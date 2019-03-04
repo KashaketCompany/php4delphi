@@ -9,7 +9,7 @@
 
 unit Unit1;
 
-{ $Id: Unit1.pas,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: Unit1.pas,v 7.0 04/2007 delphi32 Exp $ }
 
 interface
 
@@ -31,7 +31,7 @@ type
   TPHPExtension1 = class(TPHPExtension)
     procedure PHPExtension1Functions0Execute(Sender: TObject;
       Parameters: TFunctionParams; var ReturnValue: Variant;
-      ThisPtr: Pzval; TSRMLS_DC: Pointer);
+      ZendVar : TZendVariable; TSRMLS_DC: Pointer);
   private
     { Private declarations }
   public
@@ -46,7 +46,7 @@ implementation
 {$R *.DFM}
 
 procedure TPHPExtension1.PHPExtension1Functions0Execute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: Pzval;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 
 begin

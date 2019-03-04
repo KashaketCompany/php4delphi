@@ -5,22 +5,72 @@
 { Author:                                               }
 { Serhiy Perevoznyk                                     }
 { serge_perevoznyk@hotmail.com                          }
-{ http://users.chello.be/ws36637                        }
+{ http://users.telenet.be/ws36637                       }
 {*******************************************************}
-{$I PHP.INC}
+{$I 'PHP.inc'}
 
-{ $Id: ZendTypes.pas,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: ZendTypes.pas,v 7.4 10/2009 delphi32 Exp $ }
 
 unit ZENDTypes;
 
 interface
 
 uses
-  Windows;
+  Windows, SysUtils;
 
 const
   //zend.h
   ZEND_MAX_RESERVED_RESOURCES = 4;
+
+{$IFDEF PHP530}
+{$IFDEF ZTS}
+const ZEND_BUILD_TS  = ',TS';
+{$ELSE}
+const ZEND_BUILD_TS  = ',NTS';
+{$ENDIF}
+
+{$IFDEF ZEND_DEBUG}
+const ZEND_BUILD_DEBUG  = ',debug';
+{$ELSE}
+const ZEND_BUILD_DEBUG  = '';
+{$ENDIF}
+
+{$IFDEF PHP_COMPILER_ID}
+{$IFDEF COMPILER_VC9}
+const ZEND_BUILD_SYSTEM  =
+{$IFDEF COMPILER_VC14}
+',VC14'
+{$ELSE}
+  {$IFDEF COMPILER_VC13}
+    ',VC13'
+  {$ELSE}
+    {$IFDEF COMPILER_VC12}
+      ',VC12'
+      {$ELSE}
+        {$IFDEF COMPILER_VC11}
+          ',VC11'
+          {$ELSE}
+            {$IFDEF COMPILER_VC11}
+            ',VC10'
+            {$ELSE}
+            ',VC9'
+            {$ENDIF}
+          {$ENDIF}
+      {$ENDIF}
+  {$ENDIF}
+{$ENDIF};
+{$ELSE}
+{$IFDEF COMPILER_VC6}
+const ZEND_BUILD_SYSTEM  = ',VC6';
+{$ELSE}
+const ZEND_BUILD_SYSTEM  = ', $DEFINE COMPILER_VCx directive error. See PHP.INC for more details';
+{$ENDIF}
+{$ENDIF}
+{$ENDIF}
+
+{$ENDIF}
+
+
 
   //zend_vm_opcodes.h
 const
@@ -206,11 +256,29 @@ const
   ZEND_ISEMPTY                                    = (1 shl 1);
   ZEND_CT                                         = (1 shl 0);
   ZEND_RT                                         = (1 shl 1);
+
+{$IFDEF PHP530}
+type
+zend_stream_type = (
+	ZEND_HANDLE_FILENAME,
+	ZEND_HANDLE_FD,
+	ZEND_HANDLE_FP,
+	ZEND_HANDLE_STREAM,
+	ZEND_HANDLE_MAPPED);
+{$ELSE}
+const
   ZEND_HANDLE_FILENAME                            = 0;
   ZEND_HANDLE_FD                                  = 1;
   ZEND_HANDLE_FP                                  = 2;
   ZEND_HANDLE_STDIOSTREAM                         = 3;
   ZEND_HANDLE_FSTREAM                             = 4;
+
+  {$IFDEF PHP5}
+  ZEND_HANDLE_STREAM                              = 5;
+  {$ENDIF}
+{$ENDIF}
+
+const
   ZEND_FETCH_STANDARD                             = 0;
   ZEND_FETCH_ADD_LOCK                             = 1;
   ZEND_MEMBER_FUNC_CALL                           = 1 shl 0;
@@ -233,7 +301,9 @@ const
   E_USER_ERROR                                    = (1 shl 8);
   E_USER_WARNING                                  = (1 shl 9);
   E_USER_NOTICE                                   = (1 shl 10);
-  E_ALL                                           = (E_ERROR or E_WARNING or E_PARSE or E_NOTICE or E_CORE_ERROR or E_CORE_WARNING or E_COMPILE_ERROR or E_COMPILE_WARNING or E_USER_ERROR or E_USER_WARNING or E_USER_NOTICE);
+  E_STRICT                                        = (1 shl 11);
+  E_RECOVERABLE_ERROR                             = (1 shl 12);
+  E_ALL = (E_ERROR or E_WARNING or E_PARSE or E_NOTICE or E_CORE_ERROR or E_CORE_WARNING or E_COMPILE_ERROR or E_COMPILE_WARNING or E_USER_ERROR or E_USER_WARNING or E_USER_NOTICE or E_RECOVERABLE_ERROR);
   E_CORE                                          = (E_CORE_ERROR or E_CORE_WARNING);
 
   //zend.h
@@ -270,11 +340,22 @@ const
 
   //zend_modules.h
 const
-{$IFDEF PHP4}
-  ZEND_MODULE_API_NO                          = 20020429;
+{$IFDEF PHP700}
+   ZEND_MODULE_API_NO = 20151012;
 {$ELSE}
+  {$IFDEF PHP530}
+    ZEND_MODULE_API_NO                        =
+   {$IFDEF PHP560}
+    20131226
+   {$ELSE}
+    {$IFDEF PHP550}20121212{$ELSE}{$IFDEF PHP540}20100525{$ELSE}20090626{$ENDIF}{$ENDIF}
+    {$ENDIF};
+  {$ELSE}
+  {$IFDEF PHP520}
+    ZEND_MODULE_API_NO                          = 20060613;
+  {$ELSE}
   {$IFDEF PHP512}
-  ZEND_MODULE_API_NO                          = 20050922;
+   ZEND_MODULE_API_NO                          = 20050922;
     {$ELSE}
      {$IFDEF PHP511}
      ZEND_MODULE_API_NO                       = 20050922;
@@ -287,11 +368,12 @@ const
            {$ELSE}
             ZEND_MODULE_API_NO                =  20040412;
           {$ENDIF}
+       {$ENDIF}
      {$ENDIF}
+   {$ENDIF}
    {$ENDIF}
 {$ENDIF}
 {$ENDIF}
-
 {$IFDEF ZTS}
 const
   USING_ZTS                                       = 1;
@@ -299,6 +381,7 @@ const
 const
   USING_ZTS                                       = 0;
 {$ENDIF}
+
 
 const
   NO_VERSION_YET                                  = nil;
@@ -396,13 +479,15 @@ const
 type
   zend_uint   = uint;
   zend_bool   = boolean;
-  zend_uchar  = char;
+  zend_uchar  = AnsiChar;
   zend_ulong  = ulong;
   zend_ushort = word;
   unsigned_char = byte;
 
 
 type
+  uint = longword;
+  PINT = ^Integer;
   size_t = cardinal;
   ppointer = ^pointer;
   pppointer = ^ppointer;
@@ -434,7 +519,7 @@ type
 
 type
 
-  hash_func_t = function(arKey: PChar; nKeyLength: uint): ulong;
+  hash_func_t = function(arKey: PAnsiChar; nKeyLength: uint): ulong;
 
   compare_func_t = function(_noname1: Pointer; _noname2: Pointer;
     TSRMLS_DC: Pointer): integer;
@@ -453,7 +538,7 @@ type
     pListLast: PBucket;
     pNext: PBucket;
     pLast: PBucket;
-    arKey: array[0..0] of char;
+    arKey: array[0..0] of AnsiChar;
   end;
 
   PHashTable = ^THashTable;
@@ -481,7 +566,7 @@ type
   zend_op_array =
   record
     _type : zend_uchar;
-    function_name : PChar;
+    function_name : PAnsiChar;
     scope : pointer;
     fn_flags : zend_uint;
     prototype : pointer;
@@ -490,6 +575,11 @@ type
     arg_info : pointer;
     pass_rest_by_reference : zend_bool;
     return_reference : Byte;
+
+    {$IFDEF PHP530}
+    done_pass_two : zend_bool;
+    {$ENDIF}
+
     refcount : pointer;
     opcodes : pointer;
     last :zend_uint ;
@@ -503,20 +593,29 @@ type
     static_variables : PHashTable;
     start_op : pointer;
     backpatch_count : Integer;
+
+    {$IFDEF PHP530}
+    this_var : zend_uint;
+    {$ELSE}
     done_pass_two : zend_bool;
     uses_this : zend_bool;
-    filename : PChar;
+    {$ENDIF}
+
+    filename : PAnsiChar;
     line_start : zend_uint;
     line_end : zend_uint;
-    doc_comment : PChar;
+    doc_comment : PAnsiChar;
     doc_comment_len : zend_uint;
+    {$IFDEF PHP530}
+    early_binding : zend_uint;
+    {$ENDIF}
     reserved : array[0..ZEND_MAX_RESERVED_RESOURCES - 1] of Pointer;
   end;
 
   _zend_internal_function =
     record
       _type : byte;
-      function_name : PChar;
+      function_name : PAnsiChar;
       scope : pointer;
       fn_flags : zend_uint;
       prototype : pointer;
@@ -542,7 +641,7 @@ type
           common :
               record
                 _type : zend_uchar;
-                function_name : PChar;
+                function_name : PAnsiChar;
                 scope : pointer;
                 fn_flags : zend_uint;
                 prototype : pointer;
@@ -596,7 +695,7 @@ type
   type zend_op_array = record
     _type : zend_uchar;
     arg_types : PByte;
-    function_name : PChar;
+    function_name : PAnsiChar;
     refcount : pointer;
     opcodes : pointer;
     last : zend_uint;
@@ -613,7 +712,7 @@ type
     return_reference : boolean;
     done_pass_two : boolean;
 
-    filename : PChar;
+    filename : PAnsiChar;
     reserved : array[0..ZEND_MAX_RESERVED_RESOURCES - 1] of Pointer;
   end;
 
@@ -622,7 +721,7 @@ type
   _zend_internal_function = record
     _type : byte;
     arg_types : PByte;
-    function_name : pchar;
+    function_name : PAnsiChar;
     handler : pointer;
   end;
   PZendInternalFunction = ^_zend_internal_function;
@@ -630,7 +729,7 @@ type
   _zend_overloaded_function = record
    _type : byte;
    arg_types : PByte;
-   function_name : PChar;
+   function_name : PAnsiChar;
    _var : zend_uint;
   end;
 
@@ -642,7 +741,7 @@ type
               record
                 _type : zend_uchar;
                 arg_types : PByte;
-                function_name : PChar;
+                function_name : PAnsiChar;
               end;
             );
         3 :
@@ -662,11 +761,12 @@ type
   {$ENDIF}
 
   Pzend_class_entry = ^Tzend_class_entry;
+  PPZend_class_entry = ^PZend_class_entry;
   {$IFDEF PHP4}
   Tzend_class_entry =
     record
-    _type: Char;
-    name: PChar;
+    _type: AnsiChar;
+    name: PAnsiChar;
     name_length: uint;
     parent: pointer;
     refcount: pointer;
@@ -679,59 +779,66 @@ type
     handle_property_set: pointer;
   end;
   {$ELSE}
+
   Tzend_class_entry = record
-   _type : char;
-   name : pchar;
-   name_length : uint;
+   _type : AnsiChar;
+   name  : PAnsiChar;
+   name_length : zend_uint;
    parent : PZend_class_entry;
    refcount : integer;
    constants_updated : zend_bool;
    ce_flags : zend_uint;
+
    function_table : THashTable;
    default_properties : THashTable;
    properties_info : THashTable;
-   {$IFDEF PHP511}
    default_static_members : THashTable;
-   {$ENDIF}
+
    static_members : PHashTable;
    constants_table : THashTable;
    builtin_functions : pointer;
+
    _constructor : PZendFunction;
    _destructor :  PZendFunction;
    clone : PZendFunction;
    __get : PZendFunction;
    __set : PZendFunction;
-   {$IFDEF PHP510}
+   //{$IFDEF PHP510}
    __unset : PZendFunction;
    __isset : PZendFunction;
-   {$ENDIF}
+   //{$ENDIF}
    __call: PZendFunction;
-   {$IFDEF PHP510}
+   //{$IFDEF PHP530}
+   __callstatic : PZendFunction;
+   //{$ENDIF}
+   //{$IFDEF PHP520}
+   __tostring : pointer;
+   //{$ENDIF}
+   //{$IFDEF PHP510}
    serialize_func : PZendFunction;
    unserialize_func : PZendFunction;
-   {$ENDIF}
+  // {$ENDIF}
    iterator_funcs : zend_class_iterator_funcs;
 
    create_object : pointer;
    get_iterator : pointer;
    interface_gets_implemented : pointer;
 
-   {$IFDEF PHP511}
+   get_static_method : pointer;
+
    serialize : pointer;
    unserialize : pointer;
-   {$ENDIF}
 
    interfaces : pointer;
    num_interfaces : zend_uint;
 
-   filename : PChar;
+   filename : PAnsiChar;
    line_start : zend_uint;
    line_end : zend_uint;
-   doc_comment : PChar;
+   doc_comment : PAnsiChar;
    doc_comment_len : zend_uint;
-   {$IFDEF PHP511}
+
    module : pointer;
-   {$ENDIF}
   end;
   {$ENDIF}
 
@@ -782,6 +889,10 @@ type
 	compare_objects : pointer;
 	cast_object : pointer;
 	count_elements : pointer;
+  {$IFDEF PHP530}
+  get_debug_info : pointer;
+  get_closure : pointer;
+  {$ENDIF}
    end;
   pzend_object_handlers = ^zend_object_handlers;
 
@@ -800,8 +911,8 @@ type
       0: (lval: longint);
       1: (dval: double);
       2: (str: record
-          val: PChar;
-          len: longint;
+          val: {$IFDEF PHP_UNICE}PUTF8Char{$ELSE}PAnsiChar{$ENDIF};
+          len: integer;
         end);
       3: (ht: PHashTable);
       {$IFDEF PHP4}
@@ -836,6 +947,7 @@ type
 
   ppzval_array = ^pzval_array;
   pzval_array = array of ppzval;
+  pzval_array_ex = array of pzval;
 
 
 type
@@ -850,7 +962,7 @@ type
 type
   PZendHashKey = ^TZendHashKey;
   zend_hash_key = record
-    arKey: PChar;
+    arKey: PAnsiChar;
     nKeyLength: uint;
     h: ulong;
   end;
@@ -863,7 +975,7 @@ type
   zend_constant = record
     value: zval;
     flags: Integer;
-    name: PChar;
+    name: PAnsiChar;
     name_len: uint;
     module_number: Integer;
   end;
@@ -871,29 +983,65 @@ type
 
 {$IFDEF PHP5}
 type
-   zend_stream_reader_t = function(handle : pointer; buf : pChar; len : size_t; TSRMLS_DC : pointer) : size_t; cdecl;
-   zend_strem_closer_t = procedure(handle : pointer; TSRMLS_DC : pointer); cdecl;
+   zend_stream_reader_t = function(handle : pointer; buf : PAnsiChar; len : size_t; TSRMLS_DC : pointer) : size_t; cdecl;
+   zend_stream_closer_t = procedure(handle : pointer; TSRMLS_DC : pointer); cdecl;
+   zend_stream_fteller_t = function(handle : pointer; TSRMLS_DC : pointer) : longint; cdecl;
 
+{$IFDEF PHP530}
+   zend_stream_fsizer_t = function (handle : pointer; TSRMLS_DC : pointer) : size_t; cdecl;
+{$ENDIF}
+
+{$IFDEF PHP530}
+zend_mmap  = record
+	len : size_t;
+	pos : size_t;
+	map : pointer;
+	buf : PAnsiChar;
+	old_handle : pointer;
+	old_closer : zend_stream_closer_t;
+end;
+{$ENDIF}
+
+{$IFDEF PHP530}
   _zend_stream = record
    handle : pointer;
-   reader : pointer;
-   closer : pointer;
-   {$IFDEF PHP510}
-   fteller : pointer;
-   {$ENDIF}
-   interactive : pointer;
+   isatty : integer;
+   mmap : zend_mmap;
+   reader : zend_stream_reader_t;
+   fsizer : zend_stream_fsizer_t;
+   closer : zend_stream_closer_t;
    end;
+{$ELSE}
+  _zend_stream = record
+   handle : pointer;
+   reader : zend_stream_reader_t;
+   closer : zend_stream_closer_t;
+   {$IFDEF PHP510}
+   fteller : zend_stream_fteller_t;
+   {$ENDIF}
+   interactive : integer;
+   end;
+{$ENDIF}
+
+
    TZendStream = _zend_stream;
    PZendStream = ^TZendStream;
+
+
 {$ENDIF}
+
 
 type
   PZendFileHandle = ^TZendFileHandle;
   zend_file_handle =
     record
+    {$IFDEF PHP530}
+    _type : zend_stream_type;
+    {$ELSE}
     _type: uchar;
-    filename: PChar;
-    opened_path: PChar;
+    {$ENDIF}
+    filename: PAnsiChar;
+    opened_path: PAnsiChar;
     handle:
     record
       case Integer of
@@ -940,26 +1088,26 @@ type
   Pzend_syntax_highlighter_ini = ^Tzend_syntax_highlighter_ini;
   zend_syntax_highlighter_ini =
     record
-    highlight_html: PChar;
-    highlight_comment: PChar;
-    highlight_default: PChar;
-    highlight_string: PChar;
-    highlight_keyword: PChar;
+    highlight_html    : PAnsiChar;
+    highlight_comment : PAnsiChar;
+    highlight_default : PAnsiChar;
+    highlight_string  : PAnsiChar;
+    highlight_keyword : PAnsiChar;
   end;
   Tzend_syntax_highlighter_ini = zend_syntax_highlighter_ini;
 
 
 type
-  zend_write_t = function(str: PChar; str_length: integer): integer; cdecl;
+  zend_write_t = function(str: PAnsiChar; str_length: integer): integer; cdecl;
 
 
 type
 
   {$IFDEF PHP5}
    _zend_arg_info = record
-   name : PChar;
+   name : PAnsiChar;
    name_len : zend_uint;
-   class_name : PChar;
+   class_name : PAnsiChar;
    class_name_len : zend_uint;
    {$IFDEF PHP510}
    array_type_hint : zend_bool;
@@ -976,7 +1124,7 @@ type
 
   Pzend_function_entry = ^Tzend_function_entry;
   zend_function_entry = record
-    fname: Pchar;
+    fname: PAnsiChar;
     handler: pointer;
     {$IFDEF PHP4}
     func_arg_types: Pbyte;
@@ -988,8 +1136,46 @@ type
   end;
   Tzend_function_entry = zend_function_entry;
   TZendFunctionEntry = zend_function_entry;
-
+    P_zend_arg_info = ^_zend_arg_info;
+  zend_object_value = record
+    handle:Integer;
+    handlers:Pointer;
+  end;
+  _zend_function_entry = record
+    fname     : PAnsiChar;
+    handler   : pointer;
+    arg_info  : P_zend_arg_info;
+    num_args  : uint;
+    flags     : uint;
+  end;
   Pzend_module_entry = ^Tzend_module_entry;
+  p_zend_module_entry = ^_zend_module_entry;
+  _zend_module_entry = record
+    size                  : word;
+    zend_api              : dword;
+    zend_debug            : byte;
+    zts                   : byte;
+    ini_entry             : pointer;
+    deps                  : pointer;
+    name                  : PAnsiChar;
+    functions             : Pointer;
+    module_startup_func   : pointer;
+    module_shutdown_func  : pointer;
+    request_startup_func  : pointer;
+    request_shutdown_func : pointer;
+    info_func             : pointer;
+    version               : PAnsiChar;
+    globals_size          : size_t;
+    globals_id_ptr        : pointer;
+    globals_ctor          : pointer;
+    globals_dtor          : pointer;
+    post_deactivate_func  : pointer;
+    module_started        : integer;
+    _type                 : byte;
+    handle                : pointer;
+    module_number         : Integer;
+    build_id              : PAnsiChar;
+  end;
   Tzend_module_entry = record
     size: word;
     zend_api: dword;
@@ -1001,25 +1187,42 @@ type
     deps : pointer;
     {$ENDIF}
     {$ENDIF}
-    name: pchar;
-    functions: pointer;
+    name: PAnsiChar;
+    functions: Pointer;
     module_startup_func: pointer;
     module_shutdown_func: pointer;
     request_startup_func: pointer;
     request_shutdown_func: pointer;
     info_func: pointer;
-    version: pchar;
+    version: PAnsiChar;
+
+    {$IFDEF PHP5}
+     {$IFDEF PHP520}
+      globals_size : size_t;
+      globals_id_ptr : pointer;
+      globals_ctor : pointer;
+      globals_dtor : pointer;
+     {$ENDIF}
+    {$ENDIF}
+
     {$IFDEF PHP5}
     post_deactivate_func : pointer;
     {$ELSE}
     global_startup_func: pointer;
     global_shutdown_func: pointer;
     {$ENDIF}
+
+    {$IFNDEF PHP520}
     global_id: integer;
+    {$ENDIF}
+
     module_started: integer;
     _type: byte;
     handle: pointer;
     module_number: longint;
+    {$IFDEF PHP530}
+    build_id : PAnsiChar;
+    {$ENDIF}
   end;
 
 
@@ -1028,7 +1231,7 @@ type
   zend_list_element = record
     prev: pzend_list_element;
     next: pzend_list_element;
-    data: char;
+    data: AnsiChar;
   end;
 
   pzend_llist = ^zend_llist;
@@ -1132,14 +1335,8 @@ type
     object_stack : zend_stack;
     declare_stack : zend_stack;
 
-    {$IFNDEF PHP510}
-    class_entry : Tzend_class_entry;
-    {$ENDIF}
-    active_class_entry : PZend_class_entry;
 
-    {$IFNDEF PHP510}
-    active_ce_parent_class_name : zval;
-    {$ENDIF}
+    class_entry : PZend_class_entry;
 
     //variables for list() compilation
     list_llist : zend_llist;
@@ -1148,11 +1345,11 @@ type
 
     function_call_stack : zend_stack;
 
-    compiled_filename : PChar;
+    compiled_filename : PAnsiChar;
 
     zend_lineno : integer;
-    comment_start_line : integer;
-    heredoc : PChar;
+    //comment_start_line : integer;
+    heredoc : PAnsiChar;
     heredoc_len : integer;
 
     active_op_array : pointer;
@@ -1171,36 +1368,29 @@ type
 
     declarables : zend_declarables;
 
-    // For extensions support
-    extended_info : zend_bool;  // generate extension information for debugger/profiler
-    handle_op_arrays : zend_bool; // run op_arrays through op_array handlers
-
     unclean_shutdown : zend_bool;
-
     ini_parser_unbuffered_errors : zend_bool;
-
     open_files : zend_llist;
+    
+    // For extensions support
+   // extended_info : zend_bool;  // generate extension information for debugger/profiler
+   // handle_op_arrays : zend_bool; // run op_arrays through op_array handlers
 
-    {$IFDEF PHP510}
+
     catch_begin : longint;
-    {$ENDIF}
 
     ini_parser_param : pointer;
 
     interactive : integer;
 
-    {$IFDEF PHP5}
     start_lineno : zend_uint;
-    {$ENDIF}
-
     increment_lineno : zend_bool;
 
-    {$IFDEF PHP510}
+
     implementing_class : _znode;
     access_type : zend_uint;
-    doc_comment : pchar;
+    doc_comment : PAnsiChar;
     doc_comment_len : integer;
-    {$ENDIF}
   end;
   Tzend_compiler_globals = zend_compiler_globals;
 
@@ -1212,6 +1402,7 @@ type
   end;
 
   jump_buf = array[0..63] of byte;
+  p_jump_buf = ^jump_buf;
 
 {$IFDEF PHP5}
 type  _zend_objects_store = record
@@ -1223,11 +1414,11 @@ type  _zend_objects_store = record
 
 type  _zend_property_info  = record
 	flags : zend_uint;
-	name : PChar;
+	name : PAnsiChar;
 	name_length : integer;
 	h : ulong;
         {$IFDEF PHP510}
-        doc_comment : PChar;
+        doc_comment : PAnsiChar;
         doc_comment_len : integer;
         {$ENDIF}
       end;
@@ -1265,7 +1456,11 @@ type
 
      included_files : THashTable;	// files already included */
 
+     {$IFDEF PHP4}
      bailout : jump_buf;
+     {$ELSE}
+     bailout : p_jump_buf;
+     {$ENDIF}
 
      error_reporting : integer;
      orig_error_reporting : integer;
@@ -1294,7 +1489,10 @@ type
      {$ENDIF}
      {$ENDIF}
 
+     {$IFDEF PHP4}
      bailout_set : zend_bool;
+     {$ENDIF}
+
      full_tables_cleanup : zend_bool;
      {$IFDEF PHP5}
      ze1_compatibility_mode : zend_bool;
@@ -1352,7 +1550,7 @@ type
      //* locale stuff */
 
      {$IFNDEF PHP510}
-     float_separator : char;
+     float_separator : AnsiChar;
      {$ENDIF}
 
      reserved: array[0..3] of pointer;
@@ -1368,6 +1566,17 @@ type
 
 {$ENDIF}
 
+{$IFDEF PHP530}
+function ZEND_MODULE_BUILD_ID : AnsiString;
+{$ENDIF}
+
 implementation
+
+{$IFDEF PHP530}
+function ZEND_MODULE_BUILD_ID : AnsiString;
+begin
+  Result  := 'API' + IntToStr(ZEND_MODULE_API_NO) + ZEND_BUILD_TS + ZEND_BUILD_DEBUG + ZEND_BUILD_SYSTEM;
+end;
+{$ENDIF}
 
 end.

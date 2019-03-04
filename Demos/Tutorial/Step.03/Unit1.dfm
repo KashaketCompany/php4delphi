@@ -8,6 +8,8 @@ object PHPExtension1: TPHPExtension1
       Parameters = <>
     end>
   ModuleName = 'mymodule'
-  Height = 0
-  Width = 0
+  Left = 499
+  Top = 235
+  Height = 443
+  Width = 508
 end

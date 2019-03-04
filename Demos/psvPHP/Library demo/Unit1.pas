@@ -7,7 +7,7 @@
 { http://users.chello.be/ws36637                        }
 {*******************************************************}
 
-{ $Id: Unit1.pas,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: Unit1.pas,v 7.0 04/2007 delphi32 Exp $ }
 
 unit Unit1;
 
@@ -19,20 +19,21 @@ uses
   PHPFunctions, ZendTypes, phpTypes, PHPCommon;
 
 type
-  TForm1 = class(TForm)
+  TfrmLibDemo = class(TForm)
     psvPHP1: TpsvPHP;
     PHPLibrary1: TPHPLibrary;
     Memo1: TMemo;
     Button1: TButton;
-    Button2: TButton;
+    btnExecute: TButton;
+    PHPEngine: TPHPEngine;
     procedure Button1Click(Sender: TObject);
-    procedure Button2Click(Sender: TObject);
+    procedure btnExecuteClick(Sender: TObject);
     procedure PHPLibrary1Functions0Execute(Sender: TObject;
       Parameters: TFunctionParams; var ReturnValue: Variant;
-      ThisPtr: Pzval; TSRMLS_DC: Pointer);
+      ZendVar : TZendVariable; TSRMLS_DC: Pointer);
     procedure PHPLibrary1Functions1Execute(Sender: TObject;
       Parameters: TFunctionParams; var ReturnValue: Variant;
-      ThisPtr: Pzval; TSRMLS_DC: Pointer);
+      ZendVar : TZendVariable; TSRMLS_DC: Pointer);
   private
     { Private declarations }
   public
@@ -40,31 +41,34 @@ type
   end;
 
 var
-  Form1: TForm1;
+  frmLibDemo: TfrmLibDemo;
 
 implementation
 
 {$R *.DFM}
+{$R WindowsXP.res}
 
-procedure TForm1.Button1Click(Sender: TObject);
+procedure TfrmLibDemo.Button1Click(Sender: TObject);
 begin
   ShowMessage('Click');
 end;
 
-procedure TForm1.Button2Click(Sender: TObject);
+procedure TfrmLibDemo.btnExecuteClick(Sender: TObject);
 begin
-   psvPhp1.RunCode(memo1.Lines.text);
+  PHPEngine.StartupEngine;
+  psvPhp1.RunCode(memo1.Lines.text);
+  PHPEngine.ShutdownAndWaitFor;
 end;
 
-procedure TForm1.PHPLibrary1Functions0Execute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: Pzval;
+procedure TfrmLibDemo.PHPLibrary1Functions0Execute(Sender: TObject;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 begin
-  Form1.Caption := Parameters[0].Value;
+  frmLibDemo.Caption := Parameters[0].Value;
 end;
 
-procedure TForm1.PHPLibrary1Functions1Execute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: Pzval;
+procedure TfrmLibDemo.PHPLibrary1Functions1Execute(Sender: TObject;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 begin
   Button1.Click;

@@ -7,7 +7,7 @@
 { http://users.chello.be/ws36637                        }
 {*******************************************************}
 
-{ $Id: phpShellLibrary.pas,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: phpShellLibrary.pas,v 7.0 04/2007 delphi32 Exp $ }
 
 //This sample shows how to create custom library for psvPHP component
 unit phpShellLibrary;
@@ -25,11 +25,9 @@ type
   TphpShellLibrary = class(TCustomPHPLibrary)
   protected
     procedure _ShellExecute(Sender: TObject; Parameters: TFunctionParams; var ReturnValue: Variant;
-                            ThisPtr: Pzval; TSRMLS_DC: Pointer);
+                            ZendVar: TZendVariable; TSRMLS_DC: Pointer);
   public
     procedure Refresh; override;
-  published
-    property  Executor;
   end;
 
 procedure Register;
@@ -46,7 +44,7 @@ end;
 { TphpShellLibrary }
 
 procedure TphpShellLibrary._ShellExecute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: Pzval;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 var
   hWnd : THandle;

@@ -8,13 +8,13 @@
 {*******************************************************}
 unit Unit1;
 
-{ $Id: Unit1.pas,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: Unit1.pas,v 7.0 04/2007 delphi32 Exp $ }
 
 interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls,  php4delphi;
+  StdCtrls,  php4delphi, PHPCommon;
 
 type
   TForm1 = class(TForm)
@@ -25,6 +25,7 @@ type
     Label2: TLabel;
     Label3: TLabel;
     Button1: TButton;
+    PHPEngine: TPHPEngine;
     procedure Button1Click(Sender: TObject);
   private
     { Private declarations }
@@ -41,10 +42,12 @@ implementation
 
 procedure TForm1.Button1Click(Sender: TObject);
 begin
+  PHPEngine.StartupEngine;
   psvPHP1.Variables.Items[0].Value := Edit1.text;
   psvPHP1.Variables.Items[1].Value := Edit2.text;
   psvPHP1.RunCode('$z =  $x + $y;');
   Label3.Caption := psvPHP1.VariableByName('z').Value;
+  PHPEngine.ShutdownAndWaitFor;
 end;
 
 end.

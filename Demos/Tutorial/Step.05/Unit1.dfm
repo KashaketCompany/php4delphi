@@ -13,6 +13,8 @@ object PHPExtension1: TPHPExtension1
       OnExecute = PHPExtension1Functions0Execute
     end>
   ModuleName = 'mymodule'
-  Height = 0
-  Width = 0
+  Left = 414
+  Top = 262
+  Height = 359
+  Width = 478
 end

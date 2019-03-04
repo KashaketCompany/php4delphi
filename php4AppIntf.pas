@@ -6,7 +6,7 @@
 { Author:                                               }
 { Serhiy Perevoznyk                                     }
 { serge_perevoznyk@hotmail.com                          }
-{ http://users.chello.be/ws36637                        }
+{ http://users.telenet.be/ws36637                       }
 {*******************************************************}
 
 unit php4AppIntf;
@@ -15,13 +15,13 @@ interface
 
 function  InitRequest : integer; stdcall;
 procedure DoneRequest(RequestID : integer); stdcall;
-procedure RegisterVariable(RequestID : integer; AName : PChar; AValue : PChar); stdcall;
-function  ExecutePHP(RequestID : integer; FileName : PChar) : integer; stdcall;
-function  ExecuteCode(RequestID : integer; ACode : PChar) : integer; stdcall;
-function  GetResultText(RequestID : integer; Buffer : PChar; BufLen : integer) : integer; stdcall;
-function  GetVariable(RequestID : integer; AName : PChar; Buffer : PChar; BufLen : integer) : integer; stdcall;
-procedure SaveToFile(RequestID : integer; AFileName : PChar); stdcall;
-function  GetVariableSize(RequestID : integer; AName : PChar) : integer; stdcall;
+procedure RegisterVariable(RequestID : integer; AName : PAnsiChar; AValue : PAnsiChar); stdcall;
+function  ExecutePHP(RequestID : integer; FileName : PAnsiChar) : integer; stdcall;
+function  ExecuteCode(RequestID : integer; ACode : PAnsiChar) : integer; stdcall;
+function  GetResultText(RequestID : integer; Buffer : PAnsiChar; BufLen : integer) : integer; stdcall;
+function  GetVariable(RequestID : integer; AName : PAnsiChar; Buffer : PAnsiChar; BufLen : integer) : integer; stdcall;
+procedure SaveToFile(RequestID : integer; AFileName : PAnsiChar); stdcall;
+function  GetVariableSize(RequestID : integer; AName : PAnsiChar) : integer; stdcall;
 function  GetResultBufferSize(RequestID : integer) : integer; stdcall;
 
 implementation

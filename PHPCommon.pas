@@ -12,14 +12,14 @@
 {*******************************************************}
 {$I PHP.INC}
 
-{ $Id: phpcommon.pas,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: phpcommon.pas,v 7.4 10/2009 delphi32 Exp $ }
 
 unit PHPCommon;
 
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  Windows, Messages, SysUtils, Classes, VCL.Graphics, VCL.Controls, VCL.Forms, VCL.Dialogs,
   ZendTypes, ZendAPI, PHPTypes, PHPAPI;
 
 type
@@ -46,8 +46,8 @@ type
 
   TPHPVariable = class(TCollectionItem)
   private
-    FName  : string;
-    FValue : string;
+    FName  : {$IFDEF PHP_UNICE}UTf8String{$ELSE}AnsiString{$ENDIF};
+    FValue : {$IFDEF PHP_UNICE}UTf8String{$ELSE}AnsiString{$ENDIF};
     function GetAsBoolean: boolean;
     function GetAsFloat: double;
     function GetAsInteger: integer;
@@ -59,11 +59,11 @@ type
   public
     property AsInteger : integer read GetAsInteger write SetAsInteger;
     property AsBoolean : boolean read GetAsBoolean write SetAsBoolean;
-    property AsString  : string  read FValue write FValue;
+    property AsString  : {$IFDEF PHP_UNICE}UTf8String{$ELSE}AnsiString{$ENDIF}  read FValue write FValue;
     property AsFloat   : double  read GetAsFloat write SetAsFloat;
   published
-    property Name  : string read FName write FName;
-    property Value : string read FValue write FValue;
+    property Name  : {$IFDEF PHP_UNICE}UTf8String{$ELSE}AnsiString{$ENDIF} read FName write FName;
+    property Value : {$IFDEF PHP_UNICE}UTf8String{$ELSE}AnsiString{$ENDIF} read FValue write FValue;
   end;
 
   TPHPVariables = class(TCollection)
@@ -76,22 +76,22 @@ type
   public
     function Add: TPHPVariable;
     constructor Create(AOwner: TComponent);
-    function GetVariables : string;
-    function IndexOf(AName : string) : integer;
-    procedure AddRawString(AString : string);
+    function GetVariables : AnsiString;
+    function IndexOf(AName : AnsiString) : integer;
+    procedure AddRawString(AString : AnsiString);
     property Items[Index: Integer]: TPHPVariable read GetItem write SetItem; default;
-    function ByName(AName : string) : TPHPVariable;
+    function ByName(AName : AnsiString) : TPHPVariable;
   end;
 
   TPHPConstant = class(TCollectionItem)
   private
-    FName : string;
-    FValue : string;
+    FName  : AnsiString;
+    FValue : AnsiString;
   protected
     function GetDisplayName : string; override;
   published
-    property Name  : string read FName write FName;
-    property Value : string read FValue write FValue;
+    property Name  : AnsiString read FName write FName;
+    property Value : AnsiString read FValue write FValue;
   end;
 
   TPHPConstants = class(TCollection)
@@ -104,7 +104,7 @@ type
   public
     function Add: TPHPConstant;
     constructor Create(AOwner: TComponent);
-    function IndexOf(AName : string) : integer;
+    function IndexOf(AName : AnsiString) : integer;
     property Items[Index: Integer]: TPHPConstant read GetItem write SetItem; default;
   end;
 
@@ -125,7 +125,7 @@ type
   public
     function Add: TPHPHeader;
     constructor Create(AOwner: TComponent);
-    function GetHeaders : string;
+    function GetHeaders : AnsiString;
     property Items[Index: Integer]: TPHPHeader read GetItem write SetItem; default;
   end;
 
@@ -171,7 +171,7 @@ begin
   Result := FOwner;
 end;
 
-function TPHPVariables.GetVariables: string;
+function TPHPVariables.GetVariables: AnsiString;
 var i : integer;
 begin
   for i := 0 to Count - 1 do
@@ -182,7 +182,7 @@ begin
     end;
 end;
 
-function TPHPVariables.IndexOf(AName: string): integer;
+function TPHPVariables.IndexOf(AName: AnsiString): integer;
 var
  i : integer;
 begin
@@ -197,7 +197,7 @@ begin
   end;
 end;
 
-procedure TPHPVariables.AddRawString(AString : string);
+procedure TPHPVariables.AddRawString(AString : AnsiString);
 var
  SL : TStringList;
  i  : integer;
@@ -207,7 +207,9 @@ begin
   if AString[Length(AString)] = ';' then
    SetLength(AString, Length(AString)-1);
   SL := TStringList.Create;
-  ExtractStrings([';'], [], PChar(AString), SL);
+
+  ExtractStrings([';'], [], PWideChar(WideString(AString)), SL);
+
   for i := 0 to SL.Count - 1 do
    begin
      j := IndexOf(SL.Names[i]);
@@ -225,7 +227,7 @@ begin
   SL.Free;
 end;
 
-function TPHPVariables.ByName(AName: string): TPHPVariable;
+function TPHPVariables.ByName(AName: AnsiString): TPHPVariable;
 var
  i : integer;
 begin
@@ -270,12 +272,19 @@ end;
 
 function TPHPVariable.GetAsInteger: integer;
 var
- c : char;
+ {$IFDEF VERSION12}
+ c : WideChar;
+ {$ELSE}
+ c : AnsiChar;
+ {$ENDIF}
 begin
-  c := DecimalSeparator;
-  DecimalSeparator := '.';
-  Result := Round(ValueToFloat(FValue));
-  DecimalSeparator := c;
+  c := FormatSettings.DecimalSeparator;
+  try
+   FormatSettings.DecimalSeparator := '.';
+   Result := Round(ValueToFloat(FValue));
+  finally
+    FormatSettings.DecimalSeparator := c;
+  end;
 end;
 
 function TPHPVariable.GetDisplayName: string;
@@ -301,12 +310,19 @@ end;
 
 procedure TPHPVariable.SetAsInteger(const Value: integer);
 var
- c : char;
+ {$IFDEF VERSION12}
+ c : WideChar;
+ {$ELSE}
+ c : AnsiChar;
+ {$ENDIF}
 begin
-  c := DecimalSeparator;
-  DecimalSeparator := '.';
-  FValue := IntToStr(Value);
-  DecimalSeparator := c;
+  c := FormatSettings.DecimalSeparator;
+  try
+   FormatSettings.DecimalSeparator := '.';
+   FValue := IntToStr(Value);
+  finally
+    FormatSettings.DecimalSeparator := c;
+  end;
 end;
 
 { TPHPConstant }
@@ -329,7 +345,7 @@ end;
 
 constructor TPHPConstants.Create(AOwner: TComponent);
 begin
- inherited create(TPHPConstant);
+ inherited Create(TPHPConstant);
  FOwner := AOwner;
 end;
 
@@ -343,7 +359,7 @@ begin
   Result := FOwner;
 end;
 
-function TPHPConstants.IndexOf(AName: string): integer;
+function TPHPConstants.IndexOf(AName: AnsiString): integer;
 var
  i : integer;
 begin
@@ -392,7 +408,7 @@ begin
   Result := FOwner;
 end;
 
-function TPHPHeaders.GetHeaders: string;
+function TPHPHeaders.GetHeaders: AnsiString;
 var i : integer;
 begin
   for i := 0 to Count - 1 do

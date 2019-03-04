@@ -28,7 +28,7 @@ end;
 procedure php_info_module(zend_module : Pzend_module_entry; TSRMLS_DC : pointer); cdecl;
 begin  
   php_info_print_table_start();
-  php_info_print_table_row(2, PChar('Delphi classes support'), PChar('enabled'));
+  php_info_print_table_row(2, PAnsiChar('Delphi classes support'), PAnsiChar('enabled'));
   php_info_print_table_end();
 end;
 
@@ -47,7 +47,65 @@ end;
 
 var
   moduleEntry : Tzend_module_entry;
+  DelphiTable : array [0..12] of zend_function_entry;
 
+
+procedure InitDelphiFunctions;
+begin
+  PHP_FUNCTION(DelphiTable[0], 'delphi_date', @delphi_date);
+  PHP_FUNCTION(DelphiTable[1], 'delphi_extract_file_dir', @delphi_extract_file_dir);
+  PHP_FUNCTION(DelphiTable[2], 'delphi_extract_file_drive', @delphi_extract_file_drive);
+  PHP_FUNCTION(DelphiTable[3], 'delphi_extract_file_name', @delphi_extract_file_name);
+
+  DelphiTable[4].fname := 'delphi_extract_file_ext';
+  DelphiTable[4].handler := @delphi_extract_file_ext;
+  {$IFDEF PHP4}
+  DelphiTable[4].func_arg_types := nil;
+  {$ELSE}
+  DelphiTable[4].arg_info := nil;
+  {$ENDIF}
+
+  DelphiTable[5].fname := 'delphi_show_message';
+  DelphiTable[5].handler := @delphi_show_message;
+  {$IFDEF PHP4}
+  DelphiTable[5].func_arg_types := nil;
+  {$ELSE}
+  DelphiTable[5].arg_info := nil;
+  {$ENDIF}
+
+  DelphiTable[6].fname :=  'register_delphi_object';
+  delphitable[6].handler := @register_delphi_object;
+  {$IFDEF PHP4}
+  DelphiTable[6].func_arg_types := nil;
+  {$ELSE}
+  DelphiTable[6].arg_info := nil;
+  {$ENDIF}
+
+  DelphiTable[7].fname := 'delphi_get_author';
+  DelphiTable[7].handler := @delphi_get_author;
+  {$IFDEF PHP4}
+  DelphiTable[7].func_arg_types := nil;
+  {$ELSE}
+  DelphiTable[7].arg_info := nil;
+  {$ENDIF}
+
+  DelphiTable[8].fname := 'delphi_str_date';
+  DelphiTable[8].handler := @delphi_str_date;
+  {$IFDEF PHP4}
+  DelphiTable[8].func_arg_types := nil;
+  {$ELSE}
+  DelphiTable[8].arg_info := nil;
+  {$ENDIF}
+
+
+  PHP_FUNCTION(DelphiTable[9], 'delphi_get_system_directory', @delphi_get_system_directory);
+
+
+  PHP_FUNCTION(DelphiTable[10], 'delphi_input_box', @delphi_input_box);
+  PHP_FUNCTION(DelphiTable[11], 'register_delphi_component', @register_delphi_component);
+  DelphiTable[12].fname := nil;
+  DelphiTable[12].handler := nil;
+end;
 
 function get_module : Pzend_module_entry; cdecl;
 begin
@@ -69,6 +127,13 @@ begin
   {$ENDIF}
   ModuleEntry.functions :=  @DelphiTable[0];
   ModuleEntry._type := MODULE_PERSISTENT;
+  {$IFDEF PHP530}
+  {$IFNDEF COMPILER_VC9}
+  moduleEntry.build_id := strdup(PAnsiChar(ZEND_MODULE_BUILD_ID));
+  {$ELSE}
+  moduleEntry.build_id := StrNew(PAnsiChar(ZEND_MODULE_BUILD_ID));
+  {$ENDIF}
+  {$ENDIF}
   Result := @ModuleEntry;
 end;
 

@@ -8,6 +8,7 @@ uses
 
 begin
   Application.Initialize;
+  Application.Title := 'Components Demo';
   Application.CreateForm(TfrmTest, frmTest);
   Application.Run;
 end.

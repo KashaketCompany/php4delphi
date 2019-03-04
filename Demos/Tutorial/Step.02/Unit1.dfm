@@ -3,6 +3,8 @@ object PHPExtension1: TPHPExtension1
   Version = '1.0'
   Functions = <>
   ModuleName = 'mymodule'
-  Height = 0
-  Width = 0
+  Left = 541
+  Top = 282
+  Height = 376
+  Width = 406
 end

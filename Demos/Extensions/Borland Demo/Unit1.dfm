@@ -25,64 +25,8 @@ object PHPExtension1: TPHPExtension1
       OnExecute = PHPExtension1Functions1Execute
     end>
   ModuleName = 'borland_demo'
-  Left = 192
-  Top = 168
   Height = 640
   Width = 870
-  object Customer: TTable
-    DatabaseName = 'Phpdemo'
-    SessionName = 'Session1_2'
-    IndexFieldNames = 'Company'
-    TableName = 'CUSTOMER.DB'
-    Left = 26
-    Top = 64
-    object CustomerCustNo: TFloatField
-      FieldName = 'CustNo'
-    end
-    object CustomerCompany: TStringField
-      FieldName = 'Company'
-      Size = 30
-    end
-  end
-  object BioLife: TTable
-    DatabaseName = 'Phpdemo'
-    SessionName = 'Session1_2'
-    TableName = 'biolife.db'
-    Left = 25
-    Top = 126
-    object BioLifeSpeciesNo: TFloatField
-      FieldName = 'Species No'
-    end
-    object BioLifeCategory: TStringField
-      FieldName = 'Category'
-      Size = 15
-    end
-    object BioLifeCommon_Name: TStringField
-      FieldName = 'Common_Name'
-      Size = 30
-    end
-    object BioLifeSpeciesName: TStringField
-      FieldName = 'Species Name'
-      Size = 40
-    end
-    object BioLifeLengthcm: TFloatField
-      FieldName = 'Length (cm)'
-    end
-    object BioLifeLength_In: TFloatField
-      FieldName = 'Length_In'
-    end
-    object BioLifeNotes: TMemoField
-      FieldName = 'Notes'
-      OnGetText = BioLifeNotesGetText
-      BlobType = ftMemo
-      Size = 50
-    end
-    object BioLifeGraphic: TGraphicField
-      FieldName = 'Graphic'
-      OnGetText = BioLifeGraphicGetText
-      BlobType = ftGraphic
-    end
-  end
   object Root: TPageProducer
     HTMLDoc.Strings = (
       '<HTML>'
@@ -164,35 +108,12 @@ object PHPExtension1: TPHPExtension1
       ''
       '</BODY>'
       '</HTML>')
-    DataSet = BioLife
     Left = 110
     Top = 126
   end
   object CustSource: TDataSource
-    DataSet = Customer
     Left = 90
     Top = 65
-  end
-  object CustomerOrders: TQueryTableProducer
-    Caption = 'Customer Orders'
-    Columns = <
-      item
-        FieldName = 'OrderNo'
-      end
-      item
-        FieldName = 'SaleDate'
-        Title.Align = haCenter
-      end
-      item
-        FieldName = 'ShipDate'
-      end>
-    Query = Query1
-    TableAttributes.Border = 1
-    TableAttributes.CellSpacing = 1
-    TableAttributes.CellPadding = 1
-    TableAttributes.Width = 50
-    Left = 170
-    Top = 64
   end
   object CustomerList: TPageProducer
     HTMLDoc.Strings = (
@@ -214,35 +135,5 @@ object PHPExtension1: TPHPExtension1
     OnHTMLTag = CustomerListHTMLTag
     Left = 118
     Top = 9
-  end
-  object Query1: TQuery
-    DatabaseName = 'Phpdemo'
-    SessionName = 'Session1_2'
-    DataSource = CustSource
-    SQL.Strings = (
-      'SELECT *'
-      'FROM ORDERS'
-      'WHERE'
-      '(CustNo = :CustNo)')
-    Left = 24
-    Top = 8
-    ParamData = <
-      item
-        DataType = ftFloat
-        Name = 'CustNo'
-        ParamType = ptUnknown
-      end>
-  end
-  object Database1: TDatabase
-    AliasName = 'DBDEMOS'
-    DatabaseName = 'Phpdemo'
-    SessionName = 'Session1_2'
-    Left = 240
-    Top = 200
-  end
-  object Session1: TSession
-    AutoSessionName = True
-    Left = 164
-    Top = 212
   end
 end

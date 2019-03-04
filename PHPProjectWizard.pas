@@ -9,8 +9,8 @@
 {*******************************************************}
 {$I PHP.INC}
 
-{ $Id: PHPProjectWizard.pas,v 6.2 02/2006 delphi32 Exp $ } 
-
+{ $Id: PHPProjectWizard.pas,v 7.4 10/2009 delphi32 Exp $ } 
+{$I PHP.inc}
 unit PHPProjectWizard;
 
 interface
@@ -268,7 +268,7 @@ begin
       begin
         try
           TempFileName := ProjGroup.Projects[i].FileName;
-          if AnsiCompareFileName(ExtractFileName(TempFileName), ExtractFileName(TempFileName2)) = 0 then
+          if {$IF PHP560}CompareFileName{$ELSE}AnsiCompareFileName{$ENDIF}(ExtractFileName(TempFileName), ExtractFileName(TempFileName2)) = 0 then
           begin
             Found := True;
             Break;

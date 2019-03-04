@@ -5,11 +5,12 @@
 { Author:                                               }
 { Serhiy Perevoznyk                                     }
 { serge_perevoznyk@hotmail.com                          }
-{ http://users.chello.be/ws36637                        }
+{ http://users.telenet.be/ws36637                       }
+{ http://delphi32.blogspot.com                          }
 {*******************************************************}
 {$I PHP.INC}
 
-{ $Id: php4DelphiWeb.pas,v 6.2 02/2006 delphi32 Exp $ } 
+{ $Id: php4DelphiWeb.pas,v 7.4 10/2009 delphi32 Exp $ } 
 
 unit php4DelphiWeb;
 

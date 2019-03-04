@@ -1,6 +1,6 @@
 object frmMain: TfrmMain
-  Left = 184
-  Top = 121
+  Left = 331
+  Top = 235
   BorderStyle = bsDialog
   Caption = 'Encryption/Decryption'
   ClientHeight = 345
@@ -13,6 +13,8 @@ object frmMain: TfrmMain
   Font.Style = []
   OldCreateOrder = False
   Position = poScreenCenter
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
   object lblCaption: TLabel
@@ -183,7 +185,6 @@ object frmMain: TfrmMain
     TabOrder = 8
   end
   object psvPHP: TpsvPHP
-    Constants = <>
     Variables = <
       item
         Name = 'key'
@@ -210,7 +211,6 @@ object frmMain: TfrmMain
     Top = 116
   end
   object PHPLibrary1: TPHPLibrary
-    Executor = psvPHP
     LibraryName = 'ErrorsLib'
     Functions = <
       item
@@ -225,5 +225,11 @@ object frmMain: TfrmMain
       end>
     Left = 360
     Top = 168
+  end
+  object PHPEngine: TPHPEngine
+    Constants = <>
+    ReportDLLError = False
+    Left = 424
+    Top = 124
   end
 end

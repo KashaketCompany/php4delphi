@@ -8,6 +8,7 @@ uses
 
 begin
   Application.Initialize;
+  Application.Title := 'Encryption Demo';
   Application.CreateForm(TfrmMain, frmMain);
   Application.Run;
 end.

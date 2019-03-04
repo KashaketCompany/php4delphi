@@ -34,23 +34,23 @@ type
 
   TPHDelphiPExtension = class(TPHPExtension)
     procedure DelphiMessageExecute(Sender: TObject;
-      Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: pzval;
+      Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
       TSRMLS_DC: Pointer);
     procedure FormCreateExecute(Sender: TObject;
-      Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: pzval;
+      Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
       TSRMLS_DC: Pointer);
     procedure SetPropertyExecute(Sender: TObject;
-      Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: pzval;
+      Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
       TSRMLS_DC: Pointer);
     procedure ClassFreeExecute(Sender: TObject;
-      Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: pzval;
+      Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
       TSRMLS_DC: Pointer);
     procedure PHPExtensionCreate(Sender: TObject);
     procedure GetPropertyExecute(Sender: TObject;
-      Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: pzval;
+      Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
       TSRMLS_DC: Pointer);
     procedure ClassCreateExecute(Sender: TObject;
-      Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: pzval;
+      Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
       TSRMLS_DC: Pointer);
   private
     { Private declarations }
@@ -176,7 +176,7 @@ implementation
 {$R *.DFM}
 
 procedure TPHDelphiPExtension.ClassCreateExecute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: pzval;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 
 var
@@ -213,7 +213,7 @@ begin
 end;
 
 procedure TPHDelphiPExtension.GetPropertyExecute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: pzval;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 var
   Obj : TObject;
@@ -225,14 +225,14 @@ begin
 end;
 
 procedure TPHDelphiPExtension.ClassFreeExecute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: pzval;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 begin
   TObject(Parameters[0].ZendVariable.AsInteger).Free;
 end;
 
 procedure TPHDelphiPExtension.SetPropertyExecute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: pzval;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 var
   Obj : TObject;
@@ -244,7 +244,7 @@ begin
 end;
 
 procedure TPHDelphiPExtension.FormCreateExecute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: pzval;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 var
   CN : string;
@@ -277,7 +277,7 @@ begin
 end;
 
 procedure TPHDelphiPExtension.DelphiMessageExecute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: pzval;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 begin
   ShowMessage(Parameters[0].ZendVariable.AsString);

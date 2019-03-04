@@ -1,9 +1,10 @@
 object Form1: TForm1
-  Left = 283
-  Top = 220
-  Width = 264
-  Height = 194
+  Left = 490
+  Top = 294
+  BorderStyle = bsDialog
   Caption = 'Array demo'
+  ClientHeight = 160
+  ClientWidth = 256
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -11,6 +12,9 @@ object Form1: TForm1
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
+  Position = poScreenCenter
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
   object Button1: TButton
@@ -31,22 +35,26 @@ object Form1: TForm1
     TabOrder = 1
   end
   object psvPHP1: TpsvPHP
-    Constants = <>
     Variables = <>
     Left = 20
     Top = 16
   end
   object PHPLibrary1: TPHPLibrary
-    Executor = psvPHP1
     LibraryName = 'ArrayLib'
     Functions = <
       item
         FunctionName = 'get_php_array'
         Tag = 0
         Parameters = <>
-        OnExecute = PHPLibrary1Functions0Execute
+        OnExecute = ExecuteGetArray
       end>
     Left = 52
     Top = 16
+  end
+  object PHPEngine: TPHPEngine
+    Constants = <>
+    ReportDLLError = False
+    Left = 44
+    Top = 112
   end
 end

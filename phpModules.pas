@@ -5,21 +5,23 @@
 { Author:                                               }
 { Serhiy Perevoznyk                                     }
 { serge_perevoznyk@hotmail.com                          }
-{ http://users.chello.be/ws36637                        }
+{ http://users.telenet.be/ws36637                       }
 {*******************************************************}
 {$I PHP.INC}
 
-{ $Id: phpModules.pas,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: phpModules.pas,v 7.4 10/2009 delphi32 Exp $ }
 
 
 unit phpModules;
 
 interface
  uses
-   SyncObjs, Windows, SysUtils, Classes, Forms, Consts,
+   SyncObjs, Windows, SysUtils, Types, Classes, VCL.Forms, VCL.Consts,
    PHPCommon,
-   {$IFDEF VERSION6}RTLConsts, Variants,{$ENDIF} ZendAPI, phpAPI, phpFunctions,
-   ZendTypes, PHPTypes;
+   {$IFDEF VERSION6}RTLConsts, Variants,{$ENDIF} ZendAPI, phpAPI,
+   phpFunctions,
+   ZendTypes,
+   PHPTypes;
 
 type
   TOnModuleEvent = procedure(Sender : TObject; TSRMLS_DC : pointer) of object;
@@ -44,11 +46,11 @@ type
   public
     constructor Create(AOwner : TComponent); override;
     destructor  Destroy; override;
-    procedure puts(str : PChar);
-    procedure phpwrite(str : PChar; str_len : integer);
-    procedure phpwrite_h(str : PChar; str_len : integer);
-    procedure puts_h(str : PChar);
-    procedure ReportError(ErrType : integer; ErrText : PChar);
+    procedure puts(str : PAnsiChar);
+    procedure phpwrite(str : PAnsiChar; str_len : integer);
+    procedure phpwrite_h(str : PAnsiChar; str_len : integer);
+    procedure puts_h(str : PAnsiChar);
+    procedure ReportError(ErrType : integer; ErrText : PAnsiChar);
     function  FunctionByName(const AName : string) :TPHPFunction;
     property About : TPHPAboutInfo read FAbout write FAbout stored False;
     property ModuleType : TZendModuleType read FModuleType write FModuleType default mtPersistent;
@@ -92,7 +94,6 @@ type
   TPHPApplication = class(TComponent)
   private
     FClassList : TThreadList;
-    FActiveFunctionName : PChar;
     FPHPExtensionClass: TComponentClass;
     FCriticalSection: TCriticalSection;
     FActivePHPModules: TList;
@@ -110,14 +111,8 @@ type
     procedure DeactivatePHPModule(DataModule: TPHPExtension); dynamic;
     procedure DoHandleException(E: Exception); dynamic;
     procedure OnExceptionHandler(Sender: TObject; E: Exception);
-
-    {$IFDEF PHP510}
     procedure HandleRequest(ht : integer; return_value : pzval; return_value_ptr : ppzval; this_ptr : pzval;
       return_value_used : integer; TSRMLS_DC : pointer);
-    {$ELSE}
-    procedure HandleRequest(ht : integer; return_value : pzval; this_ptr : pzval;
-      return_value_used : integer; TSRMLS_DC : pointer);
-    {$ENDIF}
   public
     constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
@@ -169,7 +164,7 @@ begin
            else
              begin
                php_info_print_table_start();
-               php_info_print_table_row(2, PChar(Extension.ModuleName + ' support'), PChar('enabled'));
+               php_info_print_table_row(2, PAnsiChar(Extension.ModuleName + ' support'), PAnsiChar('enabled'));
                php_info_print_table_end();
              end;
      finally
@@ -284,7 +279,7 @@ begin
   ZVAL_NULL(return_value);
   if Assigned(Application) then
    try
-     Application.HandleRequest(ht, return_value, this_ptr, return_value_used, TSRMLS_DC);
+     Application.HandleRequest(ht, return_value, nil, this_ptr, return_value_used, TSRMLS_DC);
    except
    end;
 end;
@@ -293,8 +288,11 @@ end;
 
 function get_module : Pzend_module_entry; cdecl;
 var
-  cnt : integer;
+  cnt       : integer;
   Extension : TPHPExtension;
+  ModuleName: AnsiString;
+  Version   : AnsiString;
+  FunctionName : AnsiString;
 begin
   if ModuleEntry.module_started = 1 then
   begin
@@ -311,13 +309,23 @@ begin
     ModuleEntry.size := sizeof(Tzend_module_entry);
     ModuleEntry.zend_api := ZEND_MODULE_API_NO;
     ModuleEntry.zts := USING_ZTS;
-    {$IFDEF PHP510}
-    ModuleEntry.Name := estrndup(PChar(Extension.ModuleName), length(extension.ModuleName));
-    ModuleEntry.version := estrndup(PChar(Extension.Version), length(Extension.Version));
+    ModuleName := AnsiString(Extension.ModuleName);
+
+    {$IFNDEF COMPILER_VC9}
+    ModuleEntry.Name := strdup(PAnsiChar(ModuleName));
     {$ELSE}
-    ModuleEntry.Name := StrNew(PChar(Extension.ModuleName));
-    ModuleEntry.version := StrNew(PChar(Extension.Version));
+    ModuleEntry.Name := DupStr(PAnsiChar(ModuleName));
     {$ENDIF}
+
+    Version := AnsiString(Extension.Version);
+
+    {$IFNDEF COMPILER_VC9}
+    ModuleEntry.version := strdup(PAnsiChar(Version));
+    {$ELSE}
+    ModuleEntry.version := DupStr(PAnsiChar(Version));
+    {$ENDIF}
+
+
     ModuleEntry.module_startup_func :=  @minit;
     ModuleEntry.module_shutdown_func := @mshutdown;
     ModuleEntry.request_startup_func := @rinit;
@@ -326,11 +334,14 @@ begin
     SetLength(module_entry_table, Extension.FFunctions.Count + 1);
     for cnt := 0 to Extension.FFunctions.Count - 1 do
     begin
-      {$IFDEF PHP510}
-      module_entry_table[cnt].fname := estrndup(PChar(Extension.FFunctions[cnt].FunctionName), length(Extension.FFunctions[cnt].FunctionName));
-      {$ELSE}
-      module_entry_table[cnt].fname := StrNew(PChar(Extension.FFunctions[cnt].FunctionName));
-      {$ENDIF}
+      FunctionName := AnsiString(Extension.FFunctions[cnt].FunctionName);
+
+    {$IFNDEF COMPILER_VC9}
+      module_entry_table[cnt].fname := strdup(PAnsiChar(FunctionName));
+    {$ELSE}
+      module_entry_table[cnt].fname :=DupStr(PAnsiChar(FunctionName));
+    {$ENDIF}
+
       module_entry_table[cnt].handler := @DispatchRequest;
       {$IFDEF PHP4}
       module_entry_table[cnt].func_arg_types := nil;
@@ -344,6 +355,15 @@ begin
 
     ModuleEntry.functions :=  @module_entry_table[0];
     ModuleEntry._type := ORD(Extension.ModuleType) + 1;
+    {$IFDEF PHP530}
+
+    {$IFNDEF COMPILER_VC9}
+    moduleEntry.build_id := strdup(PAnsiChar(ZEND_MODULE_BUILD_ID));
+    {$ELSE}
+    moduleEntry.build_id := DupStr(PAnsiChar(ZEND_MODULE_BUILD_ID));
+    {$ENDIF}
+
+    {$ENDIF}
     Application.DeactivatePHPModule(Extension);
     Application.FLoading := false;
     Result := @ModuleEntry;
@@ -389,28 +409,28 @@ begin
    end;
 end;
 
-procedure TCustomPHPExtension.phpwrite(str: PChar; str_len: integer);
+procedure TCustomPHPExtension.phpwrite(str: PAnsiChar; str_len: integer);
 begin
   php_body_write(str, str_len, FTSRMLS);
 end;
 
-procedure TCustomPHPExtension.phpwrite_h(str: PChar; str_len: integer);
+procedure TCustomPHPExtension.phpwrite_h(str: PAnsiChar; str_len: integer);
 begin
   php_header_write(str, str_len, FTSRMLS);
 end;
 
-procedure TCustomPHPExtension.puts(str: PChar);
+procedure TCustomPHPExtension.puts(str: PAnsiChar);
 begin
   php_body_write(str, strlen(str), FTSRMLS);
 end;
 
-procedure TCustomPHPExtension.puts_h(str: PChar);
+procedure TCustomPHPExtension.puts_h(str: PAnsiChar);
 begin
   php_header_write(str, strlen(str), FTSRMLS);
 end;
 
 procedure TCustomPHPExtension.ReportError(ErrType: integer;
-  ErrText: PChar);
+  ErrText: PAnsiChar);
 begin
   zend_error(ErrType, ErrText);
 end;
@@ -432,7 +452,7 @@ begin
     try
       if Assigned(OnCreate) and OldCreateOrder then OnCreate(Self);
     except
-      Forms.Application.HandleException(Self);
+      VCL.Forms.Application.HandleException(Self);
     end;
   end;
 end;
@@ -443,11 +463,11 @@ end;
 procedure DoneVCLApplication;
 begin
   try
-   Forms.Application.OnException := nil;
-   if Forms.Application.Handle <> 0 then ShowOwnedPopups(Forms.Application.Handle, False);
-   Forms.Application.ShowHint := False;
-   Forms.Application.Destroying;
-   Forms.Application.DestroyComponents;
+   VCL.Forms.Application.OnException := nil;
+   if VCL.Forms.Application.Handle <> 0 then ShowOwnedPopups(VCL.Forms.Application.Handle, False);
+   VCL.Forms.Application.ShowHint := False;
+   VCL.Forms.Application.Destroying;
+   VCL.Forms.Application.DestroyComponents;
   except
   end; 
 end;
@@ -482,7 +502,7 @@ begin
    FClassList.Free;
   except
     on E : Exception do
-     OutputDebugString(PChar(E.Message));
+     OutputDebugStringA(PAnsiChar(E.Message));
   end;
   inherited Destroy;
 end;
@@ -580,7 +600,7 @@ end;
 
 procedure TPHPApplication.Run;
 begin
-  Forms.Application.OnException := OnExceptionHandler;
+  VCL.Forms.Application.OnException := OnExceptionHandler;
 end;
 
 
@@ -607,89 +627,99 @@ end;
 
 
 
-{$IFDEF PHP510}
 procedure TPHPApplication.HandleRequest(ht: integer;  return_value : pzval; return_value_ptr : ppzval;
   this_ptr: pzval; return_value_used: integer;  TSRMLS_DC: pointer);
-{$ELSE}
-procedure TPHPApplication.HandleRequest(ht: integer;  return_value : pzval;
-  this_ptr: pzval; return_value_used: integer;  TSRMLS_DC: pointer);
-{$ENDIF}
 var
   DataModule: TPHPExtension;
   cnt : integer;
-  Params : pppointer;
+  Params : pppzval;
   AFunction : TPHPFunction;
   i : integer;
   pval : pzval;
   idp : pointer;
   id : integer;
+  ReturnValue : variant;
+  FZendVar : TZendVariable;
+  FParameters : TFunctionParams;
+  FActiveFunctionName : string;
 
 begin
  pval := nil;
-
  idp := ts_resource_ex(integer(app_globals_id), nil);
  id := integer(idp^);
  if id <= 0 then
-  Exit;
-
- Params :=  emalloc(ht * sizeOf(ppzval));
+   Exit;
+   
+ FParameters := TFunctionParams.Create(nil, TFunctionParam);
  try
-   if ht > 0 then
-    begin
-      if ( not (_zend_get_parameters_array_ex(ht, Params, TSRMLS_DC) = SUCCESS )) then
-        begin
-          zend_wrong_param_count(TSRMLS_DC);
-          Exit;
-        end;
-      pval := pzval(params^^);
-    end;
 
-
-  DataModule := TPHPExtension(id);
-  if DataModule <> nil then
-  try
-    DataModule.FTSRMLS := TSRMLS_DC;
-    FActiveFunctionName := get_active_function_name(TSRMLS_DC);
-    for cnt := 0 to DataModule.FFunctions.Count - 1 do
+   Params :=  emalloc(ht * sizeOf(ppzval));
+   try
+     if ht > 0 then
       begin
-        if SameText(DataModule.FFunctions[cnt].FunctionName, FActiveFunctionName) then
+        if ( not (_zend_get_parameters_array_ex(ht, Params, TSRMLS_DC) = SUCCESS )) then
           begin
-             AFunction := DataModule.FFunctions[cnt];
-             if Assigned(AFunction.OnExecute) then
-                begin
-                  if AFunction.Parameters.Count <> ht then
-                   begin
-                     zend_wrong_param_count(TSRMLS_DC);
-                     Exit;
+            zend_wrong_param_count(TSRMLS_DC);
+            Exit;
+          end;
+        pval := pzval(params^^);
+      end;
+
+
+    DataModule := TPHPExtension(id);
+    if DataModule <> nil then
+    try
+      DataModule.FTSRMLS := TSRMLS_DC;
+      FActiveFunctionName := get_active_function_name(TSRMLS_DC);
+      for cnt := 0 to DataModule.FFunctions.Count - 1 do
+        begin
+          if SameText(DataModule.FFunctions[cnt].FunctionName, FActiveFunctionName) then
+            begin
+               AFunction := DataModule.FFunctions[cnt];
+               if Assigned(AFunction.OnExecute) then
+                  begin
+                    if AFunction.Parameters.Count <> ht then
+                     begin
+                       zend_wrong_param_count(TSRMLS_DC);
+                       Exit;
+                      end;
+
+                    FParameters.Assign(AFunction.Parameters);
+                    if ht > 0 then begin
+                     for i := 0 to ht - 1 do
+                      begin
+                        if not IsParamTypeCorrect(FParameters[i].ParamType, pval) then
+                         begin
+                           zend_error(E_WARNING, PAnsiChar(Format('Wrong parameter type for %s()', [get_active_function_name(TSRMLS_DC)])));
+                           Exit;
+                         end;
+                        FParameters[i].ZendValue := pval;
+                        inc(integer(params^), sizeof(ppzval));
+                        pval := pzval(params^^);
+                      end;
                     end;
 
-                  if ht > 0 then begin
-                   for i := 0 to ht - 1 do
-                    begin
-                      if not IsParamTypeCorrect(AFunction.Parameters[i].ParamType, pval) then
-                       begin
-                         zend_error(E_WARNING, PChar(Format('Wrong parameter type for %s()', [get_active_function_name(TSRMLS_DC)])));
-                         Exit;
-                       end;
-                      AFunction.Parameters[i].ZendValue := pval;
-                      inc(integer(params^), sizeof(ppzval));
-                      pval := pzval(params^^);
+                    FZendVar := TZendVariable.Create;
+                    try
+                     FZendVar.AsZendVariable := return_value;
+                     AFunction.OnExecute(DataModule, FParameters, ReturnValue, FZendVar, TSRMLS_DC);
+                     if FZendVar.ISNull then
+                      variant2zval(ReturnValue, return_value);
+                    finally
+                      FZendVar.Free;
                     end;
                   end;
-
-                  AFunction.ZendVar.AsZendVariable := return_value;
-                  AFunction.OnExecute(DataModule, AFunction.Parameters, AFunction.ReturnValue, this_ptr, TSRMLS_DC);
-                  if AFunction.ZendVar.ISNull then
-                   variant2zval(AFunction.ReturnValue, return_value);
-                end;
-             break;
-          end;
-      end;
+               break;
+            end;
+        end;
+    finally
+      efree(Params);
+    end;
+   except
+   end;
   finally
-    efree(Params);
+     FParameters.Free;
   end;
- except
- end;
 end;
 
 

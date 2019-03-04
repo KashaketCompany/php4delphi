@@ -21,10 +21,10 @@ type
     procedure PHPExtensionModuleInit(Sender: TObject; TSRMLS_DC: Pointer);
     procedure PHPExtension1Functions0Execute(Sender: TObject;
       Parameters: TFunctionParams; var ReturnValue: Variant;
-      ThisPtr: Pzval; TSRMLS_DC: Pointer);
+      ZendVar : TZendVariable; TSRMLS_DC: Pointer);
     procedure PHPExtension1Functions1Execute(Sender: TObject;
       Parameters: TFunctionParams; var ReturnValue: Variant;
-      ThisPtr: Pzval; TSRMLS_DC: Pointer);
+      ZendVar : TZendVariable; TSRMLS_DC: Pointer);
   private
     { Private declarations }
   public
@@ -66,7 +66,7 @@ begin
 end;
 
 procedure Tres_module.PHPExtension1Functions0Execute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: Pzval;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 var
  rc : PMyResource;
@@ -75,18 +75,19 @@ begin
   rc := emalloc(sizeof(TMyResource));
   rc^.resource_link := 1;
   rc^.resource_string := 'Hello';
-  rn := zend_register_resource(Functions[0].ZendVar.AsZendVariable, rc, le_myresource);
-  ZVAL_RESOURCE(Functions[0].ZendVar.AsZendVariable, rn);
+  rn := zend_register_resource(ZendVar.AsZendVariable, rc, le_myresource);
+  ZVAL_RESOURCE(ZendVar.AsZendVariable, rn);
 end;
 
 procedure Tres_module.PHPExtension1Functions1Execute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: Pzval;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 var
  rc : PMyResource;
-
+ Z : PZVAL;
 begin
-  rc := zend_fetch_resource(@Parameters[0].ZendValue, TSRMLS_DC, -1, 'my resource', nil, 1, le_myresource);
+  Z := Parameters[0].ZendValue;
+  rc := zend_fetch_resource(@Z, TSRMLS_DC, -1, 'my resource', nil, 1, le_myresource);
   ReturnValue := String(rc^.resource_string);
 end;
 

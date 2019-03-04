@@ -1,4 +1,13 @@
-{ $Id: Unit1.pas,v 6.2 02/2006 delphi32 Exp $ }
+{*******************************************************}
+{                     PHP4Delphi                        }
+{               PHP - Delphi interface                  }
+{ Author:                                               }
+{ Serhiy Perevoznyk                                     }
+{ serge_perevoznyk@hotmail.com                          }
+{ http://users.chello.be/ws36637                        }
+{*******************************************************}
+
+{ $Id: Unit1.pas,v 7.0 04/2007 delphi32 Exp $ }
 
 unit Unit1;
 
@@ -38,13 +47,20 @@ procedure TForm1.btnExecuteScriptClick(Sender: TObject);
 var
  S : String;
  L : integer;
+ FileName : string;
+ FilePath : string;
 begin
   Memo1.Lines.Clear;
   RequestID := InitRequest;
   RegisterVariable(RequestID, 'x','2');
   RegisterVariable(RequestID, 'y','3');
   RegisterVariable(RequestID, 'z','0');
-  ExecutePHP(RequestID, 'test.php');
+
+  FilePath := ExtractFilePath(ParamStr(0));
+  FileName := IncludeTrailingBackslash(FilePath) + 'test.php';
+
+  ExecutePHP(RequestID, PAnsiChar(FileName));
+
   L := GetResultText(RequestID, nil, 0);
   if L > 0 then
    begin

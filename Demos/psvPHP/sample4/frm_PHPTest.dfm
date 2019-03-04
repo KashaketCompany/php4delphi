@@ -1,6 +1,6 @@
 object frmPHPTest: TfrmPHPTest
-  Left = 218
-  Top = 174
+  Left = 422
+  Top = 286
   Width = 590
   Height = 435
   Caption = 'psvPHP test'
@@ -11,6 +11,8 @@ object frmPHPTest: TfrmPHPTest
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
   object Splitter1: TSplitter
@@ -88,9 +90,14 @@ object frmPHPTest: TfrmPHPTest
     end
   end
   object psvPHP: TpsvPHP
-    Constants = <>
     Variables = <>
     Left = 84
     Top = 148
+  end
+  object PHPEngine: TPHPEngine
+    Constants = <>
+    ReportDLLError = False
+    Left = 80
+    Top = 248
   end
 end

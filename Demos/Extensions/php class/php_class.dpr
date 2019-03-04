@@ -7,7 +7,7 @@
 { http://users.chello.be/ws36637                        }
 {*******************************************************}
 
-{ $Id: php_class.dpr,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: php_class.dpr,v 7.0 04/2007 delphi32 Exp $ }
 
 {$I PHP.INC}
 
@@ -148,6 +148,13 @@ begin
   {$ENDIF}
   ModuleEntry.functions :=  @module_entry_table[0];
   ModuleEntry._type := MODULE_PERSISTENT;
+  {$IFDEF PHP530}
+  {$IFNDEF COMPILER_VC9}
+  moduleEntry.build_id := strdup(PAnsiChar(ZEND_MODULE_BUILD_ID));
+  {$ELSE}
+  moduleEntry.build_id := StrNew(PAnsiChar(ZEND_MODULE_BUILD_ID));
+  {$ENDIF}
+  {$ENDIF}
   Result := @ModuleEntry;
 end;
 

@@ -20,7 +20,7 @@ object Form1: TForm1
     Width = 581
     Height = 241
     Lines.Strings = (
-      '')
+      '$z =  $x + $y; echo "Result "; echo $z;')
     TabOrder = 0
   end
   object btnExecuteScript: TButton

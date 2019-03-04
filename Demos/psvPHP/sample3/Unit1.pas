@@ -11,14 +11,14 @@ unit Unit1;
 
 {$I PHP.INC}
 
-{ $Id: Unit1.pas,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: Unit1.pas,v 7.0 04/2007 delphi32 Exp $ }
 
 interface
 
 uses
   Windows, Messages, SysUtils,
   {$IFDEF VERSION6} Variants, {$ENDIF} Classes, Graphics, Controls, Forms,
-  Dialogs, php4delphi, StdCtrls;
+  Dialogs, php4delphi, StdCtrls, PHPCommon;
 
 type
   TForm1 = class(TForm)
@@ -29,9 +29,12 @@ type
     Button2: TButton;
     Button3: TButton;
     psvPHP1: TpsvPHP;
+    PHPEngine: TPHPEngine;
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     { Private declarations }
   public
@@ -44,6 +47,7 @@ var
 implementation
 
 {$R *.dfm}
+{$R WindowsXP.res}
 
 procedure TForm1.Button1Click(Sender: TObject);
 begin
@@ -58,6 +62,16 @@ end;
 procedure TForm1.Button3Click(Sender: TObject);
 begin
   ShowMessage(psvPHP1.RunCode(Memo3.Lines.text));
+end;
+
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  PHPEngine.StartupEngine;
+end;
+
+procedure TForm1.FormDestroy(Sender: TObject);
+begin
+  PHPEngine.ShutdownAndWaitFor;
 end;
 
 end.

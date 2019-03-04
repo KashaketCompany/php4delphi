@@ -9,7 +9,7 @@
 {*******************************************************}
 {$I PHP.INC}
 
-{ $Id: phpTypes.pas,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: phpTypes.pas,v 7.4 10/2009 delphi32 Exp $ }
 
 unit PHPTypes;
 
@@ -27,7 +27,7 @@ const
 {$ENDIF}
     
 const
-  TRequestName : array [0..3] of string =
+  TRequestName : array [0..3] of AnsiString =
   ('GET',
    'PUT',
    'POST',
@@ -58,7 +58,7 @@ const
 
 
 const
- short_track_vars_names : array [0..5] of string =
+ short_track_vars_names : array [0..5] of AnsiString =
   ('_POST',
    '_GET',
    '_COOKIE',
@@ -130,14 +130,17 @@ type
 
 type
   TRequestType = (rtGet, rtPut, rtPost, rtHead);
+  TPHPRequestType = (prtGet, prtPost);
 
 type
   Psapi_header_struct = ^Tsapi_header_struct;
   sapi_header_struct =
     record
-      header : PChar;
+      header : PAnsiChar;
       header_len : uint;
+      {$IFNDEF PHP530}
       replace : zend_bool;
+      {$ENDIF}
     end;
   Tsapi_header_struct = sapi_header_struct;
 
@@ -147,8 +150,8 @@ type
       headers : zend_llist;
       http_response_code : Integer;
       send_default_content_type : Byte;
-      mimetype : PChar;
-      http_status_line : PChar;
+      mimetype : PAnsiChar;
+      http_status_line : PAnsiChar;
     end;
    Tsapi_headers_struct = sapi_headers_struct;
 
@@ -156,7 +159,7 @@ type
   Psapi_post_entry =  ^Tsapi_post_entry;
   sapi_post_entry =
     record
-      content_type : PChar;
+      content_type : PAnsiChar;
       content_type_len : uint;
       post_reader : pointer;  //void (*post_reader)(TSRMLS_D);
       post_handler : pointer; //void (*post_handler)(char *content_type_dup, void *arg TSRMLS_DC);
@@ -172,38 +175,38 @@ type
   Psapi_request_info = ^Tsapi_request_info;
   sapi_request_info =
     record
-      request_method : PChar;
-      query_string   : PChar;
-      post_data      : PChar;
-      raw_post_data  : PChar;
-      cookie_data    : PChar;
+      request_method : PAnsiChar;
+      query_string   : PAnsiChar;
+      post_data      : PAnsiChar;
+      raw_post_data  : PAnsiChar;
+      cookie_data    : PAnsiChar;
       content_length : Longint;
       post_data_length : uint;
       raw_post_data_length : uint;
-      path_translated : PChar;
-      request_uri     : PChar;
-      content_type    : PChar;
+      path_translated : PAnsiChar;
+      request_uri     : PAnsiChar;
+      content_type    : PAnsiChar;
       headers_only    : zend_bool;
       no_headers      : zend_bool;
       {$IFDEF PHP5}
       headers_read    : zend_bool;
       {$ENDIF}
       post_entry      : PSapi_post_entry;
-      content_type_dup : PChar;
+      content_type_dup : PAnsiChar;
       //for HTTP authentication
-      auth_user : PChar;
-      auth_password : PChar;
+      auth_user : PAnsiChar;
+      auth_password : PAnsiChar;
       {$IFDEF PHP510}
-      auth_digest : PChar;
+      auth_digest : PAnsiChar;
       {$ENDIF}
       //this is necessary for the CGI SAPI module
-      argv0 : PChar;
+      argv0 : PAnsiChar;
       //this is necessary for Safe Mode
-      current_user : PChar;
+      current_user : PAnsiChar;
       current_user_length : Integer;
       //this is necessary for CLI module
       argc : Integer;
-      argv : ^PChar;
+      argv : ^PAnsiChar;
       {$IFDEF PHP510}
       proto_num : integer;
       {$ENDIF}
@@ -213,7 +216,7 @@ type
   Psapi_header_line = ^Tsapi_header_line;
   sapi_header_line =
     record
-      line : PChar;
+      line : PAnsiChar;
       line_len : uint;
       response_code : Longint;
     end;
@@ -228,8 +231,8 @@ type
       read_post_bytes : Integer;
       headers_sent : Byte;
       global_stat : stat;
-      default_mimetype : PChar;
-      default_charset : PChar;
+      default_mimetype : PAnsiChar;
+      default_charset : PAnsiChar;
       rfc1867_uploaded_files : PHashTable;
       post_max_size : Longint;
       options : Integer;
@@ -251,60 +254,71 @@ type
 
   sapi_module_struct =
     record
-      name : PChar;
-      pretty_name : PChar;
-      startup  : TModuleStartupFunc;   //int (*startup)(struct _sapi_module_struct *sapi_module);
-      shutdown : TModuleShutdownFunc;   //int (*shutdown)(struct _sapi_module_struct *sapi_module);
-      activate : pointer;
-      deactivate : pointer;
+      name : PAnsiChar;
+      pretty_name : PAnsiChar;
+
+      startup  : TModuleStartupFunc;
+      //int (*startup)(struct _sapi_module_struct *sapi_module);
+
+      shutdown : TModuleShutdownFunc;
+      //int (*shutdown)(struct _sapi_module_struct *sapi_module);
+
+      activate : Pointer;
+      // int (*activate)(TSRMLS_D);
+
+      deactivate : Pointer;
+      // int (*activate)(TSRMLS_D);
+
       ub_write : pointer;
       flush : pointer;
       stat : pointer;
       getenv : pointer;
+      
       sapi_error : pointer;
+      
       header_handler : pointer;
       send_headers : pointer;
       send_header : pointer;
+      
       read_post : pointer;
       read_cookies : pointer;
+      
       register_server_variables : pointer;
       log_message : pointer;
-      {$IFDEF PHP5}
-      {$IFDEF PHP510}
       get_request_time : pointer;
-      {$ENDIF}
-      {$ENDIF}
-      php_ini_path_override : PChar;
+      terminate_process : pointer;
+
+      php_ini_path_override : PAnsiChar;
+
       block_interruptions : pointer;
       unblock_interruptions : pointer;
+
       default_post_reader : pointer;
       treat_data : pointer;
-      executable_location : PChar;
+      executable_location : PAnsiChar;
+
       php_ini_ignore : Integer;
-      {******************************}
-      {IMPORTANT:                    }
-      {Please check your php version }
-      {******************************}
-      {$IFDEF PHP4}
-      {$IFDEF PHP433}
+
+      // PHP 5.4
+      php_ini_ignore_cwd : Integer;
+
       get_fd : pointer;
       force_http_10 : pointer;
       get_target_uid : pointer;
       get_target_gid : pointer;
-      ini_defaults : pointer;
-      phpinfo_as_text : integer;
-      {$ENDIF}
-      {$ENDIF}
-      {$IFDEF PHP5}
-      get_fd : pointer;
-      force_http_10 : pointer;
-      get_target_uid : pointer;
-      get_target_gid : pointer;
+      
       input_filter : pointer;
+      
       ini_defaults : pointer;
+      
       phpinfo_as_text : integer;
-      {$ENDIF}
+
+      ini_entries : PAnsiChar;
+
+      additional_functions: Pointer;
+      input_filter_init : Pointer;
     end;
+
    Tsapi_module_struct = sapi_module_struct;
 
 
@@ -312,22 +326,22 @@ type
   PPHP_URL = ^TPHP_URL;
   Tphp_url =
     record
-      scheme : PChar;
-      user : PChar;
-      pass : PChar;
-      host : PChar;
+      scheme : PAnsiChar;
+      user : PAnsiChar;
+      pass : PAnsiChar;
+      host : PAnsiChar;
       port : Smallint;
-      path : PChar;
-      query : PChar;
-      fragment : PChar;
+      path : PAnsiChar;
+      query : PAnsiChar;
+      fragment : PAnsiChar;
     end;
 
 
 type
   arg_separators =
     record
-      output : PChar;
-      input : PChar;
+      output : PAnsiChar;
+      input : PAnsiChar;
     end;
 
 type
@@ -341,13 +355,13 @@ type
       allow_call_time_pass_reference : boolean;
       implicit_flush : boolean;
       output_buffering : Integer;
-      safe_mode_include_dir : PChar;
+      safe_mode_include_dir : PAnsiChar;
       safe_mode_gid : boolean;
       sql_safe_mode : boolean;
       enable_dl :boolean;
-      output_handler : PChar;
-      unserialize_callback_func : PChar;
-      safe_mode_exec_dir : PChar;
+      output_handler : PAnsiChar;
+      unserialize_callback_func : PAnsiChar;
+      safe_mode_exec_dir : PAnsiChar;
       memory_limit : Longint;
       max_input_time : Longint;
       track_errors : boolean;
@@ -358,21 +372,21 @@ type
       ignore_repeated_errors : boolean;
       ignore_repeated_source : boolean;
       report_memleaks : boolean;
-      error_log : PChar;
-      doc_root : PChar;
-      user_dir : PChar;
-      include_path : PChar;
-      open_basedir : PChar;
-      extension_dir : PChar;
-      upload_tmp_dir : PChar;
+      error_log : PAnsiChar;
+      doc_root : PAnsiChar;
+      user_dir : PAnsiChar;
+      include_path : PAnsiChar;
+      open_basedir : PAnsiChar;
+      extension_dir : PAnsiChar;
+      upload_tmp_dir : PAnsiChar;
       upload_max_filesize : Longint;
-      error_append_string : PChar;
-      error_prepend_string : PChar;
-      auto_prepend_file : PChar;
-      auto_append_file : PChar;
+      error_append_string : PAnsiChar;
+      error_prepend_string : PAnsiChar;
+      auto_prepend_file : PAnsiChar;
+      auto_append_file : PAnsiChar;
       arg_separator : arg_separators;
-      gpc_order : PChar;
-      variables_order : PChar;
+      gpc_order : PAnsiChar;
+      variables_order : PAnsiChar;
       rfc1867_protected_variables : THashTable;
       connection_status : Smallint;
       ignore_user_abort : Smallint;
@@ -383,8 +397,8 @@ type
       register_globals : boolean;
       register_argc_argv : boolean;
       y2k_compliance : boolean;
-      docref_root : PChar;
-      docref_ext : PChar;
+      docref_root : PAnsiChar;
+      docref_ext : PAnsiChar;
       html_errors : boolean;
       xmlrpc_errors : boolean;
       xmlrpc_error_number : Longint;
@@ -395,13 +409,29 @@ type
       always_populate_raw_post_data : boolean;
       {$IFDEF PHP510}
       report_zend_debug : boolean;
-      last_error_message : PChar;
-      last_error_file : pchar;
+      last_error_message : PAnsiChar;
+      last_error_file : PAnsiChar;
       last_error_lineno : integer;
+      {$IFNDEF PHP530}
       error_handling : error_handling_t;
       exception_class : Pointer;
-      disable_functions : PChar;
-      disable_classes : PChar;
+      {$ENDIF}
+      disable_functions : PAnsiChar;
+      disable_classes : PAnsiChar;
+      {$ENDIF}
+      {$IFDEF PHP520}
+      allow_url_include : zend_bool;
+      com_initialized : zend_bool;
+      max_input_nesting_level : longint;
+      in_user_include : zend_bool;
+      {$ENDIF}
+
+      {$IFDEF PHP530}
+      user_ini_filename : PAnsiChar;
+      user_ini_cache_ttl : longint;
+      request_order : PAnsiChar;
+      mail_x_header : zend_bool;
+      mail_log : PAnsiChar;
       {$ENDIF}
     end;
 

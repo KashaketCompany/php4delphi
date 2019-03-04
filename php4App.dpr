@@ -1,20 +1,20 @@
- {*******************************************************}
+{*******************************************************}
 {                   PHP4Applications                    }
 {                                                       }
 { Author:                                               }
 { Serhiy Perevoznyk                                     }
 { serge_perevoznyk@hotmail.com                          }
-{ http://users.chello.be/ws36637                        }
+{ http://users.telenet.be/ws36637                       }
+{ http://delphi32.blogspot.com                          }
 {*******************************************************}
 
-{ $Id: php4App.dpr,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: php4App.dpr,v 7.4 10/2009 delphi32 Exp $ }
 
 {$I PHP.INC}
 
 library php4App;
 uses
   Windows,
-  Classes,
   SysUtils,
   ZendTypes,
   PHPTypes,

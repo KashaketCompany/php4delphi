@@ -1,7 +1,8 @@
-object Form1: TForm1
+object frmLibDemo: TfrmLibDemo
   Left = 395
   Top = 303
-  Caption = 'Form1'
+  BorderStyle = bsDialog
+  Caption = 'PHP Demo'
   ClientHeight = 209
   ClientWidth = 377
   Color = clBtnFace
@@ -11,6 +12,7 @@ object Form1: TForm1
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
+  Position = poScreenCenter
   PixelsPerInch = 96
   TextHeight = 13
   object Memo1: TMemo
@@ -20,7 +22,8 @@ object Form1: TForm1
     Height = 189
     Lines.Strings = (
       'formcaption("Hello from PHP");'
-      'buttonclick();')
+      'buttonclick();'
+      'my_createcontrol();')
     TabOrder = 0
   end
   object Button1: TButton
@@ -32,23 +35,21 @@ object Form1: TForm1
     TabOrder = 1
     OnClick = Button1Click
   end
-  object Button2: TButton
+  object btnExecute: TButton
     Left = 292
     Top = 12
     Width = 75
     Height = 25
     Caption = 'Execute'
     TabOrder = 2
-    OnClick = Button2Click
+    OnClick = btnExecuteClick
   end
   object psvPHP1: TpsvPHP
-    Constants = <>
     Variables = <>
     Left = 32
     Top = 28
   end
   object PHPLibrary1: TPHPLibrary
-    Executor = psvPHP1
     LibraryName = 'SimpleLib'
     Functions = <
       item
@@ -67,7 +68,13 @@ object Form1: TForm1
         Parameters = <>
         OnExecute = PHPLibrary1Functions1Execute
       end>
-    Left = 68
-    Top = 28
+    Left = 88
+    Top = 108
+  end
+  object PHPEngine: TPHPEngine
+    Constants = <>
+    ReportDLLError = False
+    Left = 212
+    Top = 64
   end
 end

@@ -7,7 +7,7 @@
 { http://users.chello.be/ws36637                        }
 {*******************************************************}
 
-{ $Id: Unit1.pas,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: Unit1.pas,v 7.0 04/2007 delphi32 Exp $ }
 
 //This sample shows how to return an array as a result of PHP function
 unit Unit1;
@@ -17,7 +17,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   PHPCustomLibrary, phpLibrary, php4delphi, phpFunctions, ZendAPI, PHPAPI,
-  StdCtrls, ZendTypes, phpTypes;
+  StdCtrls, ZendTypes, phpTypes, PHPCommon;
 
 type
   TForm1 = class(TForm)
@@ -25,10 +25,13 @@ type
     PHPLibrary1: TPHPLibrary;
     Button1: TButton;
     ListBox1: TListBox;
-    procedure PHPLibrary1Functions0Execute(Sender: TObject;
-      Parameters: TFunctionParams; var ReturnValue: Variant;
-      ThisPtr: Pzval; TSRMLS_DC: Pointer);
+    PHPEngine: TPHPEngine;
     procedure Button1Click(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
+    procedure ExecuteGetArray(Sender: TObject; Parameters: TFunctionParams;
+      var ReturnValue: Variant; ZendVar: TZendVariable;
+      TSRMLS_DC: Pointer);
   private
     { Private declarations }
   public
@@ -43,9 +46,34 @@ implementation
 
 {$R *.DFM}
 
-procedure TForm1.PHPLibrary1Functions0Execute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: Pzval;
-  TSRMLS_DC: Pointer);
+
+procedure TForm1.Button1Click(Sender: TObject);
+var
+ cnt : integer;
+begin
+  //Clear array
+  SetLength(ar,0);
+  //Execute code
+  psvPHP1.RunCode('$z=0; $y=0; $ar=array("la","hu"); $x=45; $z = $x + $y; $count=count($ar); get_php_array();');
+  //Display new value of the array
+  ListBox1.Items.Clear;
+  for cnt := 0 to Length(ar) - 1 do
+   ListBox1.Items.Add(ar[cnt]);
+end;
+
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  PHPEngine.StartupEngine;
+end;
+
+procedure TForm1.FormDestroy(Sender: TObject);
+begin
+ //  PHPEngine.ShutdownEngine;
+end;
+
+procedure TForm1.ExecuteGetArray(Sender: TObject;
+  Parameters: TFunctionParams; var ReturnValue: Variant;
+  ZendVar: TZendVariable; TSRMLS_DC: Pointer);
 var
   ht  : PHashTable;
   data: ^ppzval;
@@ -53,7 +81,7 @@ var
   variable : pzval;
   tmp : ^ppzval;
 begin
-  ht := GetSymbolsTable(TSRMLS_DC);
+  ht := GetSymbolsTable;
   if Assigned(ht) then
    begin
       new(data);
@@ -74,20 +102,6 @@ begin
           end;
        freemem(data);
    end;
-end;
-
-procedure TForm1.Button1Click(Sender: TObject);
-var
- cnt : integer;
-begin
-  //Clear array
-  SetLength(ar,0);
-  //Execute code
-  psvPHP1.RunCode('$z=0; $y=0; $ar=array("la","hu"); $x=45; $z = $x + $y; $count=count($ar); get_php_array();');
-  //Display new value of the array
-  ListBox1.Items.Clear;
-  for cnt := 0 to Length(ar) - 1 do
-   ListBox1.Items.Add(ar[cnt]);
 end;
 
 end.

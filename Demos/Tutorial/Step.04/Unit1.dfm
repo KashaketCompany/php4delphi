@@ -12,6 +12,8 @@ object PHPExtension1: TPHPExtension1
         end>
     end>
   ModuleName = 'mymodule'
-  Height = 0
-  Width = 0
+  Left = 397
+  Top = 234
+  Height = 497
+  Width = 591
 end

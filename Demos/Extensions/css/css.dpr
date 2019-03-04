@@ -37,7 +37,7 @@ end;
 procedure php_info_module(zend_module : Pzend_module_entry; TSRMLS_DC : pointer); cdecl;
 begin  
   php_info_print_table_start();
-  php_info_print_table_row(2, PChar('Delphi CSS'), PChar('enabled'));
+  php_info_print_table_row(2, PAnsiChar('Delphi CSS'), PAnsiChar('enabled'));
   php_info_print_table_end();
 end;
 
@@ -57,7 +57,7 @@ procedure delphi_css(ht : integer; return_value : pzval; this_ptr : pzval;
 procedure Puts(Str : string);
 begin
   str := StringReplace(str, '\n', #13#10, [rfReplaceAll]);
-  php_body_write(Pchar(str), Length(str), TSRMLS_DC);
+  php_body_write(PAnsiChar(str), Length(str), TSRMLS_DC);
 end;
 
 begin
@@ -104,10 +104,19 @@ begin
     ModuleEntry.info_func := @php_info_module;
     module_entry_table[0].fname := 'delphi_css';
     module_entry_table[0].handler := @delphi_css;
-    module_entry_table[0].func_arg_types := nil;
-    ModuleEntry.functions :=  @module_entry_table[0];
-    ModuleEntry._type := MODULE_PERSISTENT;
-    result := @ModuleEntry;
+  {$IFDEF PHP4}
+  Module_entry_table[0].func_arg_types := nil;
+  {$ENDIF}
+  ModuleEntry.functions :=  @module_entry_table[0];
+  ModuleEntry._type := MODULE_PERSISTENT;
+  {$IFDEF PHP530}
+  {$IFNDEF COMPILER_VC9}
+  moduleEntry.build_id := strdup(PAnsiChar(ZEND_MODULE_BUILD_ID));
+  {$ELSE}
+  moduleEntry.build_id := StrNew(PAnsiChar(ZEND_MODULE_BUILD_ID));
+  {$ENDIF}
+  {$ENDIF}
+  Result := @ModuleEntry;
 end;
 
 exports

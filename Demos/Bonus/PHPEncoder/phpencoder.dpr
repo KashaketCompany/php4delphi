@@ -19,7 +19,7 @@ end;
 procedure php_info_module(zend_module : Pzend_module_entry; TSRMLS_DC : pointer); cdecl;
 begin
   php_info_print_table_start();
-  php_info_print_table_row(2, PChar('php encryption'), PChar('enabled'));
+  php_info_print_table_row(2, PAnsiChar('php encryption'), PAnsiChar('enabled'));
   php_info_print_table_end();
 end;
 
@@ -41,7 +41,7 @@ procedure ex_dec(ht : integer; return_value : pzval; this_ptr : pzval;
    return_value_used : integer; TSRMLS_DC : pointer); cdecl;
 {$ENDIF}
 var
- FileName : PChar;
+ FileName : PAnsiChar;
  S : TFileStream;
  st : string;
  i : integer;
@@ -59,7 +59,7 @@ begin
   for i := 1 to length(st) do
    if (st[i] <> #10) and (st[i] <> #13) then
    st[i] := chr ( ord(st[i]) xor 8);
-  zend_eval_string(PChar(st), nil, 'decoded', TSRMLS_DC);
+  zend_eval_string(PAnsiChar(st), nil, 'decoded', TSRMLS_DC);
 end;
 
 
@@ -84,8 +84,20 @@ begin
   ModuleEntry.info_func := @php_info_module;
   Module_entry_table[0].fname := 'ex_dec';
   Module_entry_table[0].handler := @ex_dec;
+
+  {$IFDEF PHP4}
+  Module_entry_table[0].func_arg_types := nil;
+  {$ENDIF}
   ModuleEntry.functions :=  @module_entry_table[0];
   ModuleEntry._type := MODULE_PERSISTENT;
+  {$IFDEF PHP530}
+  {$IFNDEF COMPILER_VC9}
+  moduleEntry.build_id := strdup(PAnsiChar(ZEND_MODULE_BUILD_ID));
+  {$ELSE}
+  moduleEntry.build_id := StrNew(PAnsiChar(ZEND_MODULE_BUILD_ID));
+  {$ENDIF}
+  {$ENDIF}
+
   Result := @ModuleEntry;
 end;
 

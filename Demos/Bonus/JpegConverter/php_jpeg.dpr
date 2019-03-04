@@ -4,10 +4,11 @@
 { Author:                                               }
 { Serhiy Perevoznyk                                     }
 { serge_perevoznyk@hotmail.com                          }
-{ http://users.chello.be/ws36637                        }
+{ http://users.telenet.be/ws36637                       }
 {*******************************************************}
 
-{ $Id: php_jpeg.dpr,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: php_jpeg.dpr,v 7.4 10/2009 delphi32 Exp $ }
+
 {$I PHP.INC}
 
 library php_jpeg;
@@ -41,7 +42,7 @@ end;
 procedure php_info_module(zend_module : Pzend_module_entry; TSRMLS_DC : pointer); cdecl;
 begin
   php_info_print_table_start();
-  php_info_print_table_row(2, PChar('JPEG support'), PChar('enabled'));
+  php_info_print_table_row(2, PAnsiChar('JPEG support'), PAnsiChar('enabled'));
   php_info_print_table_end();
 end;
 
@@ -63,8 +64,8 @@ procedure convert_bmp_jpeg (ht : integer; return_value : pzval; this_ptr : pzval
    return_value_used : integer; TSRMLS_DC : pointer); cdecl;
 {$ENDIF}
 var
-  bmpName : PChar;
-  JpgName : PChar;
+  bmpName : PAnsiChar;
+  JpgName : PAnsiChar;
   param : pzval_array;
   Bitmap : TBitmap;
   Jpg : TJPEGImage;
@@ -112,12 +113,12 @@ procedure show_bmp_jpeg (ht : integer; return_value : pzval; this_ptr : pzval;
    return_value_used : integer; TSRMLS_DC : pointer); cdecl;
 {$ENDIF}
 var
-  bmpName : PChar;
+  bmpName : PAnsiChar;
   param : pzval_array;
   Bitmap : TBitmap;
   Jpg : TJPEGImage;
   MS : TMemoryStream;
- _content_type : PChar;
+ _content_type : PAnsiChar;
 begin
   if ht <> 1 then
   begin
@@ -165,20 +166,20 @@ procedure sign_jpeg (ht : integer; return_value : pzval; this_ptr : pzval;
    return_value_used : integer; TSRMLS_DC : pointer); cdecl;
 {$ENDIF}
 var
-  JpgName  : PChar;
-  FontName : PChar;
+  JpgName  : PAnsiChar;
+  FontName : PAnsiChar;
   Color : TColor;
   Size : integer;
   X : integer;
   Y : integer;
-  Sign : PChar;
+  Sign : PAnsiChar;
 
   param : pzval_array;
   Jpg : TJPEGImage;
   Bmp : TBitmap;
 
   MS : TMemoryStream;
- _content_type : PChar;
+ _content_type : PAnsiChar;
 
 begin
   if ht <> 7 then
@@ -244,6 +245,7 @@ function get_module : Pzend_module_entry; cdecl;
 begin
   if not PHPLoaded then
     LoadPHP;
+
   ModuleEntry.size := sizeof(Tzend_module_entry);
   ModuleEntry.zend_api := ZEND_MODULE_API_NO;
   ModuleEntry.zts := USING_ZTS;
@@ -264,8 +266,20 @@ begin
   Module_entry_table[2].fname := 'sign_jpeg';
   Module_entry_table[2].handler := @sign_jpeg;
 
+  {$IFDEF PHP4}
+  Module_entry_table[0].func_arg_types := nil;
+  {$ENDIF}
   ModuleEntry.functions :=  @module_entry_table[0];
   ModuleEntry._type := MODULE_PERSISTENT;
+  
+  {$IFDEF PHP530}
+  {$IFNDEF COMPILER_VC9}
+  moduleEntry.build_id := strdup(PAnsiChar(ZEND_MODULE_BUILD_ID));
+  {$ELSE}
+  moduleEntry.build_id := StrNew(PAnsiChar(ZEND_MODULE_BUILD_ID));
+  {$ENDIF}
+  {$ENDIF}
+
   Result := @ModuleEntry;
 end;
 

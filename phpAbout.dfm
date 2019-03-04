@@ -1205,7 +1205,7 @@ object dlgAbout: TdlgAbout
       Alignment = taCenter
       Anchors = []
       AutoSize = False
-      Caption = '(c) Copyright 2002-2006, Serhiy Perevoznyk'#13#10'All Rights Reserved'
+      Caption = 'Copyright (c) 2002-2009, Serhiy Perevoznyk'#13#10'All Rights Reserved'
     end
     object labVersion: TLabel
       Left = 4

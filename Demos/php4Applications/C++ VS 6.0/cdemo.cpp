@@ -1,7 +1,6 @@
 // cdemo.cpp : Defines the entry point for the console application.
 //
 
-{ $Id: cdemo.cpp,v 6.2 02/2006 delphi32 Exp $ }
 
 # include "stdafx.h"
 # include <windows.h>

@@ -5,11 +5,11 @@
 { Author:                                               }
 { Serhiy Perevoznyk                                     }
 { serge_perevoznyk@hotmail.com                          }
-{ http://users.chello.be/ws36637                        }
+{ http://users.telenet.be/ws36637                       }
 {*******************************************************}
 {$I PHP.INC}
 
-{ $Id: php4DelphiReg.pas,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: php4DelphiReg.pas,v 7.4 10/2009 delphi32 Exp $ }
 
 unit php4DelphiReg;
 
@@ -20,10 +20,12 @@ uses
   {$IFDEF VERSION6}
   DesignIntf,
   DesignEditors,
+  ToolsAPI,
   {$ELSE}
   dsgnintf,
   {$ENDIF}
-   ShlObj,
+  Graphics,
+  ShlObj,
   ZendAPI, PHPAPI,
   PHP4Delphi, phpAbout, phpModules, phpLibrary, ShellAPI,
   phpClass,
@@ -56,16 +58,47 @@ type
     procedure Edit; override;
   end;
 
+{$IFDEF VERSION10}
+procedure RegisterSplashScreen;
+{$ENDIF}
+
 procedure Register;
 
 implementation
 
+{$R php4DelphiSplash.res}
+
+{$IFDEF VERSION11}
+{$R php4delphi.dcr}
+{$ENDIF}
+
+{$IFDEF VERSION10}
+procedure RegisterSplashScreen;
+var
+  Bmp: TBitmap;
+begin
+  Bmp := TBitmap.Create;
+  Bmp.LoadFromResourceName( HInstance, 'PHPDELPHIL' );
+  try
+    SplashScreenServices.AddPluginBitmap('php4Delphi version 7.4',
+                                          Bmp.Handle, False, 'Registered', '' );
+  finally
+    Bmp.Free;
+  end;
+
+end;
+
+{$ENDIF}
+
 procedure Register;
 begin
+  {$IFDEF VERSION10}
+  RegisterSplashScreen;
+  {$ENDIF}
+  RegisterComponents('PHP', [TPHPEngine]);
   RegisterComponents('PHP', [TpsvPHP]);
   RegisterComponents('PHP', [TPHPLibrary]);
   RegisterComponents('PHP', [TPHPClass]);
-  RegisterComponents('PHP', [TPHPSystemLibrary]);
   RegisterPropertyEditor(TypeInfo(String), TpsvPHP, 'FileName', TScriptFileProperty);
   RegisterPropertyEditor(TypeInfo(TPHPAboutInfo), TPHPComponent, 'About', TPHPVersionEditor);
   RegisterPropertyEditor(TypeInfo(TPHPAboutInfo), TCustomPHPExtension, 'About', TphpVersionEditor);
@@ -138,7 +171,7 @@ begin
           Designer.Modified;
         end;
       1: ShellExecute(0, 'open', 'http://www.php.net', nil, nil, SW_SHOW);
-      2: ShellExecute(0, 'open', 'http://users.chello.be/ws36637', nil, nil, SW_SHOW);
+      2: ShellExecute(0, 'open', 'http://users.telenet.be/ws36637', nil, nil, SW_SHOW);
     end;
 end;
 

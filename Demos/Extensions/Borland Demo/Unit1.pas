@@ -7,7 +7,7 @@
 { http://users.chello.be/ws36637                        }
 {*******************************************************}
 
-{ $Id: Unit1.pas,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: Unit1.pas,v 7.0 04/2007 delphi32 Exp $ }
 
 unit Unit1;
 
@@ -24,34 +24,19 @@ uses
    phpTypes,
    phpAPI,
    phpFunctions,
-   PHPModules, DBWeb, Db, DSProd, HTTPApp, DBTables, Graphics, JPeg;
+   PHPModules, DBWeb, Db, DSProd, HTTPApp, DBTables, Graphics, JPeg,
+  DBBdeWeb, HTTPProd;
 
 type
 
   TPHPExtension1 = class(TPHPExtension)
-    Customer: TTable;
-    CustomerCustNo: TFloatField;
-    CustomerCompany: TStringField;
-    BioLife: TTable;
-    BioLifeSpeciesNo: TFloatField;
-    BioLifeCategory: TStringField;
-    BioLifeCommon_Name: TStringField;
-    BioLifeSpeciesName: TStringField;
-    BioLifeLengthcm: TFloatField;
-    BioLifeLength_In: TFloatField;
-    BioLifeNotes: TMemoField;
-    BioLifeGraphic: TGraphicField;
     Root: TPageProducer;
     BioLifeProducer: TDataSetPageProducer;
     CustSource: TDataSource;
-    CustomerOrders: TQueryTableProducer;
     CustomerList: TPageProducer;
-    Query1: TQuery;
-    Database1: TDatabase;
-    Session1: TSession;
     procedure PHPExtension1Functions0Execute(Sender: TObject;
       Parameters: TFunctionParams; var ReturnValue: Variant;
-      ThisPtr: Pzval; TSRMLS_DC: Pointer);
+      ZendVar : TZendVariable; TSRMLS_DC: Pointer);
     procedure RootHTMLTag(Sender: TObject; Tag: TTag;
       const TagString: String; TagParams: TStrings;
       var ReplaceText: String);
@@ -60,7 +45,7 @@ type
       var ReplaceText: String);
     procedure PHPExtension1Functions1Execute(Sender: TObject;
       Parameters: TFunctionParams; var ReturnValue: Variant;
-      ThisPtr: Pzval; TSRMLS_DC: Pointer);
+      ZendVar : TZendVariable; TSRMLS_DC: Pointer);
     procedure PHPExtensionCreate(Sender: TObject);
     procedure BioLifeGraphicGetText(Sender: TField; var Text: String;
       DisplayText: Boolean);
@@ -81,7 +66,7 @@ implementation
 {$R *.DFM}
 
 procedure TPHPExtension1.PHPExtension1Functions0Execute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: Pzval;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 var
  Action : string;
@@ -95,7 +80,7 @@ var
 
 begin
   ts := ts_resource_ex(0, nil);
-  gl := GetSAPIGlobals(ts);
+  gl := GetSAPIGlobals;
 
   Action := Parameters.Values('Action');
   if Action = '' then
@@ -163,7 +148,7 @@ begin
   if SameText(TagString, 'MODULENAME') then
    begin
      ts := ts_resource_ex(0, nil);
-     gl := GetSAPIGlobals(ts);
+     gl := GetSAPIGlobals;
      ReplaceText := gl.request_info.request_uri;
    end;
 end;
@@ -177,7 +162,7 @@ var
   ts : pointer;
 begin
   ts := ts_resource_ex(0, nil);
-  gl := GetSAPIGlobals(ts);
+  gl := GetSAPIGlobals;
   ScriptName := gl.request_info.request_uri;
 
   if CompareText(TagString, 'CUSTLIST') = 0 then
@@ -195,7 +180,7 @@ begin
 end;
 
 procedure TPHPExtension1.PHPExtension1Functions1Execute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: Pzval;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 var
  CustNo : string;
@@ -229,7 +214,7 @@ var
 
 begin
   ts := ts_resource_ex(0, nil);
-  gl := GetSAPIGlobals(ts);
+  gl := GetSAPIGlobals;
   ScriptName := gl.request_info.request_uri;
 
   Text := Format('<IMG SRC="%s?action=getimage" alt="[%s]" border="0">',

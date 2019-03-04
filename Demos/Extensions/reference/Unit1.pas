@@ -20,7 +20,7 @@ type
   TPHPExtension1 = class(TPHPExtension)
     procedure PHPExtension1Functions0Execute(Sender: TObject;
       Parameters: TFunctionParams; var ReturnValue: Variant;
-      ThisPtr: pzval; TSRMLS_DC: Pointer);
+      ZendVar : TZendVariable; TSRMLS_DC: Pointer);
   private
     { Private declarations }
   public
@@ -35,7 +35,7 @@ implementation
 {$R *.DFM}
 
 procedure TPHPExtension1.PHPExtension1Functions0Execute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: pzval;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 begin
   ZVAL_STRING(Parameters[0].ZendValue, 'hello', true);

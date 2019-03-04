@@ -9,13 +9,17 @@
 {*******************************************************}
 {$I PHP.INC}
 
-{ $Id: PHPFunctions.pas,v 6.2 02/2006 delphi32 Exp $ } 
+{ $Id: PHPFunctions.pas,v 7.4 10/2009 delphi32 Exp $ } 
 
 unit phpFunctions;
 
+{$ifdef fpc}
+   {$mode delphi}
+{$endif}
+
 interface
  uses
-   Windows, SysUtils, Classes, {$IFDEF VERSION6} Variants,
+   Windows, SysUtils,  Classes, {$IFDEF VERSION6} Variants,
    {$ENDIF} ZendTypes, PHPTypes, ZendAPI, PHPAPI ;
 
 type
@@ -28,10 +32,10 @@ type
     procedure SetAsBoolean(const Value: boolean);
     function  GetAsFloat: double;
     function  GetAsInteger: integer;
-    function  GetAsString: string;
+    function  GetAsString: AnsiString;
     procedure SetAsFloat(const Value: double);
     procedure SetAsInteger(const Value: integer);
-    procedure SetAsString(const Value: string);
+    procedure SetAsString(const Value: AnsiString);
     function  GetAsDate: TDateTime;
     function  GetAsDateTime: TDateTime;
     function  GetAsTime: TDateTime;
@@ -50,7 +54,7 @@ type
     property    AsZendVariable : Pzval read FValue write FValue;
     property    AsBoolean : boolean read GetAsBoolean write SetAsBoolean;
     property    AsInteger : integer read GetAsInteger write SetAsInteger;
-    property    AsString  : string  read GetAsString  write SetAsString;
+    property    AsString  : AnsiString read GetAsString  write SetAsString;
     property    AsFloat   : double  read GetAsFloat write SetAsFloat;
     property    AsDate    : TDateTime read GetAsDate write SetAsDate;
     property    AsTime    : TDateTime read GetAsTime write SetAsTime;
@@ -102,43 +106,43 @@ type
 
 
   TPHPExecute = procedure(Sender : TObject; Parameters : TFunctionParams ; var ReturnValue : Variant;
-                          ThisPtr : pzval;  TSRMLS_DC : pointer) of object;
+                          ZendVar : TZendVariable;  TSRMLS_DC : pointer) of object;
 
   TPHPFunction = class(TCollectionItem)
   private
     FOnExecute : TPHPExecute;
-    FFunctionName  : string;
+    FFunctionName  : AnsiString;
     FTag       : integer;
     FFunctionParams: TFunctionParams;
-    FZendVar : TZendVariable;
+    FDescription: AnsiString;
     procedure SetFunctionParams(const Value: TFunctionParams);
+    procedure _SetDisplayName(const value : AnsiString);
   public
-    ReturnValue : variant;
     constructor Create(Collection : TCollection); override;
     destructor Destroy; override;
     function  GetDisplayName: string; override;
     procedure SetDisplayName(const Value: string); override;
     procedure AssignTo(Dest: TPersistent); override;
-    property  ZendVar: TZendVariable read FZendVar;
   published
-    property FunctionName : string read FFunctionName write SetDisplayName;
+    property FunctionName : AnsiString read FFunctionName write _SetDisplayName;
     property Tag  : integer read FTag write FTag;
     property Parameters: TFunctionParams read FFunctionParams write SetFunctionParams;
     property OnExecute : TPHPExecute read FOnExecute write FOnExecute;
+    property Description : AnsiString read FDescription write FDescription;
   end;
 
   TPHPFunctions = class(TCollection)
   private
     FOwner: TPersistent;
+  protected
     function GetItem(Index: Integer): TPHPFunction;
     procedure SetItem(Index: Integer; Value: TPHPFunction);
-  protected
     function GetOwner: TPersistent; override;
     procedure SetItemName(Item: TCollectionItem); override;
   public
-    constructor Create(Owner: TPersistent; ItemClass: TCollectionItemClass);
+    constructor Create(AOwner: TPersistent; ItemClass: TCollectionItemClass); virtual;
     function Add : TPHPFunction;
-    function FunctionByName(const AName : string) : TPHPFunction;
+    function FunctionByName(const AName : AnsiString) : TPHPFunction;
     property Items[Index: Integer]: TPHPFunction read GetItem write SetItem; default;
   end;
 
@@ -189,13 +193,13 @@ begin
   Result := TPHPFunction(inherited Add);
 end;
 
-constructor TPHPFunctions.Create(Owner: TPersistent; ItemClass: TCollectionItemClass);
+constructor TPHPFunctions.Create(AOwner: TPersistent; ItemClass: TCollectionItemClass);
 begin
   inherited Create(ItemClass);
-  FOwner := Owner;
+  FOwner := AOwner;
 end;
 
-function TPHPFunctions.FunctionByName(const AName: string): TPHPFunction;
+function TPHPFunctions.FunctionByName(const AName: AnsiString): TPHPFunction;
 var
  cnt : integer;
 begin
@@ -257,6 +261,7 @@ end;
 
 { TPHPFunction }
 
+
 procedure TPHPFunction.AssignTo(Dest: TPersistent);
 begin
   if Dest is TPHPFunction then
@@ -266,24 +271,27 @@ begin
       with TPHPFunction(Dest) do
       begin
         Tag := Self.Tag;
+        Parameters.Assign(Self.Parameters);
+        Description := Self.Description;
+        FunctionName := Self.FunctionName;
       end;
     finally
       if Assigned(Collection) then Collection.EndUpdate;
     end;
   end else inherited AssignTo(Dest);
 end;
+  
 
 constructor TPHPFunction.Create(Collection: TCollection);
 begin
-  inherited;
+  inherited Create(Collection);
   FFunctionParams := TFunctionParams.Create(TPHPFunctions(Self.Collection).GetOwner, TFunctionParam);
-  FZendVar := TZendVariable.Create;
 end;
 
 destructor TPHPFunction.Destroy;
 begin
+  FOnExecute := nil;
   FFunctionParams.Free;
-  FZendVar.Free;
   inherited;
 end;
 
@@ -300,22 +308,31 @@ procedure TPHPFunction.SetDisplayName(const Value: string);
 var
   I: Integer;
   F: TPHPFunction;
+  NameValue : AnsiString;
 begin
-  if AnsiCompareText(Value, FFunctionName) <> 0 then
+   NameValue := Value;
+  if AnsiCompareText(NameValue, FFunctionName) <> 0 then
   begin
     if Collection <> nil then
       for I := 0 to Collection.Count - 1 do
       begin
         F := TPHPFunctions(Collection).Items[I];
         if (F <> Self) and (F is TPHPFunction) and
-          (AnsiCompareText(Value, F.FunctionName) = 0) then
-          raise Exception.Create('Duplicate function name');
+          (AnsiCompareText(NameValue, F.FunctionName) = 0) then
+          raise Exception.CreateFmt('Duplicate function name: %s', [Value]);
       end;
-    FFunctionName :=  LowerCase(Value);
+    FFunctionName :=  AnsiLowerCase(Value);
     Changed(False);
   end;
 end;
 
+procedure TPHPFunction._SetDisplayName(const Value: AnsiString);
+var
+  NewName : string;
+begin
+  NewName := value;
+  SetDisplayName(NewName);
+end;
 
 procedure TPHPFunction.SetFunctionParams(const Value: TFunctionParams);
 begin
@@ -417,6 +434,7 @@ begin
       with TFunctionParam(Dest) do
       begin
         ParamType := Self.ParamType;
+        Name := Self.Name;
       end;
     finally
       if Assigned(Collection) then Collection.EndUpdate;
@@ -552,7 +570,7 @@ end;
 {$IFDEF VERSION5}
 function StrToFloatDef(const S: string; const Default: Extended): Extended;
 begin
-  if not TextToFloat(PChar(S), Result, fvExtended) then
+  if not TextToFloat(PAnsiChar(S), Result, fvExtended) then
     Result := Default;
 end;
 {$ENDIF}
@@ -593,7 +611,7 @@ begin
   end;
 end;
 
-function TZendVariable.GetAsString: string;
+function TZendVariable.GetAsString: AnsiString;
 begin
   if not Assigned(FValue) then
    begin
@@ -741,13 +759,13 @@ begin
   ZVAL_LONG(FValue, Value);
 end;
 
-procedure TZendVariable.SetAsString(const Value: string);
+procedure TZendVariable.SetAsString(const Value: AnsiString);
 begin
   if not Assigned(FValue) then
    begin
     Exit;
    end;
-  ZVAL_STRINGL(FValue, PChar(Value), Length(Value), true);
+  ZVAL_STRINGL(FValue, PAnsiChar(Value), Length(Value), true);
 end;
 
 procedure TZendVariable.SetAsTime(const Value: TDateTime);

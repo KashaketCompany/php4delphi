@@ -9,7 +9,7 @@
 {*******************************************************}
 {$I PHP.INC}
 
-{ $Id: zend_dynamic_array.pas,v 6.2 02/2006 delphi32 Exp $ } 
+{ $Id: zend_dynamic_array.pas,v 7.4 10/2009 delphi32 Exp $ } 
 
 unit zend_dynamic_array;
 
@@ -21,7 +21,7 @@ type
 
 
    dynamic_array = record
-        _array : PChar;
+        _array : PAnsiChar;
         element_size : UINT;
         current : UINT;
         allocated : UINT;

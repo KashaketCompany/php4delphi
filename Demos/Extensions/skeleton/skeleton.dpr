@@ -4,10 +4,12 @@
 { Author:                                               }
 { Serhiy Perevoznyk                                     }
 { serge_perevoznyk@hotmail.com                          }
-{ http://users.chello.be/ws36637                        }
+{ http://users.telenet.be/ws36637                       }
+{ http://delphi32.blogspot.com                          }
 {*******************************************************}
 
-{ $Id: skeleton.dpr,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: skeleton.dpr,v 7.4 10/2009 delphi32 Exp $ }
+
 {$I php.inc}
 
 library skeleton;
@@ -29,7 +31,7 @@ end;
 procedure php_info_module(zend_module : Pzend_module_entry; TSRMLS_DC : pointer); cdecl;
 begin  
   php_info_print_table_start();
-  php_info_print_table_row(2, PChar('extname support'), PChar('enabled'));
+  php_info_print_table_row(2, PAnsiChar('extname support'), PAnsiChar('enabled'));
   php_info_print_table_end();
 end;
 
@@ -51,13 +53,15 @@ procedure confirm_extname_compiled (ht : integer; return_value : pzval; this_ptr
    return_value_used : integer; TSRMLS_DC : pointer); cdecl;
 {$ENDIF}
 var
-arg : PChar;
+arg : PAnsiChar;
 str : string;
 param : pzval_array;
 begin
+ {$IFDEF PHP510}
  if return_value_ptr = nil then
   begin
   end;
+  {$ENDIF}
 
   if ht = 0 then
   begin
@@ -72,8 +76,8 @@ begin
     end;
 
    arg := param[0]^.value.str.val;
-   str := Format('Congratulations! You have successfully modified ext/%.78s/config.m4. Module %.78s is now compiled into PHP.', ['extname', arg]);
-   ZVAL_STRING(return_value, PChar(str), true);
+   str := Format('Congratulations! Module %.78s is now compiled into PHP.', [arg]);
+   ZVAL_STRING(return_value, PAnsiChar(str), true);
    dispose_pzval_array(param);
 end;
 
@@ -104,6 +108,13 @@ begin
   {$ENDIF}
   ModuleEntry.functions :=  @module_entry_table[0];
   ModuleEntry._type := MODULE_PERSISTENT;
+  {$IFDEF PHP530}
+  {$IFNDEF COMPILER_VC9}
+  moduleEntry.build_id := strdup(PAnsiChar(ZEND_MODULE_BUILD_ID));
+  {$ELSE}
+  moduleEntry.build_id := StrNew(PAnsiChar(ZEND_MODULE_BUILD_ID));
+  {$ENDIF}
+  {$ENDIF}
   Result := @ModuleEntry;
 end;
 

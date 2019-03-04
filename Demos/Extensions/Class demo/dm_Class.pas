@@ -4,10 +4,10 @@
 { Author:                                               }
 { Serhiy Perevoznyk                                     }
 { serge_perevoznyk@hotmail.com                          }
-{ http://users.chello.be/ws36637                        }
+{ http://users.telenet.be/ws36637                       }
 {*******************************************************}
 
-{ $Id: dm_Class.pas,v 6.2 02/2006 delphi32 Exp $ }
+{ $Id: dm_Class.pas,v 7.0 04/2007 delphi32 Exp $ }
 
 unit dm_Class;
 
@@ -45,7 +45,7 @@ type
       this_ptr: Pzval; TSRMLS_DC: Pointer);
     procedure classdemoFunctions0Execute(Sender: TObject;
       Parameters: TFunctionParams; var ReturnValue: Variant;
-      ThisPtr: Pzval; TSRMLS_DC: Pointer);
+      ZendVar : TZendVariable; TSRMLS_DC: Pointer);
   private
     { Private declarations }
   public
@@ -92,10 +92,10 @@ begin
 end;
 
 procedure Tclassdemo.classdemoFunctions0Execute(Sender: TObject;
-  Parameters: TFunctionParams; var ReturnValue: Variant; ThisPtr: Pzval;
+  Parameters: TFunctionParams; var ReturnValue: Variant; ZendVar : TZendVariable;
   TSRMLS_DC: Pointer);
 begin
-  PHPDemoClass.ProduceInstance(Functions[0].ZendVar.AsZendVariable);
+  PHPDemoClass.ProduceInstance(ZendVar.AsZendVariable);
 end;
 
 end.

@@ -13,6 +13,8 @@ object Form1: TForm1
   Font.Style = []
   OldCreateOrder = False
   Position = poScreenCenter
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
   object Memo1: TMemo
@@ -71,14 +73,19 @@ object Form1: TForm1
     OnClick = Button3Click
   end
   object psvPHP1: TpsvPHP
-    Constants = <>
     Variables = <
       item
         Name = 'test'
         Value = 'test'
       end>
-    HandleErrors = False
     Left = 112
     Top = 140
+  end
+  object PHPEngine: TPHPEngine
+    HandleErrors = False
+    Constants = <>
+    ReportDLLError = False
+    Left = 116
+    Top = 252
   end
 end

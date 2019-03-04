@@ -14,6 +14,7 @@ object frmTest: TfrmTest
   OldCreateOrder = False
   Position = poScreenCenter
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel
@@ -45,19 +46,15 @@ object frmTest: TfrmTest
     TabOrder = 1
     OnClick = btnExecuteClick
   end
-  object btnClose: TButton
-    Left = 384
-    Top = 42
-    Width = 75
-    Height = 25
-    Caption = '&Close'
-    TabOrder = 2
-    OnClick = btnCloseClick
-  end
   object PHP: TpsvPHP
-    Constants = <>
     Variables = <>
     Left = 400
     Top = 136
+  end
+  object PHPEngine: TPHPEngine
+    Constants = <>
+    ReportDLLError = False
+    Left = 408
+    Top = 88
   end
 end
