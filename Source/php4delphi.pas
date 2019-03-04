@@ -40,6 +40,7 @@ uses
   PHPCommon, WinApi.WinSock,
   ZendTypes, PHPTypes, PHPAPI, ZENDAPI,
   DelphiFunctions, phpFunctions, strUtils, varUtils,
+  {$IFDEF soulengine_build} VCL.Dialogs, {$ENDIF}
   System.UITypes;
 
 type
@@ -924,6 +925,7 @@ begin
         MessageBox(0, msg, 'PHP4Delphi', MB_OK);
   result := 0;
 end;
+{$ENDIF}
 { Request sender/dispatcher }
 
 {$IFDEF PHP510}
@@ -961,7 +963,6 @@ begin
    end;
 end;
 
-{$ENDIF}
 { TpsvCustomPHP }
 
 constructor TpsvCustomPHP.Create(AOwner: TComponent);
