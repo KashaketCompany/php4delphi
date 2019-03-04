@@ -861,11 +861,11 @@ begin
                     error_type_str := 'Unknown error';
                end;
 
-                php_log_err(PAnsiChar(Format('PHP4DELPHI %s:  %s in %s on line %d', [error_type_str, buffer, error_filename, error_lineno])), p);
+                php_log_err(PAnsiChar(AnsiFormat('PHP4DELPHI %s:  %s in %s on line %d', [error_type_str, buffer, error_filename, error_lineno])), p);
              end;
  end;
-
-   _zend_bailout(error_filename, error_lineno);
+   if PHPLoaded then
+    _zend_bailout(error_filename, error_lineno);
 end;
 {$ENDIF}
 {$IFDEF soulengine_build}
