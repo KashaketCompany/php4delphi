@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2019.03.04 22:04:14.717,C:\Users\Andrew\Documents\GitHub\php4delphi\php4delphi2010.groupproj=C:\Users\Andrew\Documents\GitHub\php4delphi\ProjectGroup1.groupproj</Transaction>
+    <Transaction>2019.03.04 22:24:32.086,C:\Users\Andrew\Documents\GitHub\php4delphi\php4delphi 10 Seattle.groupproj=C:\Users\Andrew\Documents\GitHub\php4delphi\php4delphi2010.groupproj</Transaction>
+    <Transaction>2019.03.04 22:25:06.047,C:\Users\Andrew\Documents\GitHub\php4delphi\php4delphi Delphi 10 Seattle.groupproj=C:\Users\Andrew\Documents\GitHub\php4delphi\php4delphi 10 Seattle.groupproj</Transaction>
+  </Transactions>
+	<Default.Personality>
+		<Projects ActiveProject="C:\Users\Andrew\Documents\GitHub\php4delphi\php4DelphiD2010.dproj"/>
+	</Default.Personality>
+</BorlandProject>
