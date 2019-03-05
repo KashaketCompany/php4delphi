@@ -39,7 +39,6 @@ History:
 * Compatible with PHP 5.6.0
 * Compatible with PHP 5.6
 * Compatible with Delphi 2011, XE8, Seattle, Berlin
-* Deleted Sample Class
 * Added Partial Unicode Support 
 
 7.3 Jan 2019
