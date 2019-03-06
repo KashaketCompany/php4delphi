@@ -476,14 +476,44 @@ const
   ZEND_INI_STAGE_DEACTIVATE                       = (1 shl 3);
   ZEND_INI_STAGE_RUNTIME                          = (1 shl 4);
 
+{ Common Types }
 type
   zend_uint   = uint;
   zend_bool   = boolean;
-  zend_uchar  = AnsiChar;
+  zend_uchar  = {$IFDEF PHP_UNICE}Utf8Char{$ELSE}AnsiChar{$ENDIF};
   zend_ulong  = ulong;
+  zend_long   = integer;
+  zend_pchar  = {$IFDEF PHP_UNICE}PUtf8Char{$ELSE}PAnsiChar{$ENDIF};
+  {$IFDEF PHP7}
+  _zend_refcounted_h = record
+      refcount : cardinal;
+      u : record
+          case longint of
+            0 : ( v : record
+                _type : zend_uchar;
+                flags : zend_uchar;
+                gc_info : word;
+              end );
+            1 : ( type_info : cardinal );
+          end;
+    end;
+  zend_refcounted_h = _zend_refcounted_h;
+  _zend_refcounted = record
+      gc : zend_refcounted_h;
+    end;
+    zend_refcounted = _zend_refcounted;
+  zend_string = record
+      gc : zend_refcounted_h;
+      h : zend_ulong;
+      len : size_t;
+      val : zend_pchar;
+  end;
+  {$ENDIF}
   zend_ushort = word;
   unsigned_char = byte;
-
+{ Common Types }
+type
+  pzend_string = {$IFDEF PHP_UNICE}PUTF8Char{$ELSE}PAnsiChar{$ENDIF};
 
 type
   uint = longword;
@@ -847,8 +877,16 @@ type
   Pzend_Object = ^Tzend_object;
   PPzend_Object = ^PZend_Object;
   _zend_object = record
+  {$IFDEF PHP7}
+    gc : zend_refcounted_h;
+    handle : cardinal;
+    handlers : P_zend_object_handlers;
+  {$ENDIF}
     ce: Pzend_class_entry;
     properties: PHashTable;
+  {$IFDEF PHP7}
+    properties_table : array[0..0] of zval;
+  {$ENDIF}
   {$IFDEF PHP5}
     in_get_set : cardinal;
   {$ENDIF}
@@ -908,9 +946,31 @@ type
  {$ENDIF}
 
   Pzvalue_value = ^zvalue_value;
+  {$IFDEF PHP7}
+   zvalue_value = Packed  record
+      case longint of
+        0 : ( lval : zend_long );
+        1 : ( dval : double );
+        2 : ( counted : P_zend_refcounted );
+        3 : ( str : Pzend_string );
+        4 : ( arr : Pzend_array );
+        5 : ( obj : Pzend_object );
+        6 : ( res : Pzend_resource );
+        7 : ( ref : P_zend_reference );
+        8 : ( ast : P_zend_ast_ref );
+        9 : ( zv : Pzval );
+        10 : ( ptr : pointer );
+        11 : ( ce : P_zend_class_entry );
+        12 : ( func : P_zend_function );
+        13 : ( ww : Packed record
+            w1 : cardinal;
+            w2 : cardinal;
+          end );
+      end;
+  {$ELSE}
   zvalue_value = record
     case longint of
-      0: (lval: longint);
+      0: (lval: zend_long);
       1: (dval: double);
       2: (str: record
           val: {$IFDEF PHP_UNICE}PUTF8Char{$ELSE}PAnsiChar{$ENDIF};
@@ -923,6 +983,7 @@ type
       4 : (obj :  _zend_object_value);
       {$ENDIF}
   end;
+  {$ENDIF}
   {$IFNDEF PHP700}
   pppzval = ^ppzval;
   ppzval = ^pzval;
@@ -939,6 +1000,32 @@ type
   Tzval = zval;
  {$ELSE}
   pzval = ^zval;
+  {$IFDEF PHP7}
+    _zval_struct = Packed  record
+      value : zend_value;
+      u1 : Packed  record
+          case longint of
+            0 : ( v : record
+                _type : zend_uchar;
+                type_flags : zend_uchar;
+                const_flags : zend_uchar;
+                reserved : zend_uchar;
+              end );
+            1 : ( type_info : cardinal );
+          end;
+      u2 :  Packed  record
+          case longint of
+            0 : ( var_flags : LongWord );
+            1 : ( next : cardinal );
+            2 : ( cache_slot : cardinal );
+            3 : ( lineno : cardinal );
+            4 : ( num_args : cardinal );
+            5 : ( fe_pos : cardinal );
+            6 : ( fe_iter_idx : cardinal );
+          end;
+    end;
+    zval = _zval_struct;
+  {$ENDIF}
   zval = record
    value : zvalue_value;
    refcount : zend_uint;

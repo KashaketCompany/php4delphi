@@ -132,7 +132,7 @@ procedure register_delphi_object(ht : integer; return_value : pzval; this_ptr : 
       return_value_used : integer; TSRMLS_DC : pointer); cdecl;
 {$ENDIF}
 
-{$IFDEF PHP510}
+{$IFDEF PHP5}
 procedure delphi_get_author(ht : integer; return_value : pzval; return_value_ptr : ppzval; this_ptr : pzval;
       return_value_used : integer; TSRMLS_DC : pointer); cdecl;
 {$ELSE}
@@ -177,7 +177,7 @@ procedure delphi_str_date(ht : integer; return_value : pzval; this_ptr : pzval;
       return_value_used : integer; TSRMLS_DC : pointer); cdecl;
 {$ENDIF}
 begin
-  ZVAL_STRING(return_value, PAnsiChar(DateToStr(Date)), true);
+  ZVAL_STRING(return_value, zend_pchar(DateToStr(Date)), true);
 end;
 
 //proto float delphi_date(void)
@@ -581,17 +581,17 @@ begin
 end;
 
 {$IFDEF PHP510}
-function delphi_call_method(method : PAnsiChar; ht : integer; return_value : pzval; return_value_ptr : ppzval; this_ptr : pzval;
+function delphi_call_method(method : zend_pchar; ht : integer; return_value : pzval; return_value_ptr : ppzval; this_ptr : pzval;
       return_value_used : integer; TSRMLS_DC : pointer) : integer; cdecl;
 {$ELSE}
-function delphi_call_method(method : PAnsiChar; ht : integer; return_value : pzval; this_ptr : pzval;
+function delphi_call_method(method : zend_pchar; ht : integer; return_value : pzval; this_ptr : pzval;
       return_value_used : integer; TSRMLS_DC : pointer) : integer; cdecl;
 {$ENDIF}
 begin
 
 end;
 
-function delphi_get_method(_object : pzval; method_name : PAnsiChar; method_len : integer; TSRMLS_DC : pointer) : PzendFunction; cdecl;
+function delphi_get_method(_object : pzval; method_name : zend_pchar; method_len : integer; TSRMLS_DC : pointer) : PzendFunction; cdecl;
 
 begin
 
@@ -600,7 +600,7 @@ end;
 
 {$ENDIF}
 
-{$IFDEF PHP510}
+{$IFDEF PHP5}
 procedure delphi_get_author(ht : integer; return_value : pzval; return_value_ptr : ppzval; this_ptr : pzval;
       return_value_used : integer; TSRMLS_DC : pointer); cdecl;
 {$ELSE}
@@ -608,7 +608,7 @@ procedure delphi_get_author(ht : integer; return_value : pzval; this_ptr : pzval
       return_value_used : integer; TSRMLS_DC : pointer); cdecl;
 {$ENDIF}
 var
- properties : array[0..3] of PAnsiChar;
+ properties : array[0..3] of zend_pchar;
 begin
   properties[0] := 'name';
   properties[1] := 'last';
