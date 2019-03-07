@@ -18,6 +18,7 @@ interface
 
 uses
   Windows, SysUtils, Classes, PHPCommon,
+  {$IFDEF PHP_UNICE}WideStrUtils, {$ENDIF}
   ZendTypes, ZendAPI, phpTypes, PHPAPI,
   phpFunctions;
 
@@ -807,7 +808,7 @@ end;
 
 procedure TPHPClass.SetClassName(const Value: zend_ustr);
 begin
-  FClassName := LowerCase(Value);
+  FClassName := {$IFDEF PHP_UNICE}UTF8LowerCase(Value){$ELSE}LowerCase(Value){$ENDIF};
 end;
 
 procedure TPHPClass.SetMethods(const Value: TPHPClassmethods);
@@ -1133,7 +1134,7 @@ begin
           ({$IFDEF PHP_UNICE}CompareText{$ELSE}AnsiCompareText{$ENDIF}(Value, F.Name) = 0) then
           raise Exception.Create('Duplicate method name');
       end;
-    FName :=  LowerCase(Value);
+    FName :=  {$IFDEF PHP_UNICE}LowerCase(Value){$ELSE}AnsiLowerCase(Value){$ENDIF};
     Changed(False);
   end;
 end;

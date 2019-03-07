@@ -3439,7 +3439,7 @@ begin
             Move(z.value.str.val^, P[1], z.value.str.len);
 
             {$IFDEF PHP_UNICE}
-              Result.VString := Pointer(String(p));
+              Result.VUnicodeString := Pointer(p);
             {$ELSE}
               Result.VAnsiString := Pointer(P);
             {$ENDIF}

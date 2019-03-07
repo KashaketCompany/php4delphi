@@ -40,6 +40,7 @@ uses
   PHPCommon, WinApi.WinSock,
   ZendTypes, PHPTypes, PHPAPI, ZENDAPI,
   DelphiFunctions, phpFunctions, strUtils, varUtils,
+  {$IFDEF PHP_UNICE}WideStrUtils, {$ENDIF}
   {$IFDEF soulengine_build} VCL.Dialogs, {$ENDIF}
   System.UITypes;
 
@@ -1765,7 +1766,7 @@ begin
   for cnt := 0 to ALib.Functions.Count - 1 do
    begin
       FN :=
-      {$IFDEF PHP_UNICE}LowerCase{$ELSE}AnsiLowerCase{$ENDIF}
+      {$IFDEF PHP_UNICE}UTF8LowerCase{$ELSE}AnsiLowerCase{$ENDIF}
       (ALib.Functions[cnt].FunctionName);
       if FHash.IndexOf(FN) > -1 then
       begin
@@ -1778,7 +1779,7 @@ begin
    begin
       for cnt := 0 to ALib.Functions.Count - 1 do
        begin
-         FN := {$IFDEF PHP_UNICE}LowerCase{$ELSE}AnsiLowerCase{$ENDIF}
+         FN := {$IFDEF PHP_UNICE}UTF8LowerCase{$ELSE}AnsiLowerCase{$ENDIF}
          (ALib.Functions[cnt].FunctionName);
          FHash.AddObject(FN, ALib.Functions[cnt]);
        end;

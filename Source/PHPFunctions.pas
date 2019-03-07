@@ -19,7 +19,9 @@ unit phpFunctions;
 
 interface
  uses
-   Windows, SysUtils,  Classes, {$IFDEF VERSION6} Variants,
+   Windows, SysUtils,  Classes,
+   {$IFDEF PHP_UNICE}WideStrUtils, {$ENDIF}
+   {$IFDEF VERSION6} Variants,
    {$ENDIF} ZendTypes, PHPTypes, ZendAPI, PHPAPI ;
 
 type
@@ -321,7 +323,7 @@ begin
           ({$IFDEF PHP_UNICE}CompareText{$ELSE}AnsiCompareText{$ENDIF}(NameValue, F.FunctionName) = 0) then
           raise Exception.CreateFmt('Duplicate function name: %s', [Value]);
       end;
-    FFunctionName :=  {$IFDEF PHP_UNICE}LowerCase{$ELSE}AnsiLowerCase{$ENDIF}(Value);
+    FFunctionName :=  {$IFDEF PHP_UNICE}UTF8LowerCase{$ELSE}AnsiLowerCase{$ENDIF}(Value);
     Changed(False);
   end;
 end;
