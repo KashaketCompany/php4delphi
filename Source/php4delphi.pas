@@ -1791,7 +1791,7 @@ var
  cnt, offset : integer;
  HashName : zend_ustr;
 begin
-  SetLength(FLibraryEntryTable, FHash.Count + MyFuncs.Count + 13);
+  SetLength(FLibraryEntryTable, FHash.Count + MyFuncs.Count + 14);
 
   PHP_FUNCTION(FLibraryEntryTable[0], 'delphi_date', @delphi_date);
   PHP_FUNCTION(FLibraryEntryTable[1], 'delphi_extract_file_dir', @delphi_extract_file_dir);
@@ -1830,18 +1830,25 @@ begin
   FLibraryEntryTable[7].arg_info := nil;
   {$ENDIF}
 
-  FLibraryEntryTable[8].fname := 'delphi_str_date';
-  FLibraryEntryTable[8].handler := @delphi_str_date;
+  FLibraryEntryTable[8].fname := 'delphi_is_uc';
+  FLibraryEntryTable[8].handler := @delphi_is_uc;
   {$IFDEF PHP4}
   FLibraryEntryTable[8].func_arg_types := nil;
   {$ELSE}
   FLibraryEntryTable[8].arg_info := nil;
   {$ENDIF}
 
+  FLibraryEntryTable[9].fname := 'delphi_str_date';
+  FLibraryEntryTable[9].handler := @delphi_str_date;
+  {$IFDEF PHP4}
+  FLibraryEntryTable[9].func_arg_types := nil;
+  {$ELSE}
+  FLibraryEntryTable[9].arg_info := nil;
+  {$ENDIF}
 
-  PHP_FUNCTION(FLibraryEntryTable[9], 'delphi_get_system_directory', @delphi_get_system_directory);
-  PHP_FUNCTION(FLibraryEntryTable[10], 'InputBox', @delphi_input_box);
-  PHP_FUNCTION(FLibraryEntryTable[11], 'register_delphi_component', @register_delphi_component);
+  PHP_FUNCTION(FLibraryEntryTable[10], 'delphi_get_system_directory', @delphi_get_system_directory);
+  PHP_FUNCTION(FLibraryEntryTable[11], 'InputBox', @delphi_input_box);
+  PHP_FUNCTION(FLibraryEntryTable[12], 'register_delphi_component', @register_delphi_component);
 
 
     for cnt := 0 to FHash.Count - 1 do
@@ -1849,18 +1856,18 @@ begin
       HashName := FHash[cnt];
 
       {$IFNDEF COMPILER_VC9}
-      FLibraryEntryTable[cnt+12].fname := strdup(zend_pchar(HashName));
+      FLibraryEntryTable[cnt+13].fname := strdup(zend_pchar(HashName));
       {$ELSE}
-      FLibraryEntryTable[cnt+12].fname := DupStr(zend_pchar(HashName));
+      FLibraryEntryTable[cnt+13].fname := DupStr(zend_pchar(HashName));
       {$ENDIF}
 
-      FLibraryEntryTable[cnt+12].handler := @DispatchRequest;
+      FLibraryEntryTable[cnt+13].handler := @DispatchRequest;
       {$IFDEF PHP4}
-      FLibraryEntryTable[cnt+12].func_arg_types := nil;
+      FLibraryEntryTable[cnt+13].func_arg_types := nil;
       {$ENDIF}
     end;
 
-    offset := FHash.Count + 12;
+    offset := FHash.Count + 13;
     for cnt := 0 to MyFuncs.Count - 1 do
     begin
         HashName := MyFuncs[cnt];
@@ -1877,10 +1884,10 @@ begin
     end;
 
 
-    FLibraryEntryTable[FHash.Count+MyFuncs.Count+12].fname := nil;
-    FLibraryEntryTable[FHash.Count+MyFuncs.Count+12].handler := nil;
+    FLibraryEntryTable[FHash.Count+MyFuncs.Count+13].fname := nil;
+    FLibraryEntryTable[FHash.Count+MyFuncs.Count+13].handler := nil;
     {$IFDEF PHP4}
-    FLibraryEntryTable[FHash.Count+MyFuncs.Count+12].func_arg_types := nil;
+    FLibraryEntryTable[FHash.Count+MyFuncs.Count+13].func_arg_types := nil;
     {$ENDIF}
 
     FLibraryModule.functions := @FLibraryEntryTable[0];

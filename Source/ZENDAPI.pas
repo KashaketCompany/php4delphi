@@ -3433,13 +3433,13 @@ begin
             Result.VExtended^ := z.value.dval;
         end;
         IS_STRING: begin
-            Result.VType := {$IFDEF PHP_UNICE}vtUnicodeString{$ELSE}vtAnsiString{$ENDIF};
+            Result.VType := {$IFDEF PHP_UNICE}vtString{$ELSE}vtAnsiString{$ENDIF};
 
             SetLength(P, z.value.str.len);
             Move(z.value.str.val^, P[1], z.value.str.len);
 
             {$IFDEF PHP_UNICE}
-              Result.VUnicodeString := Pointer(UnicodeString(p));
+              Result.VString := Pointer(String(p));
             {$ELSE}
               Result.VAnsiString := Pointer(P);
             {$ENDIF}

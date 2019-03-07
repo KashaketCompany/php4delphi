@@ -139,7 +139,13 @@ procedure delphi_get_author(ht : integer; return_value : pzval; return_value_ptr
 procedure delphi_get_author(ht : integer; return_value : pzval; this_ptr : pzval;
       return_value_used : integer; TSRMLS_DC : pointer); cdecl;
 {$ENDIF}
-
+{$IFDEF PHP5}
+procedure delphi_is_uc(ht : integer; return_value : pzval; return_value_ptr : ppzval; this_ptr : pzval;
+      return_value_used : integer; TSRMLS_DC : pointer); cdecl;
+{$ELSE}
+procedure delphi_is_uc(ht : integer; return_value : pzval; this_ptr : pzval;
+      return_value_used : integer; TSRMLS_DC : pointer); cdecl;
+{$ENDIF}
 {$IFDEF PHP510}
 procedure register_delphi_component(ht : integer; return_value : pzval; return_value_ptr : ppzval; this_ptr : pzval;
       return_value_used : integer; TSRMLS_DC : pointer); cdecl;
@@ -641,8 +647,16 @@ begin
   {$ENDIF}
 end;
 
-
-
+{$IFDEF PHP5}
+procedure delphi_is_uc(ht : integer; return_value : pzval; return_value_ptr : ppzval; this_ptr : pzval;
+      return_value_used : integer; TSRMLS_DC : pointer); cdecl;
+{$ELSE}
+procedure delphi_is_uc(ht : integer; return_value : pzval; this_ptr : pzval;
+      return_value_used : integer; TSRMLS_DC : pointer);
+{$ENDIF}
+begin
+    {$IFDEF PHP_UNICE}ZVAL_TRUE{$ELSE}ZVAL_FALSE{$ENDIF}(return_value);
+end;
 
 {$IFDEF PHP510}
 procedure register_delphi_object(ht : integer; return_value : pzval; return_value_ptr : ppzval; this_ptr : pzval;
