@@ -333,7 +333,7 @@ var
  element : pzend_list_element;
  prop  : pzend_overloaded_element;
  p : pointer;
- propname : AnsiString;
+ propname : zend_ustr;
 // --> hupu, 2006.06.01
 // pt : TTypeKind;
 {$IFDEF VERSION7}
@@ -409,7 +409,7 @@ var
  element : pzend_list_element;
  prop  : pzend_overloaded_element;
  p : pointer;
- propname : AnsiString;
+ propname : zend_ustr;
 // --> hupu, 2006.06.01
 // pt : TTypeKind;
 {$IFDEF VERSION7}
@@ -522,7 +522,7 @@ var
  element : pzend_list_element;
  prop  : pzend_overloaded_element;
  p : pointer;
- MethodName : AnsiString;
+ MethodName : zend_ustr;
  Params : pzval_array;
  M, D : integer;
 begin

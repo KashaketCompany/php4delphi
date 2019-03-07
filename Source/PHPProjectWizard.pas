@@ -268,7 +268,7 @@ begin
       begin
         try
           TempFileName := ProjGroup.Projects[i].FileName;
-          if {$IF PHP560}CompareFileName{$ELSE}AnsiCompareFileName{$ENDIF}(ExtractFileName(TempFileName), ExtractFileName(TempFileName2)) = 0 then
+          if {$IFDEF PHP_UNICE}CompareFileName{$ELSE}AnsiCompareFileName{$ENDIF}(ExtractFileName(TempFileName), ExtractFileName(TempFileName2)) = 0 then
           begin
             Found := True;
             Break;

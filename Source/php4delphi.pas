@@ -57,9 +57,9 @@ type
     procedure SetInitialSize(ASize : integer);
   end;
   {-- PHP Events --}
-  TPHPLogMessage = procedure (Sender : TObject; AText : AnsiString) of object;
-  TPHPErrorEvent = procedure (Sender: TObject; AText: AnsiString;
-  AType: integer; AFileName: AnsiString; ALineNo: integer) of object;
+  TPHPLogMessage = procedure (Sender : TObject; AText : zend_ustr) of object;
+  TPHPErrorEvent = procedure (Sender: TObject; AText: zend_ustr;
+  AType: integer; AFileName: zend_ustr; ALineNo: integer) of object;
   TPHPReadPostEvent = procedure(Sender : TObject; Stream : TStream) of object;
   TPHPReadResultEvent = procedure(Sender : TObject; Stream : TStream) of object;
 
@@ -79,12 +79,12 @@ type
     FBuffer : TPHPMemoryStream;
     FOnLogMessage : TPHPLogMessage;
     FOnScriptError : TPHPErrorEvent;
-    FFileName : {$IFDEF PHP_UNICE}UTF8String{$ELSE}AnsiString{$ENDIF};
+    FFileName : zend_ustr;
     {$IFDEF PHP4}
     FWriterHandle : THandle;
     FVirtualReadHandle : THandle;
     FVirtualWriteHandle : THandle;
-    FVirtualCode : AnsiString;
+    FVirtualCode : zend_ustr;
     {$ENDIF}
     FUseDelimiters : boolean;
     FUseMapping : boolean;
@@ -92,7 +92,7 @@ type
     FOnReadPost : TPHPReadPostEvent;
     FRequestType : TPHPRequestType;
     FOnReadResult : TPHPReadResultEvent;
-    FContentType: AnsiString;
+    FContentType: zend_ustr;
     {$IFDEF PHP5}
     FVirtualStream : TMemoryStream;
     {$ENDIF}
@@ -107,7 +107,7 @@ type
     procedure PrepareVariables; virtual;
     function RunTime : boolean;
     function GetThreadSafeResourceManager : pointer;
-    function  CreateVirtualFile(ACode : {$IFDEF PHP_UNICE}UTF8String{$ELSE}AnsiString{$ENDIF}) : boolean;
+    function  CreateVirtualFile(ACode : zend_ustr) : boolean;
     procedure CloseVirtualFile;
     {$IFDEF PHP4}
     property  VirtualCode : string read FVirtualCode;
@@ -124,14 +124,14 @@ type
     constructor Create(AOwner : TComponent); override;
     destructor Destroy; override;
     function  EngineActive : boolean;
-    function  Execute : {$IFDEF PHP_UNICE}UTF8String{$ELSE}AnsiString{$ENDIF}; overload;
-    function  Execute(AFileName : {$IFDEF PHP_UNICE}UTF8String{$ELSE}AnsiString{$ENDIF}) : {$IFDEF PHP_UNICE}UTF8String{$ELSE}AnsiString{$ENDIF}; overload;
-    function  RunCode(ACode : {$IFDEF PHP_UNICE}UTF8String{$ELSE}AnsiString{$ENDIF}) : {$IFDEF PHP_UNICE}UTF8String{$ELSE}AnsiString{$ENDIF}; overload;
+    function  Execute : zend_ustr; overload;
+    function  Execute(AFileName : zend_ustr) : zend_ustr; overload;
+    function  RunCode(ACode : zend_ustr) : zend_ustr; overload;
     function  RunCode(ACode : TStrings) : string; overload;
-    function  VariableByName(AName : AnsiString) : TPHPVariable;
+    function  VariableByName(AName : zend_ustr) : TPHPVariable;
     property  PostStream : TMemoryStream read FPostStream;
     property  ExecuteMethod : TPHPExecuteMethod read FExecuteMethod write FExecuteMethod default emServer;
-    property  FileName  : {$IFDEF PHP_UNICE}UTF8String{$ELSE}AnsiString{$ENDIF} read FFileName write FFileName;
+    property  FileName  : zend_ustr read FFileName write FFileName;
     property  Variables : TPHPVariables read FVariables write SetVariables;
     property  VariableCount : integer read GetVariableCount;
     property  OnLogMessage : TPHPLogMessage read FOnLogMessage write FOnLogMessage;
@@ -149,7 +149,7 @@ type
     property  RequestType : TPHPRequestType read FRequestType write FRequestType default prtGet;
     property  ResultBuffer : TPHPMemoryStream read FBuffer;
     property  OnReadResult : TPHPReadResultEvent read FOnReadResult write FOnReadResult;
-    property  ContentType : AnsiString read FContentType write FContentType;
+    property  ContentType : zend_ustr read FContentType write FContentType;
   end;
 
   TpsvPHP = class(TpsvCustomPHP)
@@ -174,12 +174,12 @@ type
   TCustomPHPLibrary = class(TPHPComponent)
   private
     FExecutor : TpsvCustomPHP;
-    FLibraryName : AnsiString;
+    FLibraryName : zend_ustr;
     FFunctions  : TPHPFunctions;
     FLocked: boolean;
     procedure SetFunctions(const Value : TPHPFunctions);
     procedure SetExecutor(AValue : TpsvCustomPHP);
-    procedure SetLibraryName(AValue : AnsiString);
+    procedure SetLibraryName(AValue : zend_ustr);
   protected
     procedure RegisterLibrary; virtual;
     procedure UnregisterLibrary; virtual;
@@ -188,7 +188,7 @@ type
     destructor  Destroy; override;
     procedure Refresh; virtual;
     property Executor : TpsvCustomPHP read FExecutor write SetExecutor;
-    property LibraryName : AnsiString read FLibraryName write SetLibraryName;
+    property LibraryName : zend_ustr read FLibraryName write SetLibraryName;
     property Functions  : TPHPFunctions read FFunctions write SetFunctions;
     property Locked : boolean read FLocked write FLocked;
   end;
@@ -196,7 +196,7 @@ type
 
   TPHPEngine = class(TPHPComponent, IUnknown, IPHPEngine)
   private
-    FINIPath : AnsiString;
+    FINIPath : zend_ustr;
     FOnEngineStartup  : TNotifyEvent;
     FOnEngineShutdown : TNotifyEvent;
     FEngineActive     : boolean;
@@ -209,7 +209,7 @@ type
     FHTMLErrors       : boolean;
     FMaxInputTime     : integer;
     FConstants        : TphpConstants;
-    FDLLFolder        : AnsiString;
+    FDLLFolder        : zend_ustr;
     FReportDLLError   : boolean;
     FLock: TRTLCriticalSection;
     FOnScriptError : TPHPErrorEvent;
@@ -243,7 +243,7 @@ type
   public
     constructor Create(AOwner : TComponent); override;
     destructor Destroy; override;
-    procedure AddFunction(FN: AnsiString; Func: Pointer);
+    procedure AddFunction(FN: zend_ustr; Func: Pointer);
     procedure  StartupEngine; virtual;
     procedure  ShutdownEngine; virtual;
     procedure  LockEngine; virtual;
@@ -260,7 +260,7 @@ type
     property  OnEngineShutdown : TNotifyEvent read FOnEngineShutdown write FOnEngineShutdown;
     property  OnScriptError : TPHPErrorEvent read FOnScriptError write FOnScriptError;
     property  OnLogMessage : TPHPLogMessage read FOnLogMessage write FOnLogMessage;
-    property  IniPath : AnsiString read FIniPath write FIniPath;
+    property  IniPath : zend_ustr read FIniPath write FIniPath;
     {$IFNDEF PHP540}
     property  SafeMode : boolean read FSafeMode write FSafeMode default false;
     property  SafeModeGid : boolean read FSafeModeGid write FSafeModeGid default false;
@@ -269,7 +269,7 @@ type
     property  HTMLErrors : boolean read FHTMLErrors write FHTMLErrors default false;
     property  MaxInputTime : integer read FMaxInputTime write FMaxInputTime default 0;
     property  Constants : TPHPConstants read FConstants write SetConstants;
-    property  DLLFolder : AnsiString read FDLLFolder write FDLLFolder;
+    property  DLLFolder : zend_ustr read FDLLFolder write FDLLFolder;
     property  ReportDLLError : boolean read FReportDLLError write FReportDLLError;
   end;
 
@@ -342,7 +342,7 @@ var
  {$ENDIF}
 implementation
 
-function AddSlashes(const S: ansistring): ansistring;
+function AddSlashes(const S: zend_ustr): zend_ustr;
 begin
   Result := StringReplace(S, chr(8), '8', [rfReplaceAll]);
   Result := StringReplace(S, '\', '\\', [rfReplaceAll]);
@@ -399,7 +399,7 @@ begin
   FFunctions.Assign(Value);
 end;
 
-procedure TCustomPHPLibrary.SetLibraryName(AValue: AnsiString);
+procedure TCustomPHPLibrary.SetLibraryName(AValue: zend_ustr);
 begin
   if FLibraryName <> AValue then
    begin
@@ -501,7 +501,7 @@ end;
 {$IFDEF PHP5}
 
 {PHP 5 only}
-function delphi_stream_reader (handle : pointer; buf : PAnsiChar; len : size_t; TSRMLS_DC : pointer) : size_t; cdecl;
+function delphi_stream_reader (handle : pointer; buf : zend_pchar; len : size_t; TSRMLS_DC : pointer) : size_t; cdecl;
 var
  MS : TMemoryStream;
 begin
@@ -626,7 +626,7 @@ function php_delphi_read_cookies(p1 : pointer) : pointer; cdecl;
 begin
   result := nil;
 end;
-function php_delphi_read_post(buf : PAnsiChar; len : uint; TSRMLS_DC : pointer) : integer; cdecl;
+function php_delphi_read_post(buf : zend_pchar; len : uint; TSRMLS_DC : pointer) : integer; cdecl;
 var
  gl : psapi_globals_struct;
  php : TpsvPHP;
@@ -696,8 +696,8 @@ begin
    end;
 
   php_register_variable('PHP_SELF', '_', nil, p);
-  php_register_variable('REMOTE_ADDR', PAnsiChar(GetLocalIP()), val, p);
-  php_register_variable('IP_ADDRESS', PAnsiChar(GetLocalIP()), val, p);
+  php_register_variable('REMOTE_ADDR', zend_pchar(GetLocalIP()), val, p);
+  php_register_variable('IP_ADDRESS', zend_pchar(GetLocalIP()), val, p);
   {if php.RequestType = prtPost then
    php_register_variable('REQUEST_METHOD', 'POST', val, p)
      else
@@ -708,23 +708,23 @@ begin
    begin
       for cnt := 0 to varcnt - 1 do
        begin
-         php_register_variable(PAnsiChar(php.Variables[cnt].Name),
-                PAnsiChar(php.Variables[cnt].Value), val, p);
+         php_register_variable(zend_pchar(php.Variables[cnt].Name),
+                zend_pchar(php.Variables[cnt].Value), val, p);
        end;
    end;
 end;
-function wvsprintfA(Output: PAnsiChar; Format: PAnsiChar; arglist: PAnsiChar): Integer; stdcall; external 'user32.dll';
+function wvsprintfA(Output: zend_pchar; Format: zend_pchar; arglist: zend_pchar): Integer; stdcall; external 'user32.dll';
 {$IFDEF PHP4}
 function WriterProc(Parameter : Pointer) : integer;
 var
  n : integer;
  php : TpsvCustomPHP;
- buf : PAnsiChar;
+ buf : zend_pchar;
  k : cardinal;
 begin
   try
     php := TPsvCustomPHP(Parameter);
-    Buf := PAnsiChar(php.FVirtualCode);
+    Buf := zend_pchar(php.FVirtualCode);
     k := length(php.FVirtualCode);
     repeat
       n := _write(php.FVirtualWriteHandle, Buf, k);
@@ -745,12 +745,12 @@ begin
 end;
 {$ENDIF}
 {$IFDEF soulengine_build}
-procedure delphi_error_cb(AType: Integer; const AFname: PAnsiChar; const ALineNo: UINT;
-  const AFormat: PAnsiChar; args: PAnsiChar) cdecl;
+procedure delphi_error_cb(AType: Integer; const AFname: zend_pchar; const ALineNo: UINT;
+  const AFormat: zend_pchar; args: zend_pchar) cdecl;
 var
   LText: string;
-  LBuffer: array[0..4096] of AnsiChar;
-  S: AnsiString;
+  LBuffer: array[0..4096] of zend_uchar;
+  S: zend_ustr;
 begin
   case AType of
     E_ERROR:              LText := 'FATAL Error in ';
@@ -776,7 +776,7 @@ begin
   LText := LText + AFname + '(' + inttostr(ALineNo) + '): ' + LBuffer;
   if (fatal_handler_php <> '') and not(Atype in [E_CORE_ERROR, E_CORE, E_CORE_WARNING]) then
   begin
-  S := AnsiString(fatal_handler_php + '(' + IntToStr(integer(AType)) + ',' + '''' +
+  S := zend_ustr(fatal_handler_php + '(' + IntToStr(integer(AType)) + ',' + '''' +
       AddSlashes(LBuffer) + ''', ''' + AddSlashes(AFName) + ''', ' +
       IntToStr(ALineNo) + ');' + ' ?>');
 
@@ -802,15 +802,15 @@ begin
   end;
 end;
 {$ELSE}
-procedure delphi_error_cb(_type : integer; const error_filename : PAnsiChar;
-   const error_lineno : uint; const _format : PAnsiChar; args : PAnsiChar); cdecl;
+procedure delphi_error_cb(_type : integer; const error_filename : zend_pchar;
+   const error_lineno : uint; const _format : zend_pchar; args : zend_pchar); cdecl;
 var
- buffer  : array[0..1023] of ansichar;
- err_msg : PAnsiChar;
+ buffer  : array[0..1023] of zend_uchar;
+ err_msg : zend_pchar;
  php : TpsvPHP;
  gl : psapi_globals_struct;
  p : pointer;
- error_type_str : ansistring;
+ error_type_str : zend_ustr;
  err : TPHPErrorType;
 begin
   wvsprintfa(buffer, _format, args);
@@ -863,7 +863,9 @@ begin
                     error_type_str := 'Unknown error';
                end;
 
-                php_log_err(PAnsiChar(AnsiFormat('PHP4DELPHI %s:  %s in %s on line %d', [error_type_str, buffer, error_filename, error_lineno])), p);
+                php_log_err(zend_pchar(
+                {$IFDEF PHP_UNICE}Format{$ELSE}AnsiFormat{$ENDIF}
+                ('PHP4DELPHI %s:  %s in %s on line %d', [error_type_str, buffer, error_filename, error_lineno])), p);
              end;
  end;
    if PHPLoaded then
@@ -871,11 +873,11 @@ begin
 end;
 {$ENDIF}
 {$IFDEF soulengine_build}
-function php_delphi_log_message(msg : PAnsiChar) : integer; cdecl;
+function php_delphi_log_message(msg : zend_pchar) : integer; cdecl;
 var
  php : TpsvPHP;
  gl : psapi_globals_struct;
- S: ansistring;
+ S: zend_ustr;
 begin
   Result := 0;
   gl := GetSAPIGlobals;
@@ -890,7 +892,7 @@ begin
         else
         if log_handler_php <> '' then
         begin
-          S :=  AnsiString(fatal_handler_php + '(' + '''' +  AddSlashes(msg) + '''' +
+          S :=  zend_ustr(fatal_handler_php + '(' + '''' +  AddSlashes(msg) + '''' +
                ');' + ' ?>');
 
             if not phpmd.UseDelimiters then
@@ -1012,7 +1014,7 @@ begin
 end;
 
 
-function TpsvCustomPHP.Execute : {$IFDEF PHP_UNICE}UTF8String{$ELSE}AnsiString{$ENDIF};
+function TpsvCustomPHP.Execute : zend_ustr;
 var
   file_handle : zend_file_handle;
   {$IFDEF PHP4}
@@ -1093,7 +1095,7 @@ begin
       else
        begin
          file_handle._type := ZEND_HANDLE_FILENAME;
-         file_handle.filename := PAnsiChar(FFileName);
+         file_handle.filename := zend_pchar(FFileName);
          file_handle.opened_path := nil;
          file_handle.free_filename := 0;
        end;
@@ -1137,7 +1139,7 @@ begin
   end;
 end;
 
-function TpsvCustomPHP.RunCode(ACode : {$IFDEF PHP_UNICE}UTF8String{$ELSE}AnsiString{$ENDIF}) : {$IFDEF PHP_UNICE}UTF8String{$ELSE}AnsiString{$ENDIF};
+function TpsvCustomPHP.RunCode(ACode : zend_ustr) : zend_ustr;
 begin
   if not EngineActive then
    begin
@@ -1186,7 +1188,7 @@ end;
 
 
 
-function TpsvCustomPHP.Execute(AFileName: {$IFDEF PHP_UNICE}UTF8String{$ELSE}AnsiString{$ENDIF}): {$IFDEF PHP_UNICE}UTF8String{$ELSE}AnsiString{$ENDIF};
+function TpsvCustomPHP.Execute(AFileName: zend_ustr): zend_ustr;
 begin
   FFileName := AFileName;
   Result := Execute;
@@ -1225,8 +1227,8 @@ begin
       begin
         new(data);
         try
-          if zend_hash_find(ht, PAnsiChar(FVariables[cnt].Name),
-          strlen(PAnsiChar(FVariables[cnt].Name)) + 1, data) = SUCCESS then
+          if zend_hash_find(ht, zend_pchar(FVariables[cnt].Name),
+          strlen(zend_pchar(FVariables[cnt].Name)) + 1, data) = SUCCESS then
           begin
             variable := data^^;
             convert_to_string(variable);
@@ -1239,7 +1241,7 @@ begin
    end;
 end;
 
-function TpsvCustomPHP.VariableByName(AName: AnsiString): TPHPVariable;
+function TpsvCustomPHP.VariableByName(AName: zend_ustr): TPHPVariable;
 begin
   Result := FVariables.ByName(AName);
 end;
@@ -1276,7 +1278,7 @@ begin
     if Assigned(FOnReadPost) then
      FOnReadPost(Self, FPostStream);
 
-    zend_alter_ini_entry('max_execution_time', 19, PAnsiChar(TimeStr), Length(TimeStr), ZEND_INI_SYSTEM, ZEND_INI_STAGE_RUNTIME);
+    zend_alter_ini_entry('max_execution_time', 19, zend_pchar(TimeStr), Length(TimeStr), ZEND_INI_SYSTEM, ZEND_INI_STAGE_RUNTIME);
 
     php_request_startup(TSRMLS_D);
     if Assigned(FOnRequestStartup) then
@@ -1360,17 +1362,17 @@ begin
       begin
         new(data);
         try
-          if zend_hash_find(ht, PAnsiChar(FVariables[cnt].Name),
-          strlen(PAnsiChar(FVariables[cnt].Name)) + 1, data) = SUCCESS then
+          if zend_hash_find(ht, zend_pchar(FVariables[cnt].Name),
+          strlen(zend_pchar(FVariables[cnt].Name)) + 1, data) = SUCCESS then
           begin
             if (data^^^._type = IS_STRING) then
              begin
                efree(data^^^.value.str.val);
-               ZVAL_STRING(data^^, PAnsiChar(FVariables[cnt].Value), true);
+               ZVAL_STRING(data^^, zend_pchar(FVariables[cnt].Value), true);
              end
                else
                  begin
-                   ZVAL_STRING(data^^, PAnsiChar(FVariables[cnt].Value), true);
+                   ZVAL_STRING(data^^, zend_pchar(FVariables[cnt].Value), true);
                  end;
           end;
         finally
@@ -1394,7 +1396,7 @@ begin
   {$ENDIF}
 end;
 
-function TpsvCustomPHP.CreateVirtualFile(ACode : {$IFDEF PHP_UNICE}UTF8String{$ELSE}AnsiString{$ENDIF}): boolean;
+function TpsvCustomPHP.CreateVirtualFile(ACode : zend_ustr): boolean;
 {$IFDEF PHP4}
 var
  _handles : array[0..1] of THandle;
@@ -1544,7 +1546,9 @@ begin
                  begin
                    if not IsParamTypeCorrect(FParameters[j].ParamType, Params[j]^) then
                      begin
-                       zend_error(E_WARNING, PAnsiChar(AnsiFormat('Wrong parameter type for %s()', [FActiveFunctionName])));
+                       zend_error(E_WARNING, zend_pchar(
+                       {$IFDEF PHP_UNICE}Format{$ELSE}AnsiFormat{$ENDIF}
+                       ('Wrong parameter type for %s()', [FActiveFunctionName])));
                        Exit;
                      end;
                    FParameters[j].ZendValue := (Params[j]^);
@@ -1614,7 +1618,7 @@ begin
   zend_alter_ini_entry('implicit_flush',     15, '1', 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE);
 
   TimeStr := IntToStr(FMaxInputTime);
-  zend_alter_ini_entry('max_input_time', 15, PAnsiChar(TimeStr), Length(TimeStr), ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE);
+  zend_alter_ini_entry('max_input_time', 15, zend_pchar(TimeStr), Length(TimeStr), ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE);
 end;
 
 procedure TPHPEngine.PrepareEngine;
@@ -1638,7 +1642,7 @@ begin
   delphi_sapi_module.register_server_variables := @php_delphi_register_variables;
   delphi_sapi_module.log_message := @php_delphi_log_message;
   if FIniPath <> '' then
-     delphi_sapi_module.php_ini_path_override := PAnsiChar(FIniPath)
+     delphi_sapi_module.php_ini_path_override := zend_pchar(FIniPath)
   else
      delphi_sapi_module.php_ini_path_override :=  nil;
   delphi_sapi_module.block_interruptions := nil;
@@ -1670,22 +1674,22 @@ begin
   FLibraryModule._type := MODULE_PERSISTENT;
   FLibraryModule.handle := nil;
   FLibraryModule.module_number := 0;
-  FLibraryModule.build_id := DupStr(PAnsiChar(ZEND_MODULE_BUILD_ID));
+  FLibraryModule.build_id := DupStr(zend_pchar(ZEND_MODULE_BUILD_ID));
 end;
 
 procedure TPHPEngine.RegisterConstants;
 var
  cnt : integer;
- ConstantName : AnsiString;
- ConstantValue : AnsiString;
+ ConstantName : zend_ustr;
+ ConstantValue : zend_ustr;
 begin
   for cnt := 0 to FConstants.Count - 1 do
   begin
     ConstantName  := FConstants[cnt].Name;
     ConstantValue := FConstants[cnt].Value;
-    zend_register_string_constant(PAnsiChar(ConstantName),
-      strlen(PAnsiChar(ConstantName)) + 1,
-      PAnsiChar(ConstantValue), CONST_PERSISTENT or CONST_CS, 0, TSRMLS_D);
+    zend_register_string_constant(zend_pchar(ConstantName),
+      strlen(zend_pchar(ConstantName)) + 1,
+      zend_pchar(ConstantValue), CONST_PERSISTENT or CONST_CS, 0, TSRMLS_D);
   end;
 
   RegisterInternalConstants(TSRMLS_D);
@@ -1695,14 +1699,14 @@ procedure TPHPEngine.RegisterInternalConstants(TSRMLS_DC: pointer);
 {$IFDEF REGISTER_COLORS}
 var
  i : integer;
- ColorName : AnsiString;
+ ColorName : zend_ustr;
 {$ENDIF}
 begin
  {$IFDEF REGISTER_COLORS}
   for I := Low(Colors) to High(Colors) do
   begin
-   ColorName := AnsiString(Colors[i].Name);
-   zend_register_long_constant( PAnsiChar(ColorName), strlen(PAnsiChar(ColorName)) + 1, Colors[i].Value,
+   ColorName := zend_ustr(Colors[i].Name);
+   zend_register_long_constant( zend_pchar(ColorName), strlen(zend_pchar(ColorName)) + 1, Colors[i].Value,
     CONST_PERSISTENT or CONST_CS, 0, TSRMLS_DC);
   end;
  {$ENDIF}
@@ -1749,7 +1753,7 @@ procedure TPHPEngine.RegisterLibrary(ALib : TCustomPHPLibrary);
 var
  cnt : integer;
  skip : boolean;
- FN : AnsiString;
+ FN : zend_ustr;
 begin
   skip := false;
   ALib.Refresh;
@@ -1760,7 +1764,9 @@ begin
 
   for cnt := 0 to ALib.Functions.Count - 1 do
    begin
-      FN := AnsiLowerCase(ALib.Functions[cnt].FunctionName);
+      FN :=
+      {$IFDEF PHP_UNICE}LowerCase{$ELSE}AnsiLowerCase{$ENDIF}
+      (ALib.Functions[cnt].FunctionName);
       if FHash.IndexOf(FN) > -1 then
       begin
         skip := true;
@@ -1772,7 +1778,8 @@ begin
    begin
       for cnt := 0 to ALib.Functions.Count - 1 do
        begin
-         FN := AnsiLowercase(ALib.Functions[cnt].FunctionName);
+         FN := {$IFDEF PHP_UNICE}LowerCase{$ELSE}AnsiLowerCase{$ENDIF}
+         (ALib.Functions[cnt].FunctionName);
          FHash.AddObject(FN, ALib.Functions[cnt]);
        end;
       ALib.Locked := true;
@@ -1782,7 +1789,7 @@ end;
 procedure TPHPEngine.RefreshLibrary;
 var
  cnt, offset : integer;
- HashName : AnsiString;
+ HashName : zend_ustr;
 begin
   SetLength(FLibraryEntryTable, FHash.Count + MyFuncs.Count + 13);
 
@@ -1842,9 +1849,9 @@ begin
       HashName := FHash[cnt];
 
       {$IFNDEF COMPILER_VC9}
-      FLibraryEntryTable[cnt+12].fname := strdup(PAnsiChar(HashName));
+      FLibraryEntryTable[cnt+12].fname := strdup(zend_pchar(HashName));
       {$ELSE}
-      FLibraryEntryTable[cnt+12].fname := DupStr(PAnsiChar(HashName));
+      FLibraryEntryTable[cnt+12].fname := DupStr(zend_pchar(HashName));
       {$ENDIF}
 
       FLibraryEntryTable[cnt+12].handler := @DispatchRequest;
@@ -1858,9 +1865,9 @@ begin
     begin
         HashName := MyFuncs[cnt];
         {$IFNDEF COMPILER_VC9}
-        FLibraryEntryTable[cnt+offset].fname := strdup(PAnsiChar(HashName));
+        FLibraryEntryTable[cnt+offset].fname := strdup(zend_pchar(HashName));
         {$ELSE}
-        FLibraryEntryTable[cnt+offset].fname := DupStr(PAnsiChar(HashName));
+        FLibraryEntryTable[cnt+offset].fname := DupStr(zend_pchar(HashName));
         {$ENDIF}
 
          FLibraryEntryTable[cnt+offset].handler := MyFuncs.Objects[ cnt ];
@@ -2040,7 +2047,7 @@ begin
   InterlockedDecrement(FRequestCount);
 end;
 
-procedure TPHPEngine.AddFunction(FN: AnsiString; Func: Pointer);
+procedure TPHPEngine.AddFunction(FN: zend_ustr; Func: Pointer);
 begin
  if MyFuncs.IndexOf(FN) = -1 then
     MyFuncs.AddObject(FN, TObject(Func));

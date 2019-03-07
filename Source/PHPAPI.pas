@@ -127,7 +127,7 @@ var
 
 
 function GetSymbolsTable : PHashTable;
-function GetTrackHash(Name : AnsiString) : PHashTable;
+function GetTrackHash(Name : zend_ustr) : PHashTable;
 function GetSAPIGlobals : Psapi_globals_struct; overload;
 function GetSAPIGlobals(TSRMLS_DC : pointer) : Psapi_globals_struct; overload;
 //procedure phperror(Error : zend_pchar);
@@ -244,7 +244,7 @@ function PG(TSRMLS_DC : pointer) : Pphp_Core_Globals;
 
 procedure PHP_FUNCTION(var AFunction : zend_function_entry; AName : zend_pchar; AHandler : pointer);
 
-function LoadPHP(const DllFileName: AnsiString = PHPWin) : boolean;
+function LoadPHP(const DllFileName: zend_ustr = PHPWin) : boolean;
 
 procedure UnloadPHP;
 
@@ -254,8 +254,8 @@ function PHPLoaded : boolean;
 procedure CheckPHPErrors;
 {$ENDIF}
 
-function FloatToValue(Value: Extended): AnsiString;
-function ValueToFloat(Value : AnsiString) : extended;
+function FloatToValue(Value: Extended): zend_ustr;
+function ValueToFloat(Value : zend_ustr) : extended;
 
 
 var
@@ -357,7 +357,7 @@ end;
 
 {$ENDIF}
 
-function GetTrackHash(Name : AnsiString) : PHashTable;
+function GetTrackHash(Name : zend_ustr) : PHashTable;
 var
  data : ^ppzval;
  arr  : PHashTable;
@@ -431,7 +431,7 @@ begin
    IS_NULL    : Result := NULL;
    IS_LONG    : Result := Value.value.lval;
    IS_DOUBLE  : Result := Value.value.dval;
-   IS_STRING  : Result := AnsiString(Value.Value.str.val);
+   IS_STRING  : Result := zend_ustr(Value.Value.str.val);
    IS_BOOL    : Result := Boolean(Value.Value.lval);
     else
       Result := NULL;
@@ -495,7 +495,7 @@ begin
      ZVAL_NULL(z);
      Exit;
    end;
-    //   MessageBoxA(0, zend_pchar(AnsiString( TVarData(Value).VType.ToString)), '', 0 ) ;
+    //   MessageBoxA(0, zend_pchar(zend_ustr( TVarData(Value).VType.ToString)), '', 0 ) ;
    case TVarData(Value).VType of
      varString    : //Peter Enz
          begin
@@ -513,7 +513,7 @@ begin
          begin
             S := string(TVarData(Value).VUString);
 
-             ZVAL_STRING(z, zend_pchar(AnsiString(S)), true);
+             ZVAL_STRING(z, zend_pchar(zend_ustr(S)), true);
          end;
 
      varOleStr    : //Peter Enz
@@ -604,7 +604,7 @@ end;
 {$ENDIF}
 
 
-function LoadPHP(const DllFileName: AnsiString = PHPWin) : boolean;
+function LoadPHP(const DllFileName: zend_ustr = PHPWin) : boolean;
 
 begin
   Result := false;
@@ -927,7 +927,7 @@ begin
 end;
 
 
-function FloatToValue(Value: Extended): AnsiString;
+function FloatToValue(Value: Extended): zend_ustr;
 var
   {$IFDEF VERSION12}
   c: WideChar;
@@ -944,7 +944,7 @@ begin
   end;
 end;
 
-function ValueToFloat(Value : AnsiString) : extended;
+function ValueToFloat(Value : zend_ustr) : extended;
 var
   {$IFDEF VERSION12}
   c: WideChar;
@@ -962,16 +962,52 @@ begin
 end;
 
 
+{$IFDEF Linux}
+function GetPHPVersion: TPHPFileInfo;
+begin
+
+end;
+{$ELSE}
 function GetPHPVersion: TPHPFileInfo;
 var
-  FileName: AnsiString;
+  FileName: {$IFDEF PHP_UNICE}String{$ELSE}AnsiString{$ENDIF};
+  InfoSize, Wnd: DWORD;
+  VerBuf: Pointer;
+  FI: PVSFixedFileInfo;
+  VerSize: DWORD;
 begin
   Result.MajorVersion := 0;
   Result.MinorVersion := 0;
   Result.Release := 0;
   Result.Build := 0;
   FileName := PHPWin;
+  {$IFDEF PHP_UNICE}
+  InfoSize := GetFileVersionInfoSize(PWideChar(Filename), Wnd);
+  {$ELSE}
+  InfoSize := GetFileVersionInfoSizeA(PAnsiChar(FileName), Wnd);
+  {$ENDIF}
+   if InfoSize <> 0 then
+    begin
+      GetMem(VerBuf, InfoSize);
+      try
+      {$IFDEF PHP_UNICE}
+      if GetFileVersionInfo(PWideChar(FileName), Wnd, InfoSize, VerBuf) then
+      {$ELSE}
+        if GetFileVersionInfoA(PAnsiChar(FileName), Wnd, InfoSize, VerBuf) then
+      {$ENDIF}
+          if VerQueryValue(VerBuf, '\', Pointer(FI), VerSize) then
+           begin
+             Result.MajorVersion := HIWORD(FI.dwFileVersionMS);
+             Result.MinorVersion := LOWORD(FI.dwFileVersionMS);
+             Result.Release      := HIWORD(FI.dwFileVersionLS);
+             Result.Build        := LOWORD(FI.dwFileVersionLS);
+           end;
+      finally
+        FreeMem(VerBuf);
+      end;
+    end;
 end;
+{$ENDIF}
 
 initialization
 {$IFDEF PHP4DELPHI_AUTOLOAD}
