@@ -34,6 +34,10 @@ design-time and run-time packages for Delphi 5 through Delphi Berlin
 
 
 History:
+7.4.1 Mar 2019
+
+* Added unicode support
+
 7.4 Feb 2019
 
 * Compatible with PHP 5.5.0
