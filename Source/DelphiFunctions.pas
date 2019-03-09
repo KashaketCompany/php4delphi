@@ -479,7 +479,7 @@ Scripter.SetPropertyByID(Scripter.NameToDispID(propname),
 end;
 
 
-
+{$IFDEF PHP4}
 procedure _delphi_get_property_wrapper; assembler;
 asm
   push        ebp
@@ -518,7 +518,7 @@ asm
   pop         ebp
   ret
 end;
-
+{$ENDIF}
 
 procedure delphi_call_function(ht : integer; return_value : pzval; this_ptr : pzval;
       return_value_used : integer; TSRMLS_DC : pointer; property_reference : Pzend_property_reference ); cdecl;
