@@ -15,7 +15,7 @@ unit zend_dynamic_array;
 
 interface
   uses
-    Windows, SysUtils, ZENDTypes;
+   SysUtils, ZENDTypes;
 
 type
 

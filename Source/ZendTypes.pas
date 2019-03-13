@@ -16,7 +16,7 @@ unit ZENDTypes;
 interface
 
 uses
-  Windows, SysUtils;
+  {$IFNDEF FPC} Windows {$ELSE} LCLType{$ENDIF}, SysUtils;
 
 const
   //zend.h

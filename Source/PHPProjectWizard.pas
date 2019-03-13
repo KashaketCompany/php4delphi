@@ -16,7 +16,7 @@ unit PHPProjectWizard;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  {$IFNDEF FPC} Windows, {$ELSE} LCLType,LCLIntf,dynlibs,libc,{$ENDIF} Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   ToolsAPI,
   {$IFDEF VERSION6}
   DesignIntf,

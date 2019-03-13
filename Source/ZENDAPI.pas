@@ -20,7 +20,7 @@ unit zendAPI;
 interface
 
 uses
-  Windows, SysUtils,
+  {$IFNDEF FPC} Windows{$ELSE} LCLType,LCLIntf,dynlibs,libc{$ENDIF}, SysUtils,
   ZendTypes, Variants,
   PHPTypes;
 type
@@ -556,7 +556,7 @@ var
 var
   _zend_bailout                                   : procedure (filename : zend_pchar; lineno : uint); cdecl;
 
-  zend_alter_ini_entry                            : function(name: zend_pchar; name_length: uint; new_value: zend_pchar; new_value_length: uint; modify_type: Integer; stage: Integer): Integer; cdecl;
+  zend_alter_ini_entry                            : function(name: PAnsiChar; name_length: uint; new_value: PAnsiChar; new_value_length: uint; modify_type: Integer; stage: Integer): Integer; cdecl;
   zend_alter_ini_entry_ex                            : function(name: zend_pchar; name_length: uint; new_value: zend_pchar; new_value_length: uint; modify_type: Integer; stage: Integer; force_change: integer): Integer; cdecl;
 
   zend_restore_ini_entry                          : function(name: zend_pchar; name_length: uint; stage: Integer): Integer; cdecl;

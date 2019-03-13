@@ -197,7 +197,7 @@ type
 
   TPHPEngine = class(TPHPComponent, IUnknown, IPHPEngine)
   private
-    FINIPath : zend_ustr;
+    FINIPath : AnsiString;
     FOnEngineStartup  : TNotifyEvent;
     FOnEngineShutdown : TNotifyEvent;
     FEngineActive     : boolean;
@@ -261,7 +261,7 @@ type
     property  OnEngineShutdown : TNotifyEvent read FOnEngineShutdown write FOnEngineShutdown;
     property  OnScriptError : TPHPErrorEvent read FOnScriptError write FOnScriptError;
     property  OnLogMessage : TPHPLogMessage read FOnLogMessage write FOnLogMessage;
-    property  IniPath : zend_ustr read FIniPath write FIniPath;
+    property  IniPath : AnsiString read FIniPath write FIniPath;
     {$IFNDEF PHP540}
     property  SafeMode : boolean read FSafeMode write FSafeMode default false;
     property  SafeModeGid : boolean read FSafeModeGid write FSafeModeGid default false;
@@ -1617,8 +1617,7 @@ begin
        zend_alter_ini_entry('html_errors',        12, '0', 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE);
 
   zend_alter_ini_entry('implicit_flush',     15, '1', 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE);
-
-  TimeStr := IntToStr(FMaxInputTime);
+ TimeStr := IntToStr(FMaxInputTime);
   zend_alter_ini_entry('max_input_time', 15, zend_pchar(TimeStr), Length(TimeStr), ZEND_INI_SYSTEM, ZEND_INI_STAGE_ACTIVATE);
 end;
 
@@ -1643,7 +1642,7 @@ begin
   delphi_sapi_module.register_server_variables := @php_delphi_register_variables;
   delphi_sapi_module.log_message := @php_delphi_log_message;
   if FIniPath <> '' then
-     delphi_sapi_module.php_ini_path_override := zend_pchar(FIniPath)
+     delphi_sapi_module.php_ini_path_override := PAnsiChar(FIniPath)
   else
      delphi_sapi_module.php_ini_path_override :=  nil;
   delphi_sapi_module.block_interruptions := nil;
