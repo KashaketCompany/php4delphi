@@ -7,7 +7,7 @@
 { serge_perevoznyk@hotmail.com                          }
 { http://users.telenet.be/ws36637                       }
 {*******************************************************}
-{$I 'PHP.inc'}
+{$I PHP.inc}
 
 { $Id: ZendTypes.pas,v 7.4 10/2009 delphi32 Exp $ }
 
