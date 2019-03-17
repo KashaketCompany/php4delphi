@@ -70,7 +70,7 @@ backward compatibility between PHP versions.
 	{$DEFINE PHP530}
 	{$DEFINE PHP540}
 	{$DEFINE PHP550}
-	{$DEFINE PHP_UNICE}
+	{//$DEFINE PHP_UNICE}
 	{$DEFINE ZEND_WIN32}
 	{$DEFINE PHP_COMPILER_ID}
 {$ENDIF}
@@ -212,4 +212,8 @@ backward compatibility between PHP versions.
 {$IFDEF VERSION7}
 {$J+}
 {$WARNINGS OFF}
+{$ENDIF}
+
+{$IFDEF MSWINDOWS}
+{$DEFINE WINDOWS}
 {$ENDIF}
