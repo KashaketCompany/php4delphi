@@ -7,7 +7,7 @@
 { http://users.telenet.be/ws36637                       }
 {*******************************************************}
 
-{$I php.inc}
+{$I PHP.INC}
 
 library delphi_class2;
 

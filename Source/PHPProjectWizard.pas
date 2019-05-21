@@ -10,7 +10,7 @@
 {$I PHP.INC}
 
 { $Id: PHPProjectWizard.pas,v 7.4 10/2009 delphi32 Exp $ } 
-{$I PHP.inc}
+
 unit PHPProjectWizard;
 
 interface

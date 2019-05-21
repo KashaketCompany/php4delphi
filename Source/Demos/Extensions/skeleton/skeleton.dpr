@@ -10,7 +10,7 @@
 
 { $Id: skeleton.dpr,v 7.4 10/2009 delphi32 Exp $ }
 
-{$I php.inc}
+{$I PHP.INC}
 
 library skeleton;
 

@@ -7,7 +7,7 @@
 { http://users.chello.be/ws36637                        }
 {*******************************************************}
 
-{$I php.inc}
+{$I PHP.INC}
 
 library d4pide;
 
