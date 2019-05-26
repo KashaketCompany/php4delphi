@@ -19,10 +19,11 @@ If you are using PHP version 5.1.0 or higher please add $DEFINE PHP510
 If you are using PHP version 5.1.1 or higher please add $DEFINE PHP511
 If you are using PHP version 5.1.2 or higher please add $DEFINE PHP512
 If you are using PHP version 5.2.0 or higher please add $DEFINE PHP520
-IF you are using PHP version 5.3.0 or highre please add $DEFINE PHP530
-IF you are using PHP version 5.4.0 or highre please add $DEFINE PHP540
-IF you are using PHP version 5.5.0 or highre please add $DEFINE PHP550
-IF you are using PHP version 5.6.0 or highre please add $DEFINE PHP560
+IF you are using PHP version 5.3.0 or higher please add $DEFINE PHP530
+IF you are using PHP version 5.4.0 or higher please add $DEFINE PHP540
+IF you are using PHP version 5.5.0 or higher please add $DEFINE PHP550
+IF you are using PHP version 5.6.0 or higher please add $DEFINE PHP560
+IF you are using PHP cersion 7.0.0 or higher please add $DEFINE PHP700
 If you are using PHP compiled via:
 id,   define compiler_id
 VC9   COMPILER_VC9
@@ -57,14 +58,17 @@ backward compatibility between PHP versions.
 {$DEFINE PHP540}
 {$DEFINE PHP550}
 {$DEFINE PHP560}
-
 {$IFDEF PHP530}
   {$DEFINE ZEND_WIN32}
   {$DEFINE PHP_COMPILER_ID}
 {$ENDIF}
+{..$DEFINE soulengine_build}
+{..$DEFINE PHP7}
+{..$DEFINE P_CUT}
  {$IFDEF PHP7}
   {$DEFINE COMPILER_VC14}
   {$DEFINE PHP560}
+  {$DEFINE PHP700}
  {$ENDIF}
 {$IFDEF PHP560}
 	{$DEFINE PHP530}

@@ -17,7 +17,7 @@ interface
 uses
   SysUtils, Classes,
   Controls,
-  ZendTypes, ZendAPI, PHPTypes, PHPAPI, Dialogs, typinfo,
+  {$IFDEF PHP7} hzend_types, {$ELSE} ZendTypes, {$ENDIF} ZendAPI, PHPTypes, PHPAPI, Dialogs, typinfo,
   Forms, stdctrls;
 
 {$ifdef fpc}
@@ -29,14 +29,17 @@ var
  author_class_entry   : Tzend_class_entry;
  delphi_object_entry  : TZend_class_entry;
 
- object_functions    : array[0..2] of zend_function_entry;
- author_functions    : array[0..2] of zend_function_entry;
+ object_functions    : {$IFDEF PHP7}HashTable{$ELSE}array[0..2] of zend_function_entry{$ENDIF};
+ author_functions    : {$IFDEF PHP7}HashTable{$ELSE}array[0..2] of zend_function_entry{$ENDIF};
 
  DelphiObject : pzend_class_entry;
  ce           : pzend_class_entry;
-
- {$IFDEF PHP5}
- DelphiObjectHandlers : zend_object_handlers;
+ {$IFDEF PHP7}
+  DelphiObjectHandlers : _zend_object_handlers;
+ {$ELSE}
+   {$IFDEF PHP5}
+   DelphiObjectHandlers : zend_object_handlers;
+   {$ENDIF}
  {$ENDIF}
 
 
@@ -597,7 +600,7 @@ begin
 
 end;
 
-function delphi_get_method(_object : pzval; method_name : zend_pchar; method_len : integer; TSRMLS_DC : pointer) : PzendFunction; cdecl;
+function delphi_get_method(_object : pzval; method_name : zend_pchar; method_len : integer; TSRMLS_DC : pointer) : {$IFDEF PHP7}P_zend_function{$ELSE}PzendFunction{$ENDIF}; cdecl;
 
 begin
 
@@ -688,6 +691,9 @@ end;
 procedure RegisterInternalClasses(p : pointer);
 
 begin
+  {$IFDEF PHP7}
+    object_functions
+  {$ELSE}
   object_functions[0].fname := 'delphi_classname';
   object_functions[0].handler := @delphi_object_classname;
 
@@ -698,13 +704,13 @@ begin
   object_functions[2].handler := nil;
 
   INIT_CLASS_ENTRY(delphi_object_entry, 'delphi_class' , @object_functions);
-
+  {$ENDIF}
   {$IFDEF PHP4}
   Delphi_Object_Entry.handle_property_get :=  @_delphi_get_property_wrapper;
   Delphi_Object_Entry.handle_property_set := @delphi_set_property_handler;
   Delphi_Object_Entry.handle_function_call :=  @delphi_call_function;
   {$ELSE}
-  Move(zend_get_std_object_handlers()^, DelphiObjectHandlers, sizeof(zend_object_handlers));
+  Move(zend_get_std_object_handlers()^, DelphiObjectHandlers, sizeof({$IFDEF PHP7}_zend_object_handlers{$ELSE}zend_object_handlers{$ENDIF}));
   DelphiObjectHandlers.read_property := @delphi_get_property_handler;
   DelphiObjecthandlers.write_property := @delphi_set_property_handler;
   DelphiObjectHandlers.call_method := @delphi_call_method;

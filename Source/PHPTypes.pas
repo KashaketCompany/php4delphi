@@ -16,7 +16,7 @@ unit PHPTypes;
 interface
 
 uses
-  {$IFNDEF FPC} Windows{$ELSE} LCLType{$ENDIF}, ZENDTypes;
+  {$IFNDEF FPC} Windows{$ELSE} LCLType{$ENDIF}, {$IFDEF PHP7}hzend_types,{$ENDIF} ZENDTypes;
 
 {$IFDEF PHP4}
 const
@@ -240,7 +240,7 @@ type
       sapi_started : zend_bool;
       {$IFDEF PHP510}
       global_request_time : longint;
-      known_post_content_types : THashTable;
+      known_post_content_types : {$IFDEF PHP7}HashTable{$ELSE}THashTable{$ENDIF};
       {$ENDIF}
       {$ENDIF}
     end;
@@ -387,7 +387,7 @@ type
       arg_separator : arg_separators;
       gpc_order : zend_pchar;
       variables_order : zend_pchar;
-      rfc1867_protected_variables : THashTable;
+      rfc1867_protected_variables : {$IFDEF PHP7}HashTable{$ELSE}THashTable{$ENDIF};
       connection_status : Smallint;
       ignore_user_abort : Smallint;
       header_is_being_sent : Byte;

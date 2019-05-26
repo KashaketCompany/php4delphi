@@ -29,7 +29,9 @@ uses
  Windows
  {$ENDIF},
 
- ZendTypes, PHPTypes, zendAPI,
+ ZendTypes,
+ {$IFDEF PHP7} hzend_types,{$ENDIF}
+  PHPTypes, zendAPI,
 
 
  {$IFDEF VERSION6}Variants{$ENDIF}{WinSock};
@@ -127,7 +129,7 @@ var
 
 
 function GetSymbolsTable : PHashTable;
-function GetTrackHash(Name : zend_ustr) : PHashTable;
+function GetTrackHash(Name : zend_ustr) : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};
 function GetSAPIGlobals : Psapi_globals_struct; overload;
 function GetSAPIGlobals(TSRMLS_DC : pointer) : Psapi_globals_struct; overload;
 //procedure phperror(Error : zend_pchar);
@@ -174,9 +176,9 @@ php_print_info_htmlhead: procedure (TSRMLS_D : pointer); cdecl;
 
 
 
-
+{$IFNDEF P_CUT}
 php_log_err: procedure (err_msg : zend_pchar; TSRMLS_DC : pointer); cdecl;
-
+{$ENDIF}
 php_html_puts: procedure (str : zend_pchar; str_len : integer; TSRMLS_DC : pointer); cdecl;
 
 _php_error_log: function (opt_err : integer; msg : zend_pchar; opt: zend_pchar;  headers: zend_pchar; TSRMLS_DC : pointer) : integer; cdecl;
@@ -357,10 +359,10 @@ end;
 
 {$ENDIF}
 
-function GetTrackHash(Name : zend_ustr) : PHashTable;
+function GetTrackHash(Name : zend_ustr) : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};
 var
  data : ^ppzval;
- arr  : PHashTable;
+ arr  : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};
  ret  : integer;
 begin
  Result := nil;
@@ -375,7 +377,7 @@ begin
     ret := zend_hash_find(arr, zend_pchar(Name), Length(Name)+1, Data);
     if ret = SUCCESS then
      begin
-       Result := data^^^.value.ht;
+       Result := {$IFDEF PHP7}data^^^.value.arr{$ELSE}data^^^.value.ht{$ENDIF};
      end;
   end;
 end;
@@ -427,7 +429,7 @@ end;
 
 function zval2variant(value : zval) : variant;
 begin
-  case Value._type of
+  case {$IFDEF PHP7}Value.u1.v._type{$ELSE}Value._type{$ENDIF} of
    IS_NULL    : Result := NULL;
    IS_LONG    : Result := Value.value.lval;
    IS_DOUBLE  : Result := Value.value.dval;
@@ -756,9 +758,9 @@ begin
   php_body_write                      := GetProcAddress(PHPLib, 'php_body_write');
 
   php_header_write                    := GetProcAddress(PHPLib, 'php_header_write');
-
+  {$IFNDEF P_CUT}
   php_log_err                         := GetProcAddress(PHPLib, 'php_log_err');
-
+  {$ENDIF}
   php_html_puts                       := GetProcAddress(PHPLib, 'php_html_puts');
 
   _php_error_log                      := GetProcAddress(PHPLib, '_php_error_log');
@@ -845,7 +847,9 @@ begin
   if @php_register_variable_safe = nil then raise EPHP4DelphiException.Create('php_register_variable_safe');
   if @php_register_variable_ex = nil then raise EPHP4DelphiException.Create('php_register_variable_ex');
   if @php_strip_tags = nil then raise EPHP4DelphiException.Create('php_strip_tags');
+  {$IFNDEF P_CUT}
   if @php_log_err = nil then raise EPHP4DelphiException.Create('php_log_err');
+  {$ENDIF}
   if @php_html_puts = nil then raise EPHP4DelphiException.Create('php_html_puts');
   if @_php_error_log = nil then raise EPHP4DelphiException.Create('_php_error_log');
   if @php_print_credits = nil then raise EPHP4DelphiException.Create('php_print_credits');

@@ -16,7 +16,7 @@ unit ZENDTypes;
 interface
 
 uses
-  {$IFNDEF FPC} Windows {$ELSE} LCLType{$ENDIF}, SysUtils;
+  {$IFNDEF FPC} Windows {$ELSE} LCLType{$ENDIF}, {$IFDEF PHP7} hzend_types, {$ENDIF} SysUtils;
 
 const
   //zend.h
@@ -504,28 +504,32 @@ type
       gc : zend_refcounted_h;
     end;
     zend_refcounted = _zend_refcounted;
-  zend_string = record
+  _zend_string = record
       gc : zend_refcounted_h;
       h : zend_ulong;
       len : size_t;
       val : zend_pchar;
   end;
+
+  P_zend_refcounted = ^_zend_refcounted;
+    zend_string = _zend_string;
+    P_zend_string = ^_zend_string;
   {$ENDIF}
   zend_ushort = word;
   unsigned_char = byte;
 { Common Types }
+{$IFNDEF PHP7}
 type
   pzend_string = {$IFDEF PHP_UNICE}PUTF8Char{$ELSE}PAnsiChar{$ENDIF};
-
+{$ENDIF}
 type
   uint = longword;
   PINT = ^Integer;
   size_t = cardinal;
-  {$IFNDEF PHP700}
+  {$IFNDEF PHP7}
   ppointer = ^pointer;
   pppointer = ^ppointer;
   {$ENDIF}
-
   PStat = ^TStat;
   TStat = record
     st_dev: Word;
@@ -574,7 +578,7 @@ type
     pLast: PBucket;
     arKey: array[0..0] of zend_uchar;
   end;
-
+  {$IFNDEF PHP7}
   PHashTable = ^THashTable;
   THashTable =
     record
@@ -591,10 +595,10 @@ type
     nApplyCount: Byte;
     bApplyProtection: boolean;
   end;
+  {$ENDIF}
+  HashPosition = {$IFDEF PHP7} cardinal {$ELSE} PBucket {$ENDIF};
 
-  HashPosition = PBucket;
-
-
+  {$IFNDEF PHP7}
   {$IFDEF PHP5}
 
   zend_op_array =
@@ -707,13 +711,12 @@ type
   move_forward : pointer;
   rewind : pointer;
   end;
-
   zend_object_iterator = record
   data : pointer;
   funcs : PZendObjectIteratorFuncs;
   index : ulong;
   end;
-
+  {$ENDIF}
   zend_class_iterator_funcs = record
   funcs : pointer;
   new_iterator : pointer;
@@ -793,9 +796,10 @@ type
     end;
 
   {$ENDIF}
-
+  {$IFNDEF PHP7}
   Pzend_class_entry = ^Tzend_class_entry;
   PPZend_class_entry = ^PZend_class_entry;
+  {$ENDIF}
   {$IFDEF PHP4}
   Tzend_class_entry =
     record
@@ -813,7 +817,7 @@ type
     handle_property_set: pointer;
   end;
   {$ELSE}
-
+  {$IFNDEF PHP7}
   Tzend_class_entry = record
    _type : zend_uchar;
    name  : zend_pchar;
@@ -823,35 +827,35 @@ type
    constants_updated : zend_bool;
    ce_flags : zend_uint;
 
-   function_table : THashTable;
-   default_properties : THashTable;
-   properties_info : THashTable;
-   default_static_members : THashTable;
+   function_table : {$IFDEF PHP7}HashTable{$ELSE}THashTable{$ENDIF};
+   default_properties : {$IFDEF PHP7}HashTable{$ELSE}THashTable{$ENDIF};
+   properties_info : {$IFDEF PHP7}HashTable{$ELSE}THashTable{$ENDIF};
+   default_static_members : {$IFDEF PHP7}HashTable{$ELSE}THashTable{$ENDIF};
 
    static_members : PHashTable;
-   constants_table : THashTable;
+   constants_table : {$IFDEF PHP7}HashTable{$ELSE}THashTable{$ENDIF};
    builtin_functions : pointer;
 
-   _constructor : PZendFunction;
-   _destructor :  PZendFunction;
-   clone : PZendFunction;
-   __get : PZendFunction;
-   __set : PZendFunction;
-   //{$IFDEF PHP510}
-   __unset : PZendFunction;
-   __isset : PZendFunction;
-   //{$ENDIF}
-   __call: PZendFunction;
-   //{$IFDEF PHP530}
-   __callstatic : PZendFunction;
-   //{$ENDIF}
-   //{$IFDEF PHP520}
-   __tostring : pointer;
-   //{$ENDIF}
-   //{$IFDEF PHP510}
-   serialize_func : PZendFunction;
-   unserialize_func : PZendFunction;
-  // {$ENDIF}
+   _constructor : {$IFDEF PHP7}P_zend_function{$ELSE}PZendFunction{$ENDIF};
+   _destructor :  {$IFDEF PHP7}P_zend_function{$ELSE}PZendFunction{$ENDIF};
+   clone : {$IFDEF PHP7}P_zend_function{$ELSE}PZendFunction{$ENDIF};
+   __get : {$IFDEF PHP7}P_zend_function{$ELSE}PZendFunction{$ENDIF};
+   __set : {$IFDEF PHP7}P_zend_function{$ELSE}PZendFunction{$ENDIF};
+   {$IFDEF PHP510}
+   __unset : {$IFDEF PHP7}P_zend_function{$ELSE}PZendFunction{$ENDIF};
+   __isset : {$IFDEF PHP7}P_zend_function{$ELSE}PZendFunction{$ENDIF};
+   {$ENDIF}
+   __call: {$IFDEF PHP7}P_zend_function{$ELSE}PZendFunction{$ENDIF};
+   {$IFDEF PHP530}
+   __callstatic : {$IFDEF PHP7}P_zend_function{$ELSE}PZendFunction{$ENDIF};
+   {$ENDIF}
+   {$IFDEF PHP520}
+   __tostring : {$IFDEF PHP7}P_zend_function{$ELSE}PZendFunction{$ENDIF};
+   {$ENDIF}
+   {$IFDEF PHP510}
+   serialize_func : {$IFDEF PHP7}P_zend_function{$ELSE}PZendFunction{$ENDIF};
+   unserialize_func : {$IFDEF PHP7}P_zend_function{$ELSE}PZendFunction{$ENDIF};
+  {$ENDIF}
    iterator_funcs : zend_class_iterator_funcs;
 
    create_object : pointer;
@@ -875,7 +879,9 @@ type
    module : pointer;
   end;
   {$ENDIF}
-
+  {$ENDIF}
+  {$IFNDEF PHP7}
+  //P_zend_object_handlers = ^_zend_object_handlers;
   Pzend_Object = ^Tzend_object;
   PPzend_Object = ^PZend_Object;
   _zend_object = record
@@ -894,18 +900,19 @@ type
   {$ENDIF}
   end;
   Tzend_Object = _zend_object;
-
  {$IFDEF PHP5}
+ {$ENDIF}
 
 
  type
 
-   Tzend_object_get_properties = function (_object : pointer; TSRMLS_DC : pointer) : PHashtable; cdecl;
+   Tzend_object_get_properties = function (_object : pointer; TSRMLS_DC : pointer) :{$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; cdecl;
    Pzend_object_get_propeeries = ^Tzend_object_get_properties;
 
    Tzend_object_get_classname  = function(_object : pointer; class_name : pointer; class_name_len : pointer; p : integer; TSRMLS_DC : pointer) : integer; cdecl;
 
-   zend_object_handlers = record
+ {$IFNDEF PHP7}
+ zend_object_handlers = record
 	// general object functions
 	add_ref : pointer;
 	del_ref : pointer;
@@ -936,40 +943,23 @@ type
   get_closure : pointer;
   {$ENDIF}
    end;
+   {$ENDIF}
+   zend_object_handle = cardinal;
+  {$IFNDEF PHP7}
   pzend_object_handlers = ^zend_object_handlers;
 
-  zend_object_handle = cardinal;
+
   _zend_object_value = record
    handle : zend_object_handle;
    handlers : pzend_object_handlers;
   end;
   TZendObjectValue = _zend_object_value;
   PZendObjectValue = ^TZendObjectValue;
+  {$ENDIF}
  {$ENDIF}
 
-  Pzvalue_value = ^zvalue_value;
-  {$IFDEF PHP7}
-   zvalue_value = Packed  record
-      case longint of
-        0 : ( lval : zend_long );
-        1 : ( dval : double );
-        2 : ( counted : P_zend_refcounted );
-        3 : ( str : Pzend_string );
-        4 : ( arr : Pzend_array );
-        5 : ( obj : Pzend_object );
-        6 : ( res : Pzend_resource );
-        7 : ( ref : P_zend_reference );
-        8 : ( ast : P_zend_ast_ref );
-        9 : ( zv : Pzval );
-        10 : ( ptr : pointer );
-        11 : ( ce : P_zend_class_entry );
-        12 : ( func : P_zend_function );
-        13 : ( ww : Packed record
-            w1 : cardinal;
-            w2 : cardinal;
-          end );
-      end;
-  {$ELSE}
+{$IFNDEF PHP7}
+Pzvalue_value = ^zvalue_value;
   zvalue_value = record
     case longint of
       0: (lval: zend_long);
@@ -985,12 +975,8 @@ type
       4 : (obj :  _zend_object_value);
       {$ENDIF}
   end;
-  {$ENDIF}
-  {$IFNDEF PHP700}
   pppzval = ^ppzval;
   ppzval = ^pzval;
-  {$ENDIF}
-
  {$IFDEF PHP4}
   Pzval = ^zval;
   zval = record
@@ -1001,33 +987,8 @@ type
   end;
   Tzval = zval;
  {$ELSE}
+
   pzval = ^zval;
-  {$IFDEF PHP7}
-    _zval_struct = Packed  record
-      value : zend_value;
-      u1 : Packed  record
-          case longint of
-            0 : ( v : record
-                _type : zend_uchar;
-                type_flags : zend_uchar;
-                const_flags : zend_uchar;
-                reserved : zend_uchar;
-              end );
-            1 : ( type_info : cardinal );
-          end;
-      u2 :  Packed  record
-          case longint of
-            0 : ( var_flags : LongWord );
-            1 : ( next : cardinal );
-            2 : ( cache_slot : cardinal );
-            3 : ( lineno : cardinal );
-            4 : ( num_args : cardinal );
-            5 : ( fe_pos : cardinal );
-            6 : ( fe_iter_idx : cardinal );
-          end;
-    end;
-    zval = _zval_struct;
-  {$ENDIF}
   zval = record
    value : zvalue_value;
    refcount : zend_uint;
@@ -1035,9 +996,10 @@ type
    is_ref : byte;
   end;
  {$ENDIF}
+{$ENDIF}
 
   ppzval_array = ^pzval_array;
-  pzval_array = array of {$IFNDEF PHP700} ppzval{$ELSE} pzval{$ENDIF};
+  pzval_array = array of ppzval;
   pzval_array_ex = array of pzval;
 
 
@@ -1213,6 +1175,7 @@ type
    PZendArgInfo = ^TZendArgInfo;
   {$ENDIF}
 
+ {$IFNDEF PHP7}
   Pzend_function_entry = ^Tzend_function_entry;
   zend_function_entry = record
     fname: zend_pchar;
@@ -1239,6 +1202,7 @@ type
     num_args  : uint;
     flags     : uint;
   end;
+  {$ENDIF}
   Pzend_module_entry = ^Tzend_module_entry;
   p_zend_module_entry = ^_zend_module_entry;
   _zend_module_entry = record
@@ -1445,12 +1409,12 @@ type
 
     active_op_array : pointer;
 
-    function_table : PHashTable; // function symbol table
-    class_table : PHashTable;    // class table
+    function_table :  {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; // function symbol table
+    class_table :  {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF};    // class table
 
-    filenames_table : THashTable;
+    filenames_table : {$IFDEF PHP7} zend_array {$ELSE} THashTable{$ENDIF};
 
-    auto_globals : PHashTable;
+    auto_globals :  {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF};
 
     in_compilation : zend_bool;
     short_tags : zend_bool;
@@ -1520,7 +1484,7 @@ type
 
   Pzend_executor_globals = ^zend_executor_globals;
   zend_executor_globals  = record
-    return_value_ptr_ptr : {$IFNDEF PHP700} ppzval{$ELSE} pzval{$ENDIF};
+    return_value_ptr_ptr : {$IFNDEF PHP7} ppzval{$ELSE} pzval{$ENDIF};
 
      uninitialized_zval : zval;
      uninitialized_zval_ptr : pzval;
@@ -1543,9 +1507,9 @@ type
      {$ENDIF}
 
      active_symbol_table : PHashTable;
-     symbol_table : THashTable;	// main symbol table
+     symbol_table : {$IFDEF PHP7}HashTable{$ELSE}THashTable{$ENDIF};	// main symbol table
 
-     included_files : THashTable;	// files already included */
+     included_files : {$IFDEF PHP7}HashTable{$ELSE}THashTable{$ENDIF};	// files already included */
 
      {$IFDEF PHP4}
      bailout : jump_buf;
@@ -1559,9 +1523,9 @@ type
 
      active_op_array : pointer;
 
-     function_table : PHashTable;	// function symbol table */
-     class_table : PHashTable;  	// class table
-     zend_constants : PHashTable;	// constants table */
+     function_table : {$IFDEF PHP7}Pzval{$ELSE}PHashTable{$ENDIF};	// function symbol table */
+     class_table : {$IFDEF PHP7}Pzval{$ELSE}PHashTable{$ENDIF};  	// class table
+     zend_constants : {$IFDEF PHP7}Pzval{$ELSE}PHashTable{$ENDIF};	// constants table */
 
      {$IFDEF PHP5}
      scope : pointer;
@@ -1594,8 +1558,8 @@ type
 
      timed_out : zend_bool;
 
-     regular_list : THashTable;
-     persistent_list : ThashTable;
+     regular_list : {$IFDEF PHP7}HashTable{$ELSE}THashTable{$ENDIF};
+     persistent_list : {$IFDEF PHP7}HashTable{$ELSE}THashTable{$ENDIF};
 
      argument_stack : zend_ptr_stack;
 

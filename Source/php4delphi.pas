@@ -38,6 +38,7 @@ interface
 uses
   Windows, Messages, SysUtils, System.Types, Classes, VCL.Graphics,
   PHPCommon, WinApi.WinSock,
+  {$IFDEF PHP7} hzend_types, {$ENDIF}
   ZendTypes, PHPTypes, PHPAPI, ZENDAPI,
   DelphiFunctions, phpFunctions, strUtils, varUtils,
   {$IFDEF PHP_UNICE}WideStrUtils, {$ENDIF}
@@ -863,10 +864,15 @@ begin
                 else
                     error_type_str := 'Unknown error';
                end;
-
-                php_log_err(zend_pchar(
+              {$IFDEF P_CUT}
+               ShowMessage(zend_pchar(
                 {$IFDEF PHP_UNICE}Format{$ELSE}AnsiFormat{$ENDIF}
-                ('PHP4DELPHI %s:  %s in %s on line %d', [error_type_str, buffer, error_filename, error_lineno])), p);
+                ('PHP4DELPHI %s:  %s in %s on line %d', [error_type_str, buffer, error_filename, error_lineno])));
+              {$ELSE}
+                php_log_err(zend_pchar(
+               {$IFDEF PHP_UNICE}Format{$ELSE}AnsiFormat{$ENDIF}
+               ('PHP4DELPHI %s:  %s in %s on line %d', [error_type_str, buffer, error_filename, error_lineno])), p);
+              {$ENDIF}
              end;
  end;
    if PHPLoaded then
@@ -1197,7 +1203,7 @@ end;
 
 procedure TpsvCustomPHP.PrepareResult;
 var
-  ht  : PHashTable;
+  ht  : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};
   data: ^ppzval;
   cnt : integer;
   variable : pzval;
@@ -1338,7 +1344,7 @@ end;
 
 procedure TpsvCustomPHP.PrepareVariables;
 var
-  ht  : PHashTable;
+  ht  : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};
   data: ^ppzval;
   cnt : integer;
   {$IFDEF PHP5}
@@ -1366,7 +1372,11 @@ begin
           if zend_hash_find(ht, zend_pchar(FVariables[cnt].Name),
           strlen(zend_pchar(FVariables[cnt].Name)) + 1, data) = SUCCESS then
           begin
+          {$IFDEF PHP7}
+          if (data^^^.u1.v._type = IS_STRING) then
+          {$ELSE}
             if (data^^^._type = IS_STRING) then
+          {$ENDIF}
              begin
                efree(data^^^.value.str.val);
                ZVAL_STRING(data^^, zend_pchar(FVariables[cnt].Value), true);

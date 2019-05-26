@@ -21,6 +21,7 @@ interface
 
 uses
   {$IFNDEF FPC} Windows{$ELSE} LCLType,LCLIntf,dynlibs,libc{$ENDIF}, SysUtils,
+  {$IFDEF PHP7} hzend_types, {$ENDIF}
   ZendTypes, Variants,
   PHPTypes;
 type
@@ -33,7 +34,7 @@ const
 PHPWin =
 {$IFDEF PHP_DEBUG}
 {$IFDEF PHP7}
-  'php7phpdbg.dll'
+  'php7ts_debug.dll'
 {$ELSE}
  {$IFDEF PHP5}
   'php5ts_debug.dll'
@@ -144,18 +145,19 @@ var
     nKeyLength: uint; pData: Pointer; nDataSize: uint; pDest: Pointer;
     flag: Integer): Integer; cdecl;
 {$ELSE}
+{$IFNDEF PHP7}
 var
- _zend_hash_add_or_update : function (ht : PHashTable; arKey : zend_pchar;
+ _zend_hash_add_or_update : function (ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; arKey : zend_pchar;
     nKeyLength : uint; pData : pointer; nDataSize : uint; pDes : pointer;
     flag : integer; __zend_filename: zend_pchar; __zend_lineno: uint) : integer; cdecl;
-
- function zend_hash_add_or_update(ht : PHashTable; arKey : zend_pchar;
-    nKeyLength : uint; pData : pointer; nDataSize : uint; pDes : pointer;
+{$ENDIF}
+ function zend_hash_add_or_update(ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; arKey : zend_pchar;
+    nKeyLength : uint; pData : {$IFDEF PHP7}pzval{$ELSE}pointer{$ENDIF}; nDataSize : uint; pDes : pointer;
     flag : integer) : integer; cdecl;
 
 {$ENDIF}
 
-function zend_hash_add(ht : PHashTable; arKey : zend_pchar; nKeyLength : uint; pData : pointer; nDataSize : uint; pDest : pointer) : integer; cdecl;
+function zend_hash_add(ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; arKey : zend_pchar; nKeyLength : uint; pData : pointer; nDataSize : uint; pDest : pointer) : integer; cdecl;
 
 var
  {$IFDEF PHP4}
@@ -180,21 +182,25 @@ var
 
  {$ELSE}
 
- _zend_hash_init : function (ht : PHashTable; nSize : uint;
+ _zend_hash_init : function (ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; nSize : uint;
    pHashFunction : pointer; pDestructor : pointer; persistent: zend_bool;
    __zend_filename: zend_pchar; __zend_lineno: uint) : integer; cdecl;
- _zend_hash_init_ex : function (ht : PHashTable;  nSize : uint;
+ _zend_hash_init_ex : function (ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};  nSize : uint;
    pHashFunction : pointer; pDestructor : pointer;  persistent : zend_bool;
    bApplyProtection : zend_bool; __zend_filename: zend_pchar; __zend_lineno: uint): integer; cdecl;
 
- function zend_hash_init (ht : PHashTable; nSize : uint; pHashFunction : pointer;
+ function zend_hash_init (ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; nSize : uint; pHashFunction : pointer;
    pDestructor : pointer; persistent: zend_bool) : integer; cdecl;
- function zend_hash_init_ex (ht : PHashTable;  nSize : uint; pHashFunction : pointer;
+ function zend_hash_init_ex (ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};  nSize : uint; pHashFunction : pointer;
  pDestructor : pointer;  persistent : zend_bool;  bApplyProtection : zend_bool): integer; cdecl;
 
 
 {$ENDIF}
-
+ {$IFDEF PHP7}
+ function zend_hash_num_elements(ht: Pzend_array): integer;
+ function  add_char_to_string  (_result: Pzval; op1: Pzval; op2: Pzval): Integer;
+ function  add_string_to_string(_result: Pzval; op1: Pzval; op2: Pzval): Integer;
+ {$ENDIF}
 var
   zend_hash_destroy                               : procedure(ht: PHashTable); cdecl;
   zend_hash_clean                                 : procedure(ht: PHashTable); cdecl;
@@ -226,77 +232,85 @@ var
    * the standard apply functions do.
    }
 
-  zend_hash_reverse_apply                         : procedure(ht: PHashTable;
+  zend_hash_reverse_apply                         : procedure(ht: {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF};
     apply_func: pointer; TSRMLS_DC: Pointer); cdecl;
 
   { Deletes }
 
-  zend_hash_del_key_or_index                      : function(ht: PHashTable; arKey: zend_pchar;
+  {$IFDEF PHP7}
+  zend_hash_del_key_or_index                      : function(ht: Pzend_array; key:Pzend_string):longint; cdecl;
+  {$ELSE}
+  zend_hash_del_key_or_index                      : function(ht:  PHashTable; arKey: zend_pchar;
     nKeyLength: uint; h: ulong; flag: Integer): Integer; cdecl;
-
-  zend_get_hash_value                             : function(ht: PHashTable; arKey: zend_pchar;
+  {$ENDIF}
+  zend_get_hash_value                             : function(ht: {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; arKey: zend_pchar;
     nKeyLength: uint): Longint; cdecl;
 
   { Data retreival }
 
-  zend_hash_find                                  : function(ht: PHashTable; arKey: zend_pchar; nKeyLength: uint;
+  zend_hash_find                                  : function(ht: {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; arKey: zend_pchar; nKeyLength: uint;
     pData: Pointer): Integer; cdecl;
 
-  zend_hash_quick_find                            : function(ht: PHashTable; arKey: zend_pchar;
+  zend_hash_quick_find                            : function(ht: {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; arKey: zend_pchar;
     nKeyLength: uint; h: ulong; pData: Pointer): Integer; cdecl;
 
-  zend_hash_index_find                            : function(ht: PHashTable; h: ulong; pData: Pointer): Integer; cdecl;
+  zend_hash_index_find                            : function(ht: {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; h: ulong; pData: Pointer): Integer; cdecl;
 
   { Misc }
 
-  zend_hash_exists                                : function(ht: PHashTable; arKey: zend_pchar; nKeyLength: uint): Integer; cdecl;
+  zend_hash_exists                                : function(ht: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; arKey: zend_pchar; nKeyLength: uint): Integer; cdecl;
 
-  zend_hash_index_exists                          : function(ht: PHashTable; h: ulong): Integer; cdecl;
-
-  zend_hash_next_free_element                     : function(ht: PHashTable): Longint; cdecl;
-
+  zend_hash_index_exists                          : function(ht: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; h: ulong): Integer; cdecl;
+  {$IFNDEF PHP7}
+  zend_hash_next_free_element                     : function(ht: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}): Longint; cdecl;
+  {$ENDIF}
   { traversing }
 
-  zend_hash_move_forward_ex                       : function(ht: PHashTable; pos: HashPosition): Integer; cdecl;
+  zend_hash_move_forward_ex                       : function(ht: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; pos: HashPosition): Integer; cdecl;
 
-  zend_hash_move_backwards_ex                     : function(ht: PHashTable; pos: HashPosition): Integer; cdecl;
+  zend_hash_move_backwards_ex                     : function(ht: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; pos: HashPosition): Integer; cdecl;
 
-  zend_hash_get_current_key_ex                    : function(ht: PHashTable;
+  zend_hash_get_current_key_ex                    : function(ht: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};
     var str_index: zend_pchar; var str_length: uint; var num_index: ulong;
     duplicate: boolean; pos: HashPosition): Integer; cdecl;
 
-  zend_hash_get_current_key_type_ex               : function(ht: PHashTable; pos: HashPosition): Integer; cdecl;
+  zend_hash_get_current_key_type_ex               : function(ht: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; pos: HashPosition): Integer; cdecl;
 
-  zend_hash_get_current_data_ex                   : function(ht: PHashTable; pData: Pointer; pos: HashPosition): Integer; cdecl;
+  zend_hash_get_current_data_ex                   : function(ht: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; pData: Pointer; pos: HashPosition): Integer; cdecl;
 
-  zend_hash_internal_pointer_reset_ex             : procedure(ht: PHashTable; pos: HashPosition); cdecl;
+  zend_hash_internal_pointer_reset_ex             : procedure(ht: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; pos: HashPosition); cdecl;
 
-  zend_hash_internal_pointer_end_ex               : procedure(ht: PHashTable; pos: HashPosition); cdecl;
+  zend_hash_internal_pointer_end_ex               : procedure(ht: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; pos: HashPosition); cdecl;
 
   { Copying, merging and sorting }
 
-  zend_hash_copy                                  : procedure(target: PHashTable; source: PHashTable;
+  zend_hash_copy                                  : procedure(target: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; source: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};
     pCopyConstructor: pointer; tmp: Pointer; size: uint); cdecl;
 
 
-  zend_hash_sort                                  : function(ht: PHashTable; sort_func: pointer;
+  zend_hash_sort                                  :
+  {$IFDEF PHP7}
+  function(ht:PZend_array; sort_func:sort_func_t; compare_func:compare_func_t; renumber:zend_bool):longint; cdecl;
+  {$ELSE}
+   function(ht: PHashTable; sort_func: pointer;
     compare_func: pointer; renumber: Integer; TSRMLS_DC: Pointer): Integer; cdecl;
+  {$ENDIF}
 
-  zend_hash_compare                               : function(ht1: PHashTable; ht2: PHashTable;
+  zend_hash_compare                               : function(ht1: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; ht2: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};
     compar: pointer; ordered: boolean; TSRMLS_DC: Pointer): Integer; cdecl;
 
-  zend_hash_minmax                                : function(ht: PHashTable; compar: pointer;
+  zend_hash_minmax                                : function(ht: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; compar: pointer;
     flag: Integer; pData: Pointer; TSRMLS_DC: Pointer): Integer; cdecl;
-
-  zend_hash_num_elements                          : function(ht: PHashTable): Integer; cdecl;
-
-  zend_hash_rehash                                : function(ht: PHashTable): Integer; cdecl;
+  {$IFNDEF PHP7}
+  zend_hash_num_elements                          : function(ht: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}): Integer; cdecl;
+  {$ENDIF}
+  zend_hash_rehash                                : function(ht: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}): Integer; cdecl;
 
   zend_hash_func                                  : function(arKey: zend_pchar; nKeyLength: uint): Longint; cdecl;
 
 
-function zend_hash_get_current_data(ht: PHashTable; pData: Pointer): Integer; cdecl;
-procedure zend_hash_internal_pointer_reset(ht: PHashTable); cdecl;
+function zend_hash_get_current_data(ht: {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; pData: Pointer): Integer; cdecl;
+procedure zend_hash_internal_pointer_reset(ht: {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}); cdecl;
 
 
 var
@@ -463,11 +477,11 @@ var
   convert_to_array                                : procedure(op: Pzval); cdecl;
 
   convert_to_object                               : procedure(op: Pzval); cdecl;
-
+  {$IFNDEF PHP7}
   add_char_to_string                              : function(_result: Pzval; op1: Pzval; op2: Pzval): Integer; cdecl;
 
   add_string_to_string                            : function(_result: Pzval; op1: Pzval; op2: Pzval): Integer; cdecl;
-
+  {$ENDIF}
   zend_string_to_double                           : function(number: zend_pchar; length: zend_uint): Double; cdecl;
 
   zval_is_true                                    : function(op: Pzval): Integer; cdecl;
@@ -532,20 +546,22 @@ var
   zend_html_putc                                  : procedure(c: zend_uchar); cdecl;
 
   zend_html_puts                                  : procedure(s: zend_pchar; len: uint; TSRMLS_DC: Pointer); cdecl;
-
+  {$IFDEF PHP7}
+  zend_parse_parameters_throw                     : function(num_args:longint; type_spec:PAnsiChar):longint; cdecl varargs;
+  {$ELSE}
   zend_indent                                     : procedure; cdecl;
-
+  {$ENDIF}
   ZendGetParameters                               : function: integer; cdecl;
   zend_get_params_ex : function(param_count : Integer; Args : {$IFNDEF PHP700} ppzval {$ELSE} pzval{$ENDIF}) :integer; cdecl varargs;
 function zend_get_parameters_ex(number: integer; var Params: pzval_array): integer;
 function zend_get_parameters_my(number: integer; var Params: pzval_array; TSRMLS_DC: Pointer): integer;
 
 function zend_get_parameters(ht: integer; param_count: integer; Params: array of
-{$IFNDEF PHP700} ppzval {$ELSE} pzval{$ENDIF}): integer;
+ppzval): integer;
 
 var
   _zend_get_parameters_array_ex : function(param_count: integer; argument_array:
-  {$IFNDEF PHP700} pppzval {$ELSE} pzval{$ENDIF}; TSRMLS_CC: pointer): integer; cdecl;
+  pppzval; TSRMLS_CC: pointer): integer; cdecl;
 
 procedure dispose_pzval_array(Params: pzval_array);
 
@@ -572,7 +588,7 @@ var
   execute                                         : procedure(op_array: pointer; TSRMLS_DC: Pointer); cdecl;
 
   zend_wrong_param_count                          : procedure(TSRMLS_D: pointer); cdecl;
-  _zend_hash_quick_add_or_update:function(ht: PHashTable; arKey: zend_pchar; nKeyLength: uint; h: uint; out pData: pzval; nDataSize: uint; pDest: PPointer; flag: Integer) : Integer; cdecl;
+  _zend_hash_quick_add_or_update:function(ht: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; arKey: zend_pchar; nKeyLength: uint; h: uint; out pData: pzval; nDataSize: uint; pDest: PPointer; flag: Integer) : Integer; cdecl;
   {$IFDEF PHP4}
   add_property_long_ex                            : function(arg: pzval; key: zend_pchar; key_len: uint; l: longint): integer; cdecl;
   {$ELSE}
@@ -597,8 +613,10 @@ var
   add_property_zval_ex                            : function(arg: pzval; key: zend_pchar; key_len: uint; value: pzval; TSRMLS_DC: Pointer): integer; cdecl;
   {$ENDIF}
 
-
-  call_user_function : function(function_table: PHashTable; object_pp: pzval;
+  {$IFDEF P_CUT}
+  call_user_function : procedure(func:pzval; argv:pzval; argc:integer);cdecl;
+  {$ELSE}
+   call_user_function : function(function_table: PHashTable; object_pp: pzval;
                          function_name: pzval; return_ptr: pzval; param_count: zend_uint; params: pzval_array_ex;
                           TSRMLS_DC: Pointer): integer; cdecl;
 
@@ -607,8 +625,8 @@ var
                          params: pzval_array;
                          no_separation: zend_uint; symbol_table: PHashTable;
                           TSRMLS_DC: Pointer): integer; cdecl;
-
-{
+  {$ENDIF}
+                          {
 call_user_function_ex(HashTable *function_table,
                       zval **object_pp,
                       zval *function_name,
@@ -748,15 +766,16 @@ procedure ZVAL_ARRAYAS(z: pzval; keynames: Array of AnsiString; keyvals: Array o
 procedure ZVAL_ARRAYAS(z: pzval; keynames: TASDate; keyvals: TASDate);  overload;
 procedure ZVAL_ARRAYWS(z: pzval; keynames: TWSDate; keyvals: TWSDate);  overload;
 procedure ZVAL_ARRAYWS(z: pzval; keynames: array of string; keyvals: array of string); overload;
-procedure HashToArray(HT: PHashTable; var AR: TArrayVariant); overload;
+procedure HashToArray(HT: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; var AR: TArrayVariant); overload;
 procedure ArrayToHash(AR: Array of Variant; var HT: pzval); overload;
 procedure ArrayToHash(Keys,AR: Array of Variant; var HT: pzval); overload;
 function ToStrA(V: Variant): zend_ustr;
 function ToStr(V: Variant): String;
 function toWChar(s: zend_pchar): PWideChar;
-function ZendToVariant(const Value: {$IFNDEF PHP700} pppzval {$ELSE} pzval{$ENDIF}): Variant; overload;
-function ZendToVariant(const Value: {$IFNDEF PHP700} ppzval {$ELSE} pzval{$ENDIF}): Variant; overload;
-
+{$IFNDEF PHP7}
+function ZendToVariant(const Value: pppzval): Variant; overload;
+function ZendToVariant(const Value: ppzval): Variant; overload;
+{$ENDIF}
 procedure ZVAL_STRING(z: pzval; s: zend_pchar; duplicate: boolean);
 procedure ZVAL_STRINGU(z: pzval; s: PUtf8Char; duplicate: boolean);
 procedure ZVAL_STRINGW(z: pzval; s: PWideChar; duplicate: boolean);
@@ -764,7 +783,8 @@ procedure ZVAL_STRINGW(z: pzval; s: PWideChar; duplicate: boolean);
 procedure ZVAL_STRINGL(z: pzval; s: zend_pchar; l: integer; duplicate: boolean);
 procedure ZVAL_STRINGLW(z: pzval; s: PWideChar; l: integer; duplicate: boolean);
 
-procedure INIT_CLASS_ENTRY(var class_container: Tzend_class_entry; class_name: zend_pchar; functions: pointer);
+procedure INIT_CLASS_ENTRY(var class_container: Tzend_class_entry; class_name: zend_pchar; functions:
+{$IFDEF PHP7}HashTable{$ELSE}pointer{$ENDIF});
 
 
 var
@@ -776,12 +796,12 @@ var
 
 {$IFDEF PHP5}
   zend_copy_constants: procedure(target: PHashTable; source: PHashTable); cdecl;
-  zend_objects_new : function (_object : pointer; class_type : pointer; TSRMLS_DC : pointer) : _zend_object_value; cdecl;
-  zend_objects_clone_obj: function(_object: pzval; TSRMLS_DC : pointer): _zend_object_value; cdecl;
+  zend_objects_new : function (_object : pointer; class_type : pointer; TSRMLS_DC : pointer) : {$IFDEF PHP7}zend_object{$ELSE}_zend_object_value{$ENDIF}; cdecl;
+  zend_objects_clone_obj: function(_object: pzval; TSRMLS_DC : pointer): {$IFDEF PHP7}zend_object{$ELSE}_zend_object_value{$ENDIF}; cdecl;
   zend_objects_store_add_ref: procedure (_object : pzval; TSRMLS_DC : pointer); cdecl;
   zend_objects_store_del_ref: procedure (_object : pzval; TSRMLS_DC : pointer); cdecl;
 
-  function_add_ref: procedure (func: PZendFunction); cdecl;
+  function_add_ref: procedure (func: {$IFDEF PHP7}Pzend_function{$ELSE}PZendFunction{$ENDIF}); cdecl;
 
   zend_class_add_ref: procedure(aclass: Ppzend_class_entry); cdecl;
 
@@ -830,13 +850,13 @@ function GetCompilerGlobals : Pzend_compiler_globals;
 function GetExecutorGlobals : pzend_executor_globals;
 function GetAllocGlobals : pointer;
 
-function zend_register_functions(functions : pzend_function_entry;  function_table : PHashTable; _type: integer;  TSRMLS_DC : pointer) : integer;
-function zend_unregister_functions(functions : pzend_function_entry; count : integer; function_table : PHashTable; TSRMLS_DC : pointer) : integer;
+function zend_register_functions(functions : {$IFDEF PHP7}P_zend_function_entry{$ELSE}pzend_function_entry{$ENDIF};  function_table :  {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; _type: integer;  TSRMLS_DC : pointer) : integer;
+function zend_unregister_functions(functions : {$IFDEF PHP7}P_zend_function_entry{$ELSE}pzend_function_entry{$ENDIF}; count : integer; function_table :  {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; TSRMLS_DC : pointer) : integer;
 
 {$IFDEF PHP5}
 
 var
-  zend_get_std_object_handlers : function() : pzend_object_handlers;
+  zend_get_std_object_handlers : function() : {$IFDEF PHP7}P_zend_object_handlers{$ELSE}pzend_object_handlers{$ENDIF};
   zend_objects_get_address : function (_object : pzval; TSRMLS_DC : pointer) : pzend_object; cdecl;
   zend_is_true : function(z : pzval) : integer; cdecl;
 
@@ -849,10 +869,10 @@ function Z_STRVAL(z : Pzval) : zend_ustr;
 function Z_STRUVAL(z : PZval): UTF8String;
 function Z_STRWVAL(z : pzval) : String;
 function Z_STRLEN(z : Pzval) : longint;
-function Z_ARRVAL(z : Pzval ) : PHashTable;
+function Z_ARRVAL(z : Pzval ) : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};
 function Z_OBJ_HANDLE(z :Pzval) : zend_object_handle;
-function Z_OBJ_HT(z : Pzval) : pzend_object_handlers;
-function Z_OBJPROP(z : Pzval) : PHashtable;
+function Z_OBJ_HT(z : Pzval) : {$IFDEF PHP7}hzend_types.P_zend_object_handlers{$ELSE}pzend_object_handlers{$ENDIF};
+function Z_OBJPROP(z : Pzval) : {$IFDEF PHP7}hzend_types.PHashTable{$ELSE}PHashTable{$ENDIF};
 function Z_VARREC(z: pzval): TVarRec;
 
  procedure zend_addref_p(z: pzval); cdecl;
@@ -865,10 +885,31 @@ function Z_VARREC(z: pzval): TVarRec;
 implementation
 
 
-function zend_hash_add(ht : PHashTable; arKey : zend_pchar; nKeyLength : uint; pData : pointer; nDataSize : uint; pDest : pointer) : integer; cdecl;
+function zend_hash_add(ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; arKey : zend_pchar; nKeyLength : uint; pData : pointer; nDataSize : uint; pDest : pointer) : integer; cdecl;
 begin
   result := zend_hash_add_or_update(ht, arKey, nKeyLength, pData, nDataSize, pDest, HASH_ADD);
 end;
+
+{$IFDEF PHP7}
+function zend_hash_num_elements(ht: Pzend_array): integer;
+  begin
+    Result := integer(ht.nNumOfElements);
+  end;
+function  add_char_to_string  (_result: Pzval; op1: Pzval; op2: Pzval): Integer;
+Begin
+  Result := -1;
+  if op1.u1.v._type = IS_STRING then
+  begin
+    _result.value.str.len := op1.value.str.len + op2.value.str.len;
+    _result.value.str.val := zend_pchar(zend_ustr(op1.value.str.val) + zend_ustr(op2.value.str.val));
+    Result := SUCCESS;
+  end;
+End;
+function  add_string_to_string(_result: Pzval; op1: Pzval; op2: Pzval): Integer;
+begin
+  Result := add_char_to_string(_result, op1, op2);
+end;
+{$ENDIF}
 
 function STR_EMPTY_ALLOC : zend_pchar;
 begin
@@ -942,37 +983,61 @@ end;
 
 procedure ZVAL_RESOURCE(value: pzval; l: longint);
 begin
-  value^._type := IS_RESOURCE;
+  {$IFDEF PHP7}
+  value^.u1.v._type
+  {$ELSE}
+  value^._type
+  {$ENDIF} := IS_RESOURCE;
   value^.value.lval := l;
 end;
 
 procedure ZVAL_BOOL(z: pzval; b: boolean);
 begin
-  z^._type := IS_BOOL;
+  {$IFDEF PHP7}
+  z^.u1.v._type
+  {$ELSE}
+  z^._type
+  {$ENDIF} := IS_BOOL;
   z^.value.lval := integer(b);
 end;
 
 procedure ZVAL_NULL(z: pzval);
 begin
-  z^._type := IS_NULL;
+  {$IFDEF PHP7}
+  z^.u1.v._type
+  {$ELSE}
+  z^._type
+  {$ENDIF}  := IS_NULL;
 end;
 
 procedure ZVAL_LONG(z: pzval; l: longint);
 begin
-  z^._type := IS_LONG;
+  {$IFDEF PHP7}
+  z^.u1.v._type
+  {$ELSE}
+  z^._type
+  {$ENDIF}  := IS_LONG;
   z^.value.lval := l;
 end;
 
 procedure ZVAL_DOUBLE(z: pzval; d: double);
 begin
-  z^._type := IS_DOUBLE;
+  {$IFDEF PHP7}
+  z^.u1.v._type
+  {$ELSE}
+  z^._type
+  {$ENDIF}  := IS_DOUBLE;
   z^.value.dval := d;
 end;
 procedure ZvalString(z:pzval);
 begin
   z^.value.str.len := 0;
   z^.value.str.val := '';
-  z^._type := IS_STRING;
+  {$IFDEF PHP7}
+  z^.u1.v._type
+  {$ELSE}
+  z^._type
+  {$ENDIF}  := IS_STRING;
 end;
 
 procedure ZvalString(z:pzval; s:zend_pchar; len:Integer = 0);
@@ -989,7 +1054,11 @@ begin
 
     z^.value.str.len := lens;
     z^.value.str.val := estrndup(s, lens);
-    z^._type := IS_STRING;
+    {$IFDEF PHP7}
+    z^.u1.v._type
+    {$ELSE}
+    z^._type
+    {$ENDIF}  := IS_STRING;
   end;
 end;
 
@@ -1044,24 +1113,40 @@ end;
 
 procedure ZvalVAL(z:pzval; v:Boolean);
 Begin
-  z._type := IS_BOOL;
+  {$IFDEF PHP7}
+  z^.u1.v._type
+  {$ELSE}
+  z^._type
+  {$ENDIF}  := IS_BOOL;
   z.value.lval := integer(v);
 End;
 
 procedure ZvalVAL(z:pzval; v:Integer; const _type:Integer = IS_LONG);
 Begin
-  z._type := _type;
+  {$IFDEF PHP7}
+  z^.u1.v._type
+  {$ELSE}
+  z^._type
+  {$ENDIF}  := _type;
   z.value.lval := v;
 End;
 
 procedure ZvalVAL(z:pzval);
 Begin
-  z._type := IS_NULL;
+  {$IFDEF PHP7}
+  z^.u1.v._type
+  {$ELSE}
+  z^._type
+  {$ENDIF}  := IS_NULL;
 End;
 
 procedure ZvalVAL(z:pzval; v:Double);
 Begin
-  z._type := IS_LONG;
+  {$IFDEF PHP7}
+  z^.u1.v._type
+  {$ELSE}
+  z^._type
+  {$ENDIF} := IS_LONG;
   z.value.dval := v;
 End;
 procedure ZvalVAL(z: pzval; s: zend_ustr; len: Integer = 0);
@@ -1082,7 +1167,11 @@ begin
 
     z^.value.str.len := lens;
     z^.value.str.val := _estrndup(AChar, lens, nil, 0, nil, 0);
-    z^._type := IS_STRING;
+    {$IFDEF PHP7}
+    z^.u1.v._type
+    {$ELSE}
+    z^._type
+    {$ENDIF}  := IS_STRING;
   end;
 end;
 
@@ -1093,7 +1182,11 @@ var
   arKey: zend_pchar;
 begin
   Result := FAILURE;
-  if z._type <> IS_ARRAY then
+  if {$IFDEF PHP7}
+  z^.u1.v._type
+  {$ELSE}
+  z^._type
+  {$ENDIF}  <> IS_ARRAY then
     exit;
 
   if len <> 0 then
@@ -1104,17 +1197,23 @@ begin
   end;
 
   tmp := GetArgPZval(Args[0], 1, true);
-  Result := _zend_hash_quick_add_or_update(z.value.ht, arKey, len, idx, tmp,
+
+  Result := _zend_hash_quick_add_or_update(
+  {$IFDEF PHP7}z.value.arr{$ELSE}z.value.ht{$ENDIF}, arKey, len, idx, tmp,
     sizeof(pzval), nil, flag);
 end;
 // Add Next
 function ZvalArrayAdd(z: pzval; Args: array of const): Integer; overload;
 begin
   Result := FAILURE;
-  if z._type <> IS_ARRAY then
+  if {$IFDEF PHP7}
+  z^.u1.v._type
+  {$ELSE}
+  z^._type
+  {$ENDIF} <> IS_ARRAY then
     exit;
   Result := AddElementZvalArray(z, Args, HASH_NEXT_INSERT,
-    z.value.ht.nNextFreeElement);
+    {$IFDEF PHP7} z.value.arr.nNextFreeElement {$ELSE} z.value.ht.nNextFreeElement {$ENDIF});
 end;
 
 // Add Index
@@ -1133,37 +1232,45 @@ end;
 
 function IsArrayRetVal(v: pzval): Boolean;
 begin
-  Result := v._type = IS_ARRAY;
+  Result := {$IFDEF PHP7}
+  v^.u1.v._type
+  {$ELSE}
+  v^._type
+  {$ENDIF} = IS_ARRAY;
 end;
 
 function ZValArrayKeyExists(v: pzval; key: zend_ustr): Boolean; overload;
 begin
   Result := false;
-  if v._type <> IS_ARRAY then
+  if {$IFDEF PHP7}
+  v^.u1.v._type
+  {$ELSE}
+  v^._type
+  {$ENDIF} <> IS_ARRAY then
     exit;
 
-  if v.value.ht.nNumOfElements = 0  then
+  if {$IFDEF PHP7} v.value.arr.nNumOfElements {$ELSE} v.value.ht.nNumOfElements {$ENDIF} = 0  then
     exit;
 
-  Result := zend_hash_exists(v.value.ht, zend_pchar(key), Length(key) + 1) = 1;
+  Result := zend_hash_exists({$IFDEF PHP7}v.value.arr{$ELSE}v.value.ht{$ENDIF}, zend_pchar(key), Length(key) + 1) = 1;
 end;
 
 function ZValArrayKeyExists(v: pzval; idx: Integer): Boolean; overload;
 begin
   Result := false;
-  if (v._type <> IS_ARRAY) then
+  if ({$IFDEF PHP7} v.u1.v._type {$ELSE} v._type {$ENDIF} <> IS_ARRAY) then
     exit;
 
-  if v.value.ht.nNumOfElements = 0  then
+  if {$IFDEF PHP7} v.value.arr.nNumOfElements {$ELSE} v.value.ht.nNumOfElements {$ENDIF} = 0  then
     exit;
 
-  Result := zend_hash_index_exists(v.value.ht, idx) = 1;
+  Result := zend_hash_index_exists({$IFDEF PHP7}v.value.arr{$ELSE}v.value.ht{$ENDIF}, idx) = 1;
 end;
 
 function ZValArrayKeyExists(v: pzval; key: zend_ustr; out pData: pzval)
   : Boolean; overload;
 var
-  tmp: {$IFNDEF PHP700} ppzval {$ELSE} pzval{$ENDIF};
+  tmp: ppzval;
 begin
   Result := ZValArrayKeyExists(v, key);
   if Result then
@@ -1177,7 +1284,7 @@ end;
 function ZValArrayKeyExists(v: pzval; idx: Integer; out pData: pzval)
   : Boolean; overload;
 var
-  tmp: {$IFNDEF PHP700} ppzval {$ELSE} pzval{$ENDIF};
+  tmp: ppzval;
 begin
   Result := ZValArrayKeyExists(v, idx);
   if Result then
@@ -1189,22 +1296,46 @@ begin
 end;
 
 function ZValArrayKeyDel(v: pzval; key: zend_ustr): Boolean; overload;
+{$IFDEF PHP7}
+var
+  pzs: pzend_string;
+{$ENDIF}
 begin
   Result := false;
   if ZValArrayKeyExists(v, key) then
+  {$IFDEF PHP7}
+  begin
+  pzs^.len := strlen(zend_pchar(key));
+  pzs^.val := zend_pchar(key);
+  Result := zend_hash_del_key_or_index(v.value.arr, pzs) = SUCCESS
+  end;
+  {$ELSE}
     Result := zend_hash_del_key_or_index(v.value.ht, zend_pchar(key),
       Length(key) + 1, 0, HASH_DEL_KEY) = SUCCESS;
+  {$ENDIF}
 end;
 
 function ZValArrayKeyDel(v: pzval; idx: Integer): Boolean; overload;
+{$IFDEF PHP7}
+var
+  pzs: pzend_string;
+{$ENDIF}
 begin
   Result := false;
   if ZValArrayKeyExists(v, idx) then
-    Result := zend_hash_del_key_or_index(v.value.ht, nil, 0, idx,
+  {$IFDEF PHP7}
+  begin
+  pzs^.len := strlen(zend_pchar(inttostr(idx)));
+  pzs^.val := zend_pchar(inttostr(idx));
+  Result := zend_hash_del_key_or_index(v.value.arr, pzs) = SUCCESS
+  end;
+  {$ELSE}
+    Result := zend_hash_del_key_or_index({$IFDEF PHP7}v.value.arr{$ELSE}v.value.ht{$ENDIF}, nil, 0, idx,
       HASH_DEL_INDEX) = SUCCESS;
+  {$ENDIF}
 end;
 
-function ZValArrayKeyFind(v: pzval; key: zend_ustr; out pData: {$IFNDEF PHP700} ppzval {$ELSE} pzval{$ENDIF})
+function ZValArrayKeyFind(v: pzval; key: zend_ustr; out pData: ppzval)
   : Boolean; overload;
 var
   keyStr: zend_pchar;
@@ -1213,14 +1344,14 @@ begin
   keyStr := zend_pchar(key);
   KeyLength := Length(key) + 1;
 
-  Result := zend_hash_quick_find(v.value.ht, keyStr, KeyLength,
+  Result := zend_hash_quick_find({$IFDEF PHP7}v.value.arr{$ELSE}v.value.ht{$ENDIF}, keyStr, KeyLength,
     zend_hash_func(keyStr, KeyLength), pData) = SUCCESS;
 end;
 
-function ZValArrayKeyFind(v: pzval; idx: Integer; out pData: {$IFNDEF PHP700} ppzval {$ELSE} pzval{$ENDIF})
+function ZValArrayKeyFind(v: pzval; idx: Integer; out pData: ppzval)
   : Boolean; overload;
 begin
-  Result := zend_hash_quick_find(v.value.ht, nil, 0, idx, pData) = SUCCESS;
+  Result := zend_hash_quick_find({$IFDEF PHP7}v.value.arr{$ELSE}v.value.ht{$ENDIF}, nil, 0, idx, pData) = SUCCESS;
 end;
 procedure MAKE_STD_ZVAL(out Result: pzval);
 begin
@@ -1238,7 +1369,7 @@ begin
   begin
     if Make then
       MAKE_STD_ZVAL(Result);
-    Result._type := IS_NULL;
+   {$IFDEF PHP7} Result.u1.v._type {$ELSE} Result._type {$ENDIF} := IS_NULL;
   end
   else if Args.VType = vtPointer then
     Result := Args.VPointer
@@ -1293,7 +1424,7 @@ begin
    z^.value.str.val := estrndup(__s, z^.value.str.len)
   else
     z^.value.str.val := __s;
-  z^._type := IS_STRING;
+  {$IFDEF PHP7} z^.u1.v._type {$ELSE} z^._type {$ENDIF} := IS_STRING;
 end;
 
 procedure ZVAL_STRING(z: pzval; s: zend_pchar; duplicate: boolean);
@@ -1311,7 +1442,7 @@ begin
    z^.value.str.val := estrndup(__s, z^.value.str.len)
   else
     z^.value.str.val := __s;
-  z^._type := IS_STRING;
+  {$IFDEF PHP7} z^.u1.v._type {$ELSE} z^._type {$ENDIF} := IS_STRING;
 end;
 
 procedure ZVAL_STRINGW(z: pzval; s: PWideChar; duplicate: boolean);
@@ -1335,7 +1466,7 @@ begin
    z^.value.str.val := estrndup(__s, z^.value.str.len)
   else
     z^.value.str.val := __s;
-  z^._type := IS_STRING;
+  {$IFDEF PHP7} z^.u1.v._type {$ELSE} z^._type {$ENDIF} := IS_STRING;
 end;
 
 procedure ZVAL_STRINGL(z: pzval; s: zend_pchar; l: integer; duplicate: boolean);
@@ -1353,7 +1484,7 @@ begin
     z^.value.str.val := estrndup(__s, __l)
   else
     z^.value.str.val := __s;
-  z^._type := IS_STRING;
+  {$IFDEF PHP7} z^.u1.v._type {$ELSE} z^._type {$ENDIF} := IS_STRING;
 end;
 
 procedure ZVAL_STRINGLW(z: pzval; s: PWideChar; l: integer; duplicate: boolean);
@@ -1378,7 +1509,7 @@ begin
     z^.value.str.val := estrndup(__s, __l)
   else
     z^.value.str.val := __s;
-  z^._type := IS_STRING;
+  {$IFDEF PHP7} z^.u1.v._type {$ELSE} z^._type {$ENDIF} := IS_STRING;
 end;
 
 procedure ZVAL_EMPTY_STRING(z: pzval);
@@ -1389,18 +1520,18 @@ begin
   (*{$ELSE}
   z^.value.str.val := '';
   {$ENDIF}*)
-  z^._type := IS_STRING;
+  {$IFDEF PHP7} z^.u1.v._type {$ELSE} z^._type {$ENDIF} := IS_STRING;
 end;
 
 procedure ZVAL_TRUE(z: pzval);
 begin
-  z^._type := IS_BOOL;
+  {$IFDEF PHP7} z^.u1.v._type {$ELSE} z^._type {$ENDIF} := IS_BOOL;
   z^.value.lval := 1;
 end;
 
 procedure ZVAL_FALSE(z: pzval);
 begin
-  z^._type := IS_BOOL;
+  {$IFDEF PHP7} z^.u1.v._type {$ELSE} z^._type {$ENDIF} := IS_BOOL;
   z^.value.lval := 0;
 end;
 function ToStrA(V: Variant): zend_ustr;
@@ -1428,11 +1559,11 @@ begin
   Result := PWideChar(ss);
 end;
 
-function ZendToVariant(const Value: {$IFNDEF PHP700} pppzval {$ELSE} pzval{$ENDIF}): Variant; overload;
+function ZendToVariant(const Value: pppzval): Variant; overload;
   Var
   S: String;
 begin
- case Value^^^._type of
+ case {$IFDEF PHP7} Value^^^.u1.v._type {$ELSE}Value^^^._type{$ENDIF} of
  1: Result := Value^^^.value.lval;
  2: Result := Value^^^.value.dval;
  6: begin S := Value^^^.value.str.val; Result := S; end;
@@ -1440,12 +1571,12 @@ begin
  end;
 end;
 
-function ZendToVariant(const Value: {$IFNDEF PHP700} ppzval {$ELSE} pzval{$ENDIF}): Variant; overload;
+function ZendToVariant(const Value: ppzval): Variant; overload;
   Var
   S: String;
 begin
 Result := Null;
- case Value^^._type of
+ case {$IFDEF PHP7} Value^^.u1.v._type {$ELSE}Value^^._type{$ENDIF} of
  1: Result := Value^^.value.lval;
  2: Result := Value^^.value.dval;
  6: begin S := Value^^.value.str.val; Result := S; end;
@@ -1453,10 +1584,10 @@ Result := Null;
  end;
 end;
 
-procedure HashToArray(HT: PHashTable; var AR: TArrayVariant); overload;
+procedure HashToArray(HT: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; var AR: TArrayVariant); overload;
   Var
   Len,I: Integer;
-  tmp : {$IFNDEF PHP700} pppzval {$ELSE} pzval{$ENDIF};
+  tmp : pppzval;
 begin
  len := zend_hash_num_elements(HT);
  SetLength(AR,len);
@@ -1588,7 +1719,11 @@ begin
 
   if Length(arr) = 0 then
   begin
-    z^.refcount := 1;
+    {$IFDEF PHP7}
+    z^.value.counted.gc.refcount
+    {$ELSE}
+    z^.refcount
+    {$ENDIF} := 1;
     Exit;
   end;
 
@@ -1611,7 +1746,11 @@ begin
 
   if Length(arr) = 0 then
   begin
-    z^.refcount := 1;
+    {$IFDEF PHP7}
+    z^.value.counted.gc.refcount
+    {$ELSE}
+    z^.refcount
+    {$ENDIF} := 1;
     Exit;
   end;
 
@@ -1634,7 +1773,11 @@ begin
 
   if Length(arr) = 0 then
   begin
-    z^.refcount := 1;
+    {$IFDEF PHP7}
+    z^.value.counted.gc.refcount
+    {$ELSE}
+    z^.refcount
+    {$ENDIF} := 1;
     Exit;
   end;
 
@@ -1657,7 +1800,11 @@ begin
 
   if Length(arr) = 0 then
   begin
-    z^.refcount := 1;
+    {$IFDEF PHP7}
+    z^.value.counted.gc.refcount
+    {$ELSE}
+    z^.refcount
+    {$ENDIF} := 1;
     Exit;
   end;
 
@@ -1680,7 +1827,11 @@ begin
 
   if Length(arr) = 0 then
   begin
-    z^.refcount := 1;
+    {$IFDEF PHP7}
+    z^.value.counted.gc.refcount
+    {$ELSE}
+    z^.refcount
+    {$ENDIF} := 1;
     Exit;
   end;
 
@@ -1702,7 +1853,11 @@ begin
 
   if Length(arr) = 0 then
   begin
-    z^.refcount := 1;
+    {$IFDEF PHP7}
+    z^.value.counted.gc.refcount
+    {$ELSE}
+    z^.refcount
+    {$ENDIF} := 1;
     Exit;
   end;
 
@@ -1716,7 +1871,7 @@ end;
 procedure ZVAL_ARRAY(z: pzval; arr: Variant); overload;
 var
   i: integer;
-  V: TVarData;
+  {V: TVarData;}
 begin
  if _array_init(z, nil, 0) = FAILURE then //Создаём массив первого уровня
   begin
@@ -1794,7 +1949,11 @@ begin
 
   if (Length(keynames) = 0)and(Length(keynames) = Length(keyvals)) then
   begin
-    z^.refcount := 1;
+    {$IFDEF PHP7}
+    z^.value.counted.gc.refcount
+    {$ELSE}
+    z^.refcount
+    {$ENDIF} := 1;
     Exit;
   end;
 
@@ -1820,7 +1979,11 @@ begin
 
   if (Length(keynames) = 0)and(Length(keynames) = Length(keyvals)) then
   begin
-    z^.refcount := 1;
+    {$IFDEF PHP7}
+    z^.value.counted.gc.refcount
+    {$ELSE}
+    z^.refcount
+    {$ENDIF} := 1;
     Exit;
   end;
 
@@ -1851,7 +2014,11 @@ begin
    //z^.refcount := Length(keynames); //Передаём количество возвращаемых массивов
   if (Length(keynames) = 0) then
   begin
-    z^.refcount := 1;
+    {$IFDEF PHP7}
+    z^.value.counted.gc.refcount
+    {$ELSE}
+    z^.refcount
+    {$ENDIF} := 1;
     Exit;
   end;
 
@@ -1887,7 +2054,11 @@ begin
 
   if (Length(keynames) = 0)and(Length(keynames) = Length(keyvals)) then
   begin
-    z^.refcount := 1;
+    {$IFDEF PHP7}
+    z^.value.counted.gc.refcount
+    {$ELSE}
+    z^.refcount
+    {$ENDIF} := 1;
     Exit;
   end;
 
@@ -1919,7 +2090,11 @@ begin
 
   if (Length(keynames) = 0)and(Length(keynames) = Length(keyvals)) then
   begin
-    z^.refcount := 1;
+    {$IFDEF PHP7}
+    z^.value.counted.gc.refcount
+    {$ELSE}
+    z^.refcount
+    {$ENDIF} := 1;
     Exit;
   end;
 
@@ -1950,7 +2125,11 @@ begin
 
   if (Length(keynames) = 0)and(Length(keynames) = Length(keyvals)) then
   begin
-    z^.refcount := 1;
+    {$IFDEF PHP7}
+    z^.value.counted.gc.refcount
+    {$ELSE}
+    z^.refcount
+    {$ENDIF} := 1;
     Exit;
   end;
 
@@ -2154,97 +2333,108 @@ begin
   zend_hash_add_or_update := GetProcAddress(PHPLib, 'zend_hash_add_or_update');
   {$ELSE}
   // -- zend_hash_add_or_update
-  _zend_hash_add_or_update := GetProcAddress(PHPLib, '_zend_hash_add_or_update');
+  _zend_hash_add_or_update := GetProcAddress(PHPLib,
+  {$IFDEF PHP7}'_zend_hash_add_or_update@@16'{$ELSE}'_zend_hash_add_or_update'{$ENDIF});
   {$ENDIF}
 
   // -- zend_hash_destroy
-  zend_hash_destroy := GetProcAddress(PHPLib, 'zend_hash_destroy');
+  zend_hash_destroy := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_destroy@@4'{$ELSE}'zend_hash_destroy'{$ENDIF});
 
   // -- zend_hash_clean
-  zend_hash_clean := GetProcAddress(PHPLib, 'zend_hash_clean');
+  zend_hash_clean := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_clean@@4'{$ELSE}'zend_hash_clean'{$ENDIF});
 
   // -- zend_hash_add_empty_element
-  zend_hash_add_empty_element := GetProcAddress(PHPLib, 'zend_hash_add_empty_element');
+  zend_hash_add_empty_element := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_add_empty_element@@8'{$ELSE}'zend_hash_add_empty_element'{$ENDIF});
 
   // -- zend_hash_graceful_destroy
-  zend_hash_graceful_destroy := GetProcAddress(PHPLib, 'zend_hash_graceful_destroy');
+  zend_hash_graceful_destroy := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_graceful_destroy@@4'{$ELSE}'zend_hash_graceful_destroy'{$ENDIF});
 
   // -- zend_hash_graceful_reverse_destroy
-  zend_hash_graceful_reverse_destroy := GetProcAddress(PHPLib, 'zend_hash_graceful_reverse_destroy');
+  zend_hash_graceful_reverse_destroy := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_graceful_reverse_destroy@@4'{$ELSE}'zend_hash_graceful_reverse_destroy'{$ENDIF});
 
   // -- zend_hash_apply
-  zend_hash_apply := GetProcAddress(PHPLib, 'zend_hash_apply');
+  zend_hash_apply := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_apply@@8'{$ELSE}'zend_hash_apply'{$ENDIF});
 
   // -- zend_hash_apply_with_argument
-  zend_hash_apply_with_argument := GetProcAddress(PHPLib, 'zend_hash_apply_with_argument');
+  zend_hash_apply_with_argument := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_apply_with_argument@@12'{$ELSE}'zend_hash_apply_with_argument'{$ENDIF});
 
   // -- zend_hash_reverse_apply
-  zend_hash_reverse_apply := GetProcAddress(PHPLib, 'zend_hash_reverse_apply');
+  zend_hash_reverse_apply := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_reverse_apply@@8'{$ELSE}'zend_hash_reverse_apply'{$ENDIF});
 
   // -- zend_hash_del_key_or_index
-  zend_hash_del_key_or_index := GetProcAddress(PHPLib, 'zend_hash_del_key_or_index');
+  zend_hash_del_key_or_index := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_del@@8'{$ELSE}'zend_hash_del_key_or_index'{$ENDIF});
 
   // -- zend_get_hash_value
   zend_get_hash_value := GetProcAddress(PHPLib,
   {$IFDEF PHP560}'zend_hash_func'{$ELSE}'zend_get_hash_value'{$ENDIF});
 
   // -- zend_hash_find
-  zend_hash_find := GetProcAddress(PHPLib, 'zend_hash_find');
+  zend_hash_find := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_find@@8'{$ELSE}'zend_hash_find'{$ENDIF});
 
   // -- zend_hash_quick_find
-  zend_hash_quick_find := GetProcAddress(PHPLib, 'zend_hash_quick_find');
+  zend_hash_quick_find := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_find@@8'{$ELSE}'zend_hash_quick_find'{$ENDIF});
 
   // -- zend_hash_index_find
-  zend_hash_index_find := GetProcAddress(PHPLib, 'zend_hash_index_find');
+  zend_hash_index_find := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_index_find@@8'{$ELSE}'zend_hash_index_find'{$ENDIF});
 
   // -- zend_hash_exists
-  zend_hash_exists := GetProcAddress(PHPLib, 'zend_hash_exists');
+  zend_hash_exists := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_exists@@8'{$ELSE}'zend_hash_exists'{$ENDIF});
 
   // -- zend_hash_index_exists
-  zend_hash_index_exists := GetProcAddress(PHPLib, 'zend_hash_index_exists');
-
+  zend_hash_index_exists := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_index_exists@@8'{$ELSE}'zend_hash_index_exists'{$ENDIF});
+  {$IFDEF PHP7}
+  _zend_hash_add_or_update := GetProcAddress(PHPLib, '_zend_hash_add_or_update@@16');
+  _zend_hash_add := GetProcAddress(PHPLib, '_zend_hash_add@@12');
+  {$IFDEF P_CUT}
+  zend_hash_index_findZval := GetProcAddress(PHPLib,'zend_hash_index_findZval');
+  zend_symtable_findTest := GetProcAddress(PHPLib,'zend_symtable_findTest');
+  zend_hash_index_existsZval := GetProcAddress(PHPLib,'zend_hash_index_existsZval');
+  {$ENDIF}
+  {$ELSE}
   // -- zend_hash_next_free_element
   zend_hash_next_free_element := GetProcAddress(PHPLib, 'zend_hash_next_free_element');
-
+  {$ENDIF}
   // -- zend_hash_move_forward_ex
-  zend_hash_move_forward_ex := GetProcAddress(PHPLib, 'zend_hash_move_forward_ex');
+  zend_hash_move_forward_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_move_forward_ex@@8'{$ELSE}'zend_hash_move_forward_ex'{$ENDIF});
 
   // -- zend_hash_move_backwards_ex
-  zend_hash_move_backwards_ex := GetProcAddress(PHPLib, 'zend_hash_move_backwards_ex');
+  zend_hash_move_backwards_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_move_backwards_ex@@8'{$ELSE}'zend_hash_move_backwards_ex'{$ENDIF});
 
   // -- zend_hash_get_current_key_ex
-  zend_hash_get_current_key_ex := GetProcAddress(PHPLib, 'zend_hash_get_current_key_ex');
+  zend_hash_get_current_key_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_get_current_key_ex@@16'{$ELSE}'zend_hash_get_current_key_ex'{$ENDIF});
 
   // -- zend_hash_get_current_key_type_ex
-  zend_hash_get_current_key_type_ex := GetProcAddress(PHPLib, 'zend_hash_get_current_key_type_ex');
+  zend_hash_get_current_key_type_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_get_current_key_type_ex@@8'{$ELSE}'zend_hash_get_current_key_type_ex'{$ENDIF});
 
   // -- zend_hash_get_current_data_ex
-  zend_hash_get_current_data_ex := GetProcAddress(PHPLib, 'zend_hash_get_current_data_ex');
+  zend_hash_get_current_data_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_get_current_data_ex@@8'{$ELSE}'zend_hash_get_current_data_ex'{$ENDIF});
 
   // -- zend_hash_internal_pointer_reset_ex
-  zend_hash_internal_pointer_reset_ex := GetProcAddress(PHPLib, 'zend_hash_internal_pointer_reset_ex');
+  zend_hash_internal_pointer_reset_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_internal_pointer_reset_ex@@8'{$ELSE}'zend_hash_internal_pointer_reset_ex'{$ENDIF});
 
   // -- zend_hash_internal_pointer_end_ex
-  zend_hash_internal_pointer_end_ex := GetProcAddress(PHPLib, 'zend_hash_internal_pointer_end_ex');
+  zend_hash_internal_pointer_end_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_internal_pointer_end_ex@@8'{$ELSE}'zend_hash_internal_pointer_end_ex'{$ENDIF});
 
   // -- zend_hash_copy
-  zend_hash_copy := GetProcAddress(PHPLib, 'zend_hash_copy');
+  zend_hash_copy := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_copy@@12'{$ELSE}'zend_hash_copy'{$ENDIF});
 
 
   // -- zend_hash_sort
-  zend_hash_sort := GetProcAddress(PHPLib, 'zend_hash_sort');
+  zend_hash_sort := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_sort_ex@@16'{$ELSE}'zend_hash_sort'{$ENDIF});
 
   // -- zend_hash_compare
   zend_hash_compare := GetProcAddress(PHPLib, 'zend_hash_compare');
 
   // -- zend_hash_minmax
-  zend_hash_minmax := GetProcAddress(PHPLib, 'zend_hash_minmax');
+  zend_hash_minmax := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_minmax@@12'{$ELSE}'zend_hash_minmax'{$ENDIF});
 
   // -- zend_hash_num_elements
+  {$IFNDEF PHP7}
   zend_hash_num_elements := GetProcAddress(PHPLib, 'zend_hash_num_elements');
+  {$ENDIF}
 
   // -- zend_hash_rehash
-  zend_hash_rehash := GetProcAddress(PHPLib, 'zend_hash_rehash');
+  zend_hash_rehash := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_rehash@@4'{$ELSE}'zend_hash_rehash'{$ENDIF});
 
   // -- zend_hash_func
   zend_hash_func := GetProcAddress(PHPLib, 'zend_hash_func');
@@ -2299,8 +2489,8 @@ begin
   _zval_copy_ctor := GetProcAddress(PHPLib, '_zval_copy_ctor');
 
   {$ELSE}
-  _zval_copy_ctor_func := GetProcAddress(PHPLib, '_zval_copy_ctor_func');
-  _zval_dtor_func := GetProcAddress(PHPLib, '_zval_dtor_func');
+  _zval_copy_ctor_func := GetProcAddress(PHPLib, {$IFDEF PHP7}'_zval_copy_ctor_func@@4'{$ELSE}'_zval_copy_ctor_func'{$ENDIF});
+  _zval_dtor_func := GetProcAddress(PHPLib, {$IFDEF PHP7}'_zval_dtor_func@@4'{$ELSE}'_zval_dtor_func'{$ENDIF});
   _zval_ptr_dtor := GetProcAddress(PHPLib, '_zval_ptr_dtor');
 
   {$ENDIF}
@@ -2342,160 +2532,160 @@ begin
   zend_stack_apply_with_argument := GetProcAddress(PHPLib, 'zend_stack_apply_with_argument');
 
   // -- _convert_to_string
-  _convert_to_string := GetProcAddress(PHPLib, '_convert_to_string');
+  _convert_to_string := GetProcAddress(PHPLib, {$IFDEF PHP7}'_convert_to_string@@4'{$ELSE}'_convert_to_string'{$ENDIF});
 
   // -- add_function
-  add_function := GetProcAddress(PHPLib, 'add_function');
+  add_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'add_function@@12'{$ELSE}'add_function'{$ENDIF});
 
   // -- sub_function
-  sub_function := GetProcAddress(PHPLib, 'sub_function');
+  sub_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'sub_function@@12'{$ELSE}'sub_function'{$ENDIF});
 
   // -- mul_function
-  mul_function := GetProcAddress(PHPLib, 'mul_function');
+  mul_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'mul_function@@12'{$ELSE}'mul_function'{$ENDIF});
 
   // -- div_function
-  div_function := GetProcAddress(PHPLib, 'div_function');
+  div_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'div_function@@12'{$ELSE}'div_function'{$ENDIF});
 
   // -- mod_function
-  mod_function := GetProcAddress(PHPLib, 'mod_function');
+  mod_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'mod_function@@12'{$ELSE}'mod_function'{$ENDIF});
 
   // -- boolean_xor_function
-  boolean_xor_function := GetProcAddress(PHPLib, 'boolean_xor_function');
+  boolean_xor_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'boolean_xor_function@@12'{$ELSE}'boolean_xor_function'{$ENDIF});
 
   // -- boolean_not_function
-  boolean_not_function := GetProcAddress(PHPLib, 'boolean_not_function');
+  boolean_not_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'boolean_not_function@@8'{$ELSE}'boolean_not_function'{$ENDIF});
 
   // -- bitwise_not_function
-  bitwise_not_function := GetProcAddress(PHPLib, 'bitwise_not_function');
+  bitwise_not_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'bitwise_not_function@@8'{$ELSE}'bitwise_not_function'{$ENDIF});
 
   // -- bitwise_or_function
-  bitwise_or_function := GetProcAddress(PHPLib, 'bitwise_or_function');
+  bitwise_or_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'bitwise_or_function@@12'{$ELSE}'bitwise_or_function'{$ENDIF});
 
   // -- bitwise_and_function
-  bitwise_and_function := GetProcAddress(PHPLib, 'bitwise_and_function');
+  bitwise_and_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'bitwise_and_function@@12'{$ELSE}'bitwise_and_function'{$ENDIF});
 
   // -- bitwise_xor_function
-  bitwise_xor_function := GetProcAddress(PHPLib, 'bitwise_xor_function');
+  bitwise_xor_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'bitwise_xor_function@@12'{$ELSE}'bitwise_xor_function'{$ENDIF});
 
   // -- shift_left_function
-  shift_left_function := GetProcAddress(PHPLib, 'shift_left_function');
+  shift_left_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'shift_left_function@@12'{$ELSE}'shift_left_function'{$ENDIF});
 
   // -- shift_right_function
-  shift_right_function := GetProcAddress(PHPLib, 'shift_right_function');
+  shift_right_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'shift_right_function@@12'{$ELSE}'shift_right_function'{$ENDIF});
 
   // -- concat_function
-  concat_function := GetProcAddress(PHPLib, 'concat_function');
+  concat_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'concat_function@@12'{$ELSE}'concat_function'{$ENDIF});
 
   // -- is_equal_function
-  is_equal_function := GetProcAddress(PHPLib, 'is_equal_function');
+  is_equal_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'is_equal_function@@12'{$ELSE}'is_equal_function'{$ENDIF});
 
   // -- is_identical_function
-  is_identical_function := GetProcAddress(PHPLib, 'is_identical_function');
+  is_identical_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'is_identical_function@@12'{$ELSE}'is_identical_function'{$ENDIF});
 
   // -- is_not_identical_function
-  is_not_identical_function := GetProcAddress(PHPLib, 'is_not_identical_function');
+  is_not_identical_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'is_not_identical_function@@12'{$ELSE}'is_not_identical_function'{$ENDIF});
 
   // -- is_not_equal_function
-  is_not_equal_function := GetProcAddress(PHPLib, 'is_not_equal_function');
+  is_not_equal_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'is_not_equal_function@@12'{$ELSE}'is_not_equal_function'{$ENDIF});
 
   // -- is_smaller_function
-  is_smaller_function := GetProcAddress(PHPLib, 'is_smaller_function');
+  is_smaller_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'is_smaller_function@@12'{$ELSE}'is_smaller_function'{$ENDIF});
 
   // -- is_smaller_or_equal_function
-  is_smaller_or_equal_function := GetProcAddress(PHPLib, 'is_smaller_or_equal_function');
+  is_smaller_or_equal_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'is_smaller_or_equal_function@@12'{$ELSE}'is_smaller_or_equal_function'{$ENDIF});
 
   // -- increment_function
-  increment_function := GetProcAddress(PHPLib, 'increment_function');
+  increment_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'increment_function@@4'{$ELSE}'increment_function'{$ENDIF});
 
   // -- decrement_function
-  decrement_function := GetProcAddress(PHPLib, 'decrement_function');
+  decrement_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'decrement_function@@4'{$ELSE}'decrement_function'{$ENDIF});
 
   // -- convert_scalar_to_number
-  convert_scalar_to_number := GetProcAddress(PHPLib, 'convert_scalar_to_number');
+  convert_scalar_to_number := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_scalar_to_number@@4'{$ELSE}'convert_scalar_to_number'{$ENDIF});
 
   // -- convert_to_long
-  convert_to_long := GetProcAddress(PHPLib, 'convert_to_long');
+  convert_to_long := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_to_long@@4'{$ELSE}'convert_to_long'{$ENDIF});
 
   // -- convert_to_double
-  convert_to_double := GetProcAddress(PHPLib, 'convert_to_double');
+  convert_to_double := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_to_double@@4'{$ELSE}'convert_to_double'{$ENDIF});
 
   // -- convert_to_long_base
-  convert_to_long_base := GetProcAddress(PHPLib, 'convert_to_long_base');
+  convert_to_long_base := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_to_long_base@@8'{$ELSE}'convert_to_long_base'{$ENDIF});
 
   // -- convert_to_null
-  convert_to_null := GetProcAddress(PHPLib, 'convert_to_null');
+  convert_to_null := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_to_null@@4'{$ELSE}'convert_to_null'{$ENDIF});
 
   // -- convert_to_boolean
-  convert_to_boolean := GetProcAddress(PHPLib, 'convert_to_boolean');
+  convert_to_boolean := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_to_boolean@@4'{$ELSE}'convert_to_boolean'{$ENDIF});
 
   // -- convert_to_array
-  convert_to_array := GetProcAddress(PHPLib, 'convert_to_array');
+  convert_to_array := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_to_array@@4'{$ELSE}'convert_to_array'{$ENDIF});
 
   // -- convert_to_object
-  convert_to_object := GetProcAddress(PHPLib, 'convert_to_object');
-
+  convert_to_object := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_to_object@@4'{$ELSE}'convert_to_object'{$ENDIF});
+  {$IFNDEF PHP7}
   // -- add_char_to_string
   add_char_to_string := GetProcAddress(PHPLib, 'add_char_to_string');
 
   // -- add_string_to_string
   add_string_to_string := GetProcAddress(PHPLib, 'add_string_to_string');
-
+  {$ENDIF}
   // -- zend_string_to_double
-  zend_string_to_double := GetProcAddress(PHPLib, 'zend_string_to_double');
+  zend_string_to_double := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_strtod'{$ELSE}'zend_string_to_double'{$ENDIF});
 
   // -- zval_is_true
-  zval_is_true := GetProcAddress(PHPLib, 'zval_is_true');
+  zval_is_true := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_is_true@@4'{$ELSE}'zval_is_true'{$ENDIF});
 
   // -- compare_function
-  compare_function := GetProcAddress(PHPLib, 'compare_function');
+  compare_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'compare_function@@12'{$ELSE}'compare_function'{$ENDIF});
 
   // -- numeric_compare_function
-  numeric_compare_function := GetProcAddress(PHPLib, 'numeric_compare_function');
+  numeric_compare_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'numeric_compare_function@@8'{$ELSE}'numeric_compare_function'{$ENDIF});
 
   // -- string_compare_function
-  string_compare_function := GetProcAddress(PHPLib, 'string_compare_function');
+  string_compare_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'string_compare_function@@8'{$ELSE}'string_compare_function'{$ENDIF});
 
   // -- zend_str_tolower
-  zend_str_tolower := GetProcAddress(PHPLib, 'zend_str_tolower');
+  zend_str_tolower := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_str_tolower@@8'{$ELSE}'zend_str_tolower'{$ENDIF});
 
   // -- zend_binary_zval_strcmp
-  zend_binary_zval_strcmp := GetProcAddress(PHPLib, 'zend_binary_zval_strcmp');
+  zend_binary_zval_strcmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_zval_strcmp@@8'{$ELSE}'zend_binary_zval_strcmp'{$ENDIF});
 
   // -- zend_binary_zval_strncmp
-  zend_binary_zval_strncmp := GetProcAddress(PHPLib, 'zend_binary_zval_strncmp');
+  zend_binary_zval_strncmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_zval_strncmp@@12'{$ELSE}'zend_binary_zval_strncmp'{$ENDIF});
 
   // -- zend_binary_zval_strcasecmp
-  zend_binary_zval_strcasecmp := GetProcAddress(PHPLib, 'zend_binary_zval_strcasecmp');
+  zend_binary_zval_strcasecmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_zval_strcasecmp@@8'{$ELSE}'zend_binary_zval_strcasecmp'{$ENDIF});
 
   // -- zend_binary_zval_strncasecmp
-  zend_binary_zval_strncasecmp := GetProcAddress(PHPLib, 'zend_binary_zval_strncasecmp');
+  zend_binary_zval_strncasecmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_zval_strncasecmp@@12'{$ELSE}'zend_binary_zval_strncasecmp'{$ENDIF});
 
   // -- zend_binary_strcmp
-  zend_binary_strcmp := GetProcAddress(PHPLib, 'zend_binary_strcmp');
+  zend_binary_strcmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_strcmp@@16'{$ELSE}'zend_binary_strcmp'{$ENDIF});
 
   // -- zend_binary_strncmp
-  zend_binary_strncmp := GetProcAddress(PHPLib, 'zend_binary_strncmp');
+  zend_binary_strncmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_strncmp@@20'{$ELSE}'zend_binary_strncmp'{$ENDIF});
 
   // -- zend_binary_strcasecmp
-  zend_binary_strcasecmp := GetProcAddress(PHPLib, 'zend_binary_strcasecmp');
+  zend_binary_strcasecmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_strcasecmp@@16'{$ELSE}'zend_binary_strcasecmp'{$ENDIF});
 
   // -- zend_binary_strncasecmp
-  zend_binary_strncasecmp := GetProcAddress(PHPLib, 'zend_binary_strncasecmp');
+  zend_binary_strncasecmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_strncasecmp@@20'{$ELSE}'zend_binary_strncasecmp'{$ENDIF});
 
   // -- zendi_smart_strcmp
-  zendi_smart_strcmp := GetProcAddress(PHPLib, 'zendi_smart_strcmp');
+  zendi_smart_strcmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zendi_smart_strcmp@@8'{$ELSE}'zendi_smart_strcmp'{$ENDIF});
 
   // -- zend_compare_symbol_tables
-  zend_compare_symbol_tables := GetProcAddress(PHPLib, 'zend_compare_symbol_tables');
+  zend_compare_symbol_tables := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_compare_symbol_tables@@8'{$ELSE}'zend_compare_symbol_tables'{$ENDIF});
 
   // -- zend_compare_arrays
-  zend_compare_arrays := GetProcAddress(PHPLib, 'zend_compare_arrays');
+  zend_compare_arrays := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_compare_arrays@@8'{$ELSE}'zend_compare_arrays'{$ENDIF});
 
   // -- zend_compare_objects
-  zend_compare_objects := GetProcAddress(PHPLib, 'zend_compare_objects');
+  zend_compare_objects := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_compare_objects@@8'{$ELSE}'zend_compare_objects'{$ENDIF});
 
   // -- zend_atoi
-  zend_atoi := GetProcAddress(PHPLib, 'zend_atoi');
+  zend_atoi := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_atoi@@8'{$ELSE}'zend_atoi'{$ENDIF});
 
   // -- get_active_function_name
   get_active_function_name := GetProcAddress(PHPLib, 'get_active_function_name');
@@ -2532,12 +2722,15 @@ begin
 
   // -- zend_html_puts
   zend_html_puts := GetProcAddress(PHPLib, 'zend_html_puts');
-
+  {$IFDEF PHP7}
+  // -- zend_parse_parameters_throw
+  zend_parse_parameters_throw := GetProcAddress(PHPLib, 'zend_parse_parameters_throw');
+  {$ELSE}
   // -- zend_indent
   zend_indent := GetProcAddress(PHPLib, 'zend_indent');
-
+  {$ENDIF}
   // -- _zend_get_parameters_array_ex
-  _zend_get_parameters_array_ex := GetProcAddress(PHPLib, '_zend_get_parameters_array_ex');
+  _zend_get_parameters_array_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}{$ELSE}{$ENDIF}'_zend_get_parameters_array_ex');
 
   // -- zend_ini_refresh_caches
   zend_ini_refresh_caches := GetProcAddress(PHPLib, 'zend_ini_refresh_caches');
@@ -2593,9 +2786,10 @@ begin
   // -- add_property_zval_ex
   add_property_zval_ex := GetProcAddress(PHPLib, 'add_property_zval_ex');
 
-  call_user_function := GetProcAddress(PHPLib, 'call_user_function');
+  call_user_function := GetProcAddress(PHPLib, {$IFDEF P_CUT}'__call_function'{$ELSE}'call_user_function'{$ENDIF});
+  {$IFNDEF P_CUT}
   call_user_function_ex := GetProcAddress(PHPLib, 'call_user_function_ex');
-
+  {$ENDIF}
   // -- add_assoc_long_ex
   add_assoc_long_ex := GetProcAddress(PHPLib, 'add_assoc_long_ex');
 
@@ -2750,7 +2944,7 @@ begin
   _convert_to_string(op, nil, 0);
 end;
 
-procedure INIT_CLASS_ENTRY(var class_container: Tzend_class_entry; class_name: zend_pchar; functions: pointer);
+procedure INIT_CLASS_ENTRY(var class_container: Tzend_class_entry; class_name: zend_pchar; functions: {$IFDEF PHP7}HashTable{$ELSE}pointer{$ENDIF});
 begin
 
   if class_name = nil then
@@ -2761,12 +2955,19 @@ begin
   {$IFNDEF COMPILER_VC9}
   class_container.name := strdup(class_name);
   {$ELSE}
-  class_container.name := estrdup(class_name);
+  {$IFDEF PHP7}
+      class_container.name.val := estrdup(class_name);
+    {$ELSE}
+      class_container.name := estrdup(class_name);
+    {$ENDIF}
   {$ENDIF}
-
+  {$IFDEF PHP7}
+   class_container.name.len := strlen(class_name);
+   class_container.function_table := functions;
+  {$ELSE}
   class_container.name_length := strlen(class_name);
   class_container.builtin_functions := functions;
-
+  {$ENDIF}
   {$IFDEF PHP4}
   class_container.handle_function_call := nil;
   class_container.handle_property_get := nil;
@@ -2791,19 +2992,26 @@ end;
 {$ENDIF}
 procedure INIT_PZVAL(p: pzval);
 begin
+  {$IFDEF PHP7}
+  p^.value.counted.gc.refcount := 1;
+  {$ELSE}
   p^.refcount := 1;
   p^.is_ref := 0;
+  {$ENDIF}
 end;
 
 procedure LOCK_ZVAL(p: pzval);
 begin
-  Inc(p^.refcount);
+  Inc({$IFDEF PHP7}
+  p^.value.counted.gc.refcount{$ELSE}p^.refcount{$ENDIF});
 end;
 
 procedure UNLOCK_ZVAL(p: pzval);
 begin
-  if p^.refcount > 0 then
-    Dec(p^.refcount);
+  if {$IFDEF PHP7}
+  p^.value.counted.gc.refcount{$ELSE}p^.refcount{$ENDIF} > 0 then
+    Dec({$IFDEF PHP7}
+  p^.value.counted.gc.refcount{$ELSE}p^.refcount{$ENDIF});
 end;
 
 function MAKE_STD_ZVAL: pzval;
@@ -2833,7 +3041,7 @@ end;
 function zend_get_parameters_my(number: integer; var Params: pzval_array; TSRMLS_DC: Pointer): integer;
 var
   i  : integer;
-  p: {$IFNDEF PHP700} pppzval {$ELSE} pzval{$ENDIF};
+  p: pppzval;
 begin
   SetLength(Params, number);
   if number = 0 then
@@ -2850,9 +3058,9 @@ begin
 
   for i := 0 to number - 1 do
   begin
-     {$IFNDEF PHP700}Params[i]^ :=  p^^ {$ELSE}Params[i] := p{$ENDIF};
+     Params[i]^ :=  p^^;
      if i <> number then
-         inc(integer({$IFNDEF PHP700}p^{$ELSE}p{$ENDIF}), sizeof({$IFNDEF PHP700} ppzval {$ELSE} pzval{$ENDIF}));
+         inc(integer(p^), sizeof(ppzval));
   end;
 
   efree(p);
@@ -2969,7 +3177,18 @@ begin
   if @zend_hash_index_find = nil then raise EPHP4DelphiException.Create('zend_hash_index_find');
   if @zend_hash_exists = nil then raise EPHP4DelphiException.Create('zend_hash_exists');
   if @zend_hash_index_exists = nil then raise EPHP4DelphiException.Create('zend_hash_index_exists');
+  {$IFDEF PHP7}
+  if @_zend_hash_add = nil then raise EPHP4DelphiException.Create('_zend_hash_add');
+  if @_zend_hash_add_or_update = nil then raise EPHP4DelphiException.Create('_zend_hash_add_or_update');
+
+  if @zend_hash_index_findZval = nil then raise EPHP4DelphiException.Create('zend_hash_index_findZval');
+  if @zend_symtable_findTest = nil then raise EPHP4DelphiException.Create('zend_symtable_findTest');
+  if @zend_hash_index_existsZval = nil then raise EPHP4DelphiException.Create('zend_hash_index_existsZval');
+
+  {$ENDIF}
+  {$IFNDEF PHP7}
   if @zend_hash_next_free_element = nil then raise EPHP4DelphiException.Create('zend_hash_next_free_element');
+  {$ENDIF}
   if @zend_hash_move_forward_ex = nil then raise EPHP4DelphiException.Create('zend_hash_move_forward_ex');
   if @zend_hash_move_backwards_ex = nil then raise EPHP4DelphiException.Create('zend_hash_move_backwards_ex');
   if @zend_hash_get_current_key_ex = nil then raise EPHP4DelphiException.Create('zend_hash_get_current_key_ex');
@@ -3003,7 +3222,7 @@ begin
   if @_zval_copy_ctor = nil then raise EPHP4DelphiException.Create('_zval_copy_ctor');
   {$ELSE}
   if @_zval_dtor_func = nil then raise EPHP4DelphiException.Create('_zval_dtor_func');
-  if @_zval_copy_ctor_func = nil then raise EPHP4DelphiException.Create('_zval_ctor_func');
+  if @_zval_copy_ctor_func = nil then raise EPHP4DelphiException.Create('_zval_copy_ctor_func');
  {$ENDIF}
 
   if @zend_print_variable = nil then raise EPHP4DelphiException.Create('zend_print_variable');
@@ -3081,7 +3300,11 @@ begin
   if @highlight_string = nil then raise EPHP4DelphiException.Create('highlight_string');
   if @zend_html_putc = nil then raise EPHP4DelphiException.Create('zend_html_putc');
   if @zend_html_puts = nil then raise EPHP4DelphiException.Create('zend_html_puts');
+  {$IFDEF PHP7}
+  if @zend_parse_parameters_throw = nil then EPHP4DelphiException.Create('zend_parse_parameters_throw');
+  {$ELSE}
   if @zend_indent = nil then raise EPHP4DelphiException.Create('zend_indent');
+  {$ENDIF}
   if @_zend_get_parameters_array_ex = nil then raise EPHP4DelphiException.Create('_zend_get_parameters_array_ex');
   if @zend_ini_refresh_caches = nil then raise EPHP4DelphiException.Create('zend_ini_refresh_caches');
   if @zend_alter_ini_entry = nil then raise EPHP4DelphiException.Create('zend_alter_ini_entry');
@@ -3101,7 +3324,9 @@ begin
   if @add_property_stringl_ex = nil then raise EPHP4DelphiException.Create('add_property_stringl_ex');
   if @add_property_zval_ex = nil then raise EPHP4DelphiException.Create('add_property_zval_ex');
   if @call_user_function = nil then raise EPHP4DelphiException.Create('call_user_function');
+  {$IFNDEF P_CUT}
   if @call_user_function_ex = nil then raise EPHP4DelphiException.Create('call_user_function_ex');
+  {$ENDIF}
   if @add_assoc_long_ex = nil then raise EPHP4DelphiException.Create('add_assoc_long_ex');
   if @add_assoc_null_ex = nil then raise EPHP4DelphiException.Create('add_assoc_null_ex');
   if @add_assoc_bool_ex = nil then raise EPHP4DelphiException.Create('add_assoc_bool_ex');
@@ -3147,14 +3372,14 @@ begin
 end;
 {$ENDIF}
 
-function zend_hash_get_current_data(ht: PHashTable; pData: Pointer): Integer; cdecl;
+function zend_hash_get_current_data(ht:  {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; pData: Pointer): Integer; cdecl;
 begin
-  result := zend_hash_get_current_data_ex(ht, pData, nil);
+  result := zend_hash_get_current_data_ex(ht, pData, cardinal(nil));
 end;
 
-procedure zend_hash_internal_pointer_reset(ht: PHashTable); cdecl;
+procedure zend_hash_internal_pointer_reset(ht:  {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}); cdecl;
 begin
-  zend_hash_internal_pointer_reset_ex(ht, nil);
+  zend_hash_internal_pointer_reset_ex(ht, cardinal(nil));
 end;
 
 function ts_resource(id : integer) : pointer;
@@ -3174,10 +3399,13 @@ begin
 end;
 {$ENDIF}
 
-function zend_unregister_functions(functions : pzend_function_entry; count : integer; function_table : PHashTable; TSRMLS_DC : pointer) : integer;
+function zend_unregister_functions(functions : {$IFDEF PHP7}P_zend_function_entry{$ELSE}pzend_function_entry{$ENDIF}; count : integer; function_table :  {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; TSRMLS_DC : pointer) : integer;
 var
  i : integer;
- ptr : pzend_function_entry;
+ {$IFDEF PHP7}
+ pzs: pzend_string;
+ {$ENDIF}
+ ptr : {$IFDEF PHP7}P_zend_function_entry{$ELSE}pzend_function_entry{$ENDIF};
 begin
   Result := SUCCESS;
   i := 0;
@@ -3188,7 +3416,13 @@ begin
    begin
      if ( count <> -1 ) and (i >= count) then
       break;
+      {$IFDEF PHP7}
+      pzs^.len := strlen(ptr.fname);
+      pzs^.val := ptr.fname;
+      zend_hash_del_key_or_index(function_table, pzs);
+      {$ELSE}
       zend_hash_del_key_or_index(function_table, ptr.fname, strlen(ptr.fname) +1, 0, HASH_DEL_KEY);
+      {$ENDIF}
       inc(ptr);
       inc(i);
    end;
@@ -3196,14 +3430,14 @@ end;
 
 // registers all functions in *library_functions in the function hash
 
-function zend_register_functions(functions : pzend_function_entry;  function_table : PHashTable; _type: integer;  TSRMLS_DC : pointer) : integer;
+function zend_register_functions(functions : {$IFDEF PHP7}P_zend_function_entry{$ELSE}pzend_function_entry{$ENDIF};  function_table :  {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; _type: integer;  TSRMLS_DC : pointer) : integer;
 var
- ptr : pzend_function_entry;
- _function : zend_function;
- internal_function : PzendInternalFunction;
+ ptr : {$IFDEF PHP7}P_zend_function_entry{$ELSE}pzend_function_entry{$ENDIF};
+ _function : {$IFDEF PHP7} _zend_function{$ELSE}zend_function{$ENDIF};
+ internal_function :{$IFDEF PHP7}P_zend_internal_function{$ELSE}PzendInternalFunction{$ENDIF};
   count : integer;
   unload : integer;
-  target_function_table : PHashTable;
+  target_function_table :  {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF};
   error_type : integer;
 
 begin
@@ -3230,8 +3464,12 @@ begin
   while (ptr.fname <> nil) do
     begin
       internal_function.handler := ptr.handler;
+      {$IFDEF PHP7}
+      internal_function.function_name.val := ptr.fname;
+      {$ELSE}
       internal_function.function_name := ptr.fname;
-      if (internal_function.handler = nil) then begin
+      {$ENDIF}
+      if not Assigned(internal_function.handler) then begin
      	zend_error(error_type, 'Null function defined as active function');
 	zend_unregister_functions(functions, count, target_function_table, TSRMLS_DC);
 	Result := FAILURE;
@@ -3314,7 +3552,7 @@ end;
 
 procedure zend_addref_p;
 begin
-    Inc(z.refcount);
+    Inc({$IFDEF PHP7}z.value.counted.gc.refcount{$ELSE}z.refcount{$ENDIF});
 end;
 
 procedure my_class_add_ref;
@@ -3355,10 +3593,10 @@ begin
       exit;
   end;
 
-  if z._type = IS_LONG then
+  if {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} = IS_LONG then
   Result := z.value.lval
   else
-    case z._type of
+    case {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} of
        IS_DOUBLE: Result := Trunc(z.value.dval);
        IS_BOOL  : Result := z.value.lval;
        IS_STRING: Result := StrToIntDef( Z_STRVAL(z), 0 );
@@ -3375,10 +3613,10 @@ begin
       exit;
   end;
 
-  if z._type = IS_BOOL then
+  if {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} = IS_BOOL then
      Result := zend_bool(z.value.lval)
   else
-    case z._type of
+    case {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} of
        IS_DOUBLE: if Trunc(z.value.dval) = 0 then Result := false else Result := true;
        IS_LONG  : if z.value.lval = 0 then Result := false else Result := true;
        IS_STRING: if Z_STRVAL(z) = '' then Result := False else Result := True;
@@ -3396,10 +3634,10 @@ begin
       exit;
   end;
 
-  if z._type = IS_DOUBLE then
+  if {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} = IS_DOUBLE then
      Result := z.value.dval
   else
-    case z._type of
+    case {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} of
        IS_LONG, IS_BOOL:  Result := z.value.lval;
        IS_STRING: Result := StrToFloatDef( Z_STRVAL(z), 0 );
        else
@@ -3418,7 +3656,7 @@ begin
       exit;
   end;
 
-    case z._type of
+    case {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} of
         IS_BOOL: begin
             Result.VType := vtBoolean;
             Result.VBoolean := Boolean(z.value.lval);
@@ -3460,12 +3698,12 @@ begin
       exit;
   end;
 
-  if z._type = IS_STRING then
+  if {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} = IS_STRING then
   begin
      SetLength(Result, z.value.str.len);
      Move(z.value.str.val^, Result[1], z.value.str.len);
   end else
-    case z._type of
+    case {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} of
        IS_LONG: Result := IntToStr(z.value.lval);
        IS_DOUBLE: Result := FloatToStr(z.value.dval);
        IS_BOOL: if z.value.lval = 0 then Result := '' else Result := '1';
@@ -3482,12 +3720,12 @@ begin
       exit;
   end;
 
-  if z._type = IS_STRING then
+  if {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} = IS_STRING then
   begin
      SetLength(Result, z.value.str.len);
      Move(z.value.str.val^, Result[1], z.value.str.len);
   end else
-    case z._type of
+    case {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} of
        IS_LONG: Result := IntToStr(z.value.lval);
        IS_DOUBLE: Result := FloatToStr(z.value.dval);
        IS_BOOL: if z.value.lval = 0 then Result := '' else Result := '1';
@@ -3504,12 +3742,12 @@ begin
       exit;
   end;
 
-  if z._type = IS_STRING then
+  if {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} = IS_STRING then
   begin
      SetLength(Result, z.value.str.len);
      Move(z.value.str.val^, Result[1], z.value.str.len);
   end else
-    case z._type of
+    case {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} of
        IS_LONG: Result := IntToStr(z.value.lval);
        IS_DOUBLE: Result := FloatToStr(z.value.dval);
        IS_BOOL: if z.value.lval = 0 then Result := '' else Result := '1';
@@ -3523,9 +3761,9 @@ begin
   Result := Length(Z_STRVAL(z));
 end;
 
-function Z_ARRVAL(z : pzval ) : PHashTable;
+function Z_ARRVAL(z : pzval ) : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};
 begin
-  Result := z.value.ht;
+  Result := {$IFDEF PHP7} z.value.arr {$ELSE}z.value.ht{$ENDIF};
 end;
 
 function Z_OBJ_HANDLE(z :pzval) : zend_object_handle;
@@ -3533,18 +3771,24 @@ begin
   Result := z.value.obj.handle;
 end;
 
-function Z_OBJ_HT(z : pzval) : pzend_object_handlers;
+function Z_OBJ_HT(z : pzval) : {$IFDEF PHP7}hzend_types.P_zend_object_handlers{$ELSE}pzend_object_handlers{$ENDIF};
 begin
   Result := z.value.obj.handlers;
 end;
 
-function Z_OBJPROP(z : pzval) : PHashtable;
+function Z_OBJPROP(z : pzval) : {$IFDEF PHP7}hzend_types.PHashTable{$ELSE}PHashTable{$ENDIF};
+{$IFDEF PHP7}
+begin
+  Result := Z_OBJ_HT(z)^.get_properties(z);
+end;
+{$ELSE}
 var
  TSRMLS_DC : pointer;
 begin
   TSRMLS_DC := ts_resource_ex(0, nil);
   Result := Z_OBJ_HT(z)^.get_properties(@z, TSRMLS_DC);
 end;
+{$ENDIF}
 
 
 {$ENDIF}
@@ -3552,7 +3796,7 @@ end;
 {$IFDEF PHP5}
 procedure  _zval_copy_ctor (val: pzval; __zend_filename: zend_pchar; __zend_lineno: uint);
 begin
-  if val^._type <= IS_BOOL then
+  if {$IFDEF PHP7}val^.u1.v._type{$ELSE}val^._type{$ENDIF} <= IS_BOOL then
    Exit
     else
       _zval_copy_ctor_func(val, __zend_filename, __zend_lineno);
@@ -3560,28 +3804,38 @@ end;
 
 procedure _zval_dtor(val: pzval; __zend_filename: zend_pchar; __zend_lineno: uint);
 begin
-  if val^._type <= IS_BOOL then
+  if {$IFDEF PHP7}val^.u1.v._type{$ELSE}val^._type{$ENDIF} <= IS_BOOL then
    Exit
      else
        _zval_dtor_func(val, __zend_filename, __zend_lineno);
 end;
 
-function zend_hash_init (ht : PHashTable; nSize : uint; pHashFunction : pointer; pDestructor : pointer; persistent: zend_bool) : integer;
+function zend_hash_init (ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; nSize : uint; pHashFunction : pointer; pDestructor : pointer; persistent: zend_bool) : integer;
 begin
   Result := _zend_hash_init(ht, nSize, pHashFunction, pDestructor, persistent, nil, 0);
 end;
 
-function zend_hash_add_or_update(ht : PHashTable; arKey : zend_pchar;
-    nKeyLength : uint; pData : pointer; nDataSize : uint; pDes : pointer;
+function zend_hash_add_or_update(ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; arKey : zend_pchar;
+    nKeyLength : uint; pData : {$IFDEF PHP7}pzval{$ELSE}pointer{$ENDIF}; nDataSize : uint; pDes : pointer;
     flag : integer) : integer;
+{$IFDEF PHP7}
+var pz: Pzend_string;
+{$ENDIF}
 begin
+  {$IFDEF PHP7}
+    pz^.len := strlen(arKey);
+    pz^.val := arKey;
+   if Assigned(_zend_hash_add_or_update) then
+   Result := _zend_hash_add_or_update(ht, pz, pData, flag, '', 0).u2.fe_iter_idx
+  {$ELSE}
   if Assigned(_zend_hash_add_or_update) then
    Result := _zend_hash_add_or_update(ht, arKey, nKeyLength, pData, nDataSize, pDes, flag, nil, 0)
+  {$ENDIF}
      else
        Result := FAILURE;
 end;
 
-function zend_hash_init_ex (ht : PHashTable;  nSize : uint; pHashFunction : pointer;
+function zend_hash_init_ex (ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};  nSize : uint; pHashFunction : pointer;
  pDestructor : pointer;  persistent : zend_bool;  bApplyProtection : zend_bool): integer;
 begin
   Result := _zend_hash_init_ex(ht, nSize, pHashFunction, pDestructor, persistent, bApplyProtection, nil, 0);

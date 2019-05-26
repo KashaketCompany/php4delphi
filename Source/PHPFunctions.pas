@@ -22,7 +22,9 @@ interface
    Windows, SysUtils,  Classes,
    {$IFDEF PHP_UNICE}WideStrUtils, {$ENDIF}
    {$IFDEF VERSION6} Variants,
-   {$ENDIF} ZendTypes, PHPTypes, ZendAPI, PHPAPI ;
+   {$ENDIF}
+   {$IFDEF PHP7} hzend_types, {$ENDIF}
+   ZendTypes, PHPTypes, ZendAPI, PHPAPI ;
 
 type
   TParamType = (tpString, tpInteger, tpFloat, tpBoolean, tpArray, tpUnknown);
@@ -175,7 +177,7 @@ function IsParamTypeCorrect(AParamType :  TParamType; z : Pzval) : boolean;
 var
   ZType : integer;
 begin
-  ZType := Z^._type;
+  ZType := {$IFDEF PHP7}Z^.u1.v._type{$ELSE} Z^._type{$ENDIF};
   case AParamType Of
    tpString  : Result := (ztype in [IS_STRING, IS_NULL]);
    tpInteger : Result := (ztype in [IS_LONG, IS_BOOL, IS_NULL, IS_RESOURCE]);
@@ -389,30 +391,16 @@ end;
 procedure TFunctionParams.SetItemName(Item: TCollectionItem);
 var
   I, J: Integer;
-  ItemName: string;
   CurItem: TFunctionParam;
 begin
   J := 1;
-  while True do
+  CurItem := ParamByName('Param1');
+  while (CurItem <> nil) and (CurItem <> Item) do
   begin
-    ItemName := Format('Param%d', [J]);
-    I := 0;
-    while I < Count do
-    begin
-      CurItem := Items[I] as TFunctionParam;
-      if (CurItem <> Item) and (CompareText(CurItem.Name, ItemName) = 0) then
-      begin
-        Inc(J);
-        Break;
-      end;
-      Inc(I);
-    end;
-    if I >= Count then
-    begin
-      (Item as TFunctionParam).Name := ItemName;
-      Break;
-    end;
+    inc(J);
+    CurItem := ParamByName('Param' + inttostr(J));
   end;
+  (Item as TFunctionParam).Name := 'Param' + inttostr(J);
 end;
 
 function TFunctionParams.Values(AName: string): Variant;
@@ -522,7 +510,7 @@ begin
     Exit;
    end;
 
-  case FValue^._type of
+  case{$IFDEF PHP7}FValue^.u1.v._type{$ELSE} FValue^._type{$ENDIF} of
    IS_STRING :
     begin
       if SameText(GetAsString, 'True') then
@@ -545,7 +533,7 @@ begin
     Exit;
    end;
 
-  case FValue^._type of
+  case{$IFDEF PHP7}FValue^.u1.v._type{$ELSE} FValue^._type{$ENDIF} of
    IS_STRING : Result := StrToDate(GetAsString);
    IS_DOUBLE : Result := FValue^.value.dval;
   else
@@ -561,7 +549,7 @@ begin
     Exit;
    end;
 
-  case FValue^._type of
+  case {$IFDEF PHP7}FValue^.u1.v._type{$ELSE} FValue^._type{$ENDIF} of
    IS_STRING : Result := StrToDateTime(GetAsString);
    IS_DOUBLE : Result := FValue^.value.dval;
   else
@@ -585,7 +573,7 @@ begin
     Exit;
    end;
 
-  case FValue^._type of
+  case {$IFDEF PHP7}FValue^.u1.v._type{$ELSE} FValue^._type{$ENDIF} of
    IS_STRING : Result := StrToFloatDef(GetAsString,0.0);
    IS_DOUBLE : Result := FValue^.value.dval;
   else
@@ -601,7 +589,7 @@ begin
     Exit;
    end;
 
-  case FValue^._type of
+  case {$IFDEF PHP7}FValue^.u1.v._type{$ELSE} FValue^._type{$ENDIF} of
    IS_STRING : result := StrToIntDef(GetAsString, 0);
    IS_DOUBLE : result := Round(FValue^.value.dval);
    IS_NULL   : result := 0;
@@ -621,7 +609,7 @@ begin
     Exit;
    end;
 
-  case FValue^._type of
+  case {$IFDEF PHP7}FValue^.u1.v._type{$ELSE} FValue^._type{$ENDIF} of
    IS_STRING : begin
                  try
                    SetLength(Result, FValue^.value.str.len);
@@ -654,7 +642,7 @@ begin
     Exit;
    end;
 
-  case FValue^._type of
+  case {$IFDEF PHP7}FValue^.u1.v._type{$ELSE} FValue^._type{$ENDIF} of
    IS_STRING : Result := StrToTime(GetAsString);
    IS_DOUBLE : Result := FValue^.value.dval;
   else
@@ -681,7 +669,7 @@ begin
     Exit;
    end;
 
-  Result := FValue^._type;
+  Result := {$IFDEF PHP7}FValue^.u1.v._type{$ELSE} FValue^._type{$ENDIF};
 end;
 
 function TZendVariable.GetIsNull: boolean;
@@ -691,7 +679,7 @@ begin
     Result := true;
     Exit;
    end;
-  Result := FValue^._type = IS_NULL;
+  Result := {$IFDEF PHP7}FValue^.u1.v._type{$ELSE} FValue^._type{$ENDIF} = IS_NULL;
 end;
 
 function TZendVariable.GetTypeName: string;
@@ -702,7 +690,7 @@ begin
     Exit;
    end;
 
-  case FValue^._type of
+  case {$IFDEF PHP7}FValue^.u1.v._type{$ELSE} FValue^._type{$ENDIF} of
 		IS_NULL:    result :=  'null';
 		IS_LONG:    result := 'integer';
 		IS_DOUBLE:  result := 'double';
