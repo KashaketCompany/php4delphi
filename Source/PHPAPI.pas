@@ -29,8 +29,7 @@ uses
  Windows
  {$ENDIF},
 
- ZendTypes,
- {$IFDEF PHP7} hzend_types,{$ENDIF}
+ {$IFDEF PHP7} hzend_types, {$ELSE} ZendTypes, {$ENDIF}
   PHPTypes, zendAPI,
 
 

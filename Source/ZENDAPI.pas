@@ -21,8 +21,7 @@ interface
 
 uses
   {$IFNDEF FPC} Windows{$ELSE} LCLType,LCLIntf,dynlibs,libc{$ENDIF}, SysUtils,
-  {$IFDEF PHP7} hzend_types, {$ENDIF}
-  ZendTypes, Variants,
+  {$IFDEF PHP7} hzend_types, {$ElSE} ZendTypes, {$ENDIF} Variants,
   PHPTypes;
 type
 TArrayVariant = array of variant;
@@ -218,8 +217,9 @@ var
 
 var
   zend_hash_graceful_destroy                      : procedure(ht: PHashTable); cdecl;
+  {$IFNDEF PHP7}
   zend_hash_graceful_reverse_destroy              : zend_hash_graceful_reverse_destroy_t;
-
+  {$ENDIF}
   zend_hash_apply                                 : procedure(ht: PHashTable; apply_func: pointer; TSRMLS_DC: Pointer); cdecl;
 
   zend_hash_apply_with_argument                   : procedure(ht: PHashTable;
@@ -332,8 +332,17 @@ var
 
   zend_register_constant                          : function(var c: zend_constant; TSRMLS_DC: Pointer): Integer; cdecl;
 
-  zend_register_auto_global : function(name: zend_pchar; name_len: uint; callback: Pointer; TSRMLS_DC: Pointer): Integer; cdecl;
-
+  zend_register_auto_global :
+  {$IFDEF PHP700}
+  function(name:Pzend_string; jit:zend_bool; auto_global_callback:Pointer):longint; cdecl;
+  {$ELSE}
+    {$IFDEF PHP5}
+    function(name: zend_pchar; name_len: uint; jit:boolean; callback: Pointer; TSRMLS_DC: Pointer): Integer; cdecl;
+     zend_activate_auto_globals: procedure(TSRMLS_C: Pointer); cdecl;
+    {$ELSE}
+    function(name: zend_pchar; name_len: uint; callback: Pointer; TSRMLS_DC: Pointer): Integer; cdecl;
+    {$ENDIF}
+  {$ENDIF}
 procedure REGISTER_MAIN_LONG_CONSTANT(name: zend_pchar; lval: longint; flags: integer; TSRMLS_DC: Pointer);
 procedure REGISTER_MAIN_DOUBLE_CONSTANT(name: zend_pchar; dval: double; flags: integer; TSRMLS_DC: Pointer);
 procedure REGISTER_MAIN_STRING_CONSTANT(name: zend_pchar; str: zend_pchar; flags: integer; TSRMLS_DC: Pointer);
@@ -551,17 +560,32 @@ var
   {$ELSE}
   zend_indent                                     : procedure; cdecl;
   {$ENDIF}
-  ZendGetParameters                               : function: integer; cdecl;
-  zend_get_params_ex : function(param_count : Integer; Args : {$IFNDEF PHP700} ppzval {$ELSE} pzval{$ENDIF}) :integer; cdecl varargs;
-function zend_get_parameters_ex(number: integer; var Params: pzval_array): integer;
-function zend_get_parameters_my(number: integer; var Params: pzval_array; TSRMLS_DC: Pointer): integer;
-
-function zend_get_parameters(ht: integer; param_count: integer; Params: array of
-ppzval): integer;
-
-var
+  ZendGetParameters                               :
+  {$IFDEF PHP7}
+    function(ht:longint; param_count:longint):longint; cdecl varargs;
+  {$ELSE}
+    function: integer; cdecl;
+  {$ENDIF}
+  zend_get_params_ex :
+  {$IFDEF PHP7}
+  function(param_count:longint):longint; cdecl varargs;
+  {$ELSE}
+  function(param_count : Integer; Args : ppzval) :integer; cdecl varargs;
+  {$ENDIF}
+  {$IFDEF PHP7}
+   ZvalGetArgs: function(Count: Integer; Args: ppzval): Integer;cdecl varargs;
+	_zend_get_parameters_array_ex:function(param_count:longint; argument_array:Pzval):longint; cdecl;
+  {$ELSE}
   _zend_get_parameters_array_ex : function(param_count: integer; argument_array:
   pppzval; TSRMLS_CC: pointer): integer; cdecl;
+  {$ENDIF}
+function zend_get_parameters_ex(number: integer; var Params: pzval_array): integer;
+function zend_get_parameters_my(number: integer; var Params: pzval_array; TSRMLS_DC: Pointer): integer;
+{$IFNDEF PHP7}
+function zend_get_parameters(ht: integer; param_count: integer; Params: array of
+ppzval): integer;
+{$ENDIF}
+
 
 procedure dispose_pzval_array(Params: pzval_array);
 
@@ -869,10 +893,10 @@ function Z_STRVAL(z : Pzval) : zend_ustr;
 function Z_STRUVAL(z : PZval): UTF8String;
 function Z_STRWVAL(z : pzval) : String;
 function Z_STRLEN(z : Pzval) : longint;
-function Z_ARRVAL(z : Pzval ) : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};
-function Z_OBJ_HANDLE(z :Pzval) : zend_object_handle;
-function Z_OBJ_HT(z : Pzval) : {$IFDEF PHP7}hzend_types.P_zend_object_handlers{$ELSE}pzend_object_handlers{$ENDIF};
-function Z_OBJPROP(z : Pzval) : {$IFDEF PHP7}hzend_types.PHashTable{$ELSE}PHashTable{$ENDIF};
+function Z_ARRVAL(z : Pzval ) : PHashTable;
+function Z_OBJ_HANDLE(z :Pzval) : {$IFDEF PHP7} P_zend_object_handlers {$ELSE} zend_object_handle{$ENDIF};
+function Z_OBJ_HT(z : Pzval) : {$IFDEF PHP7}P_zend_object_handlers{$ELSE}pzend_object_handlers{$ENDIF};
+function Z_OBJPROP(z : Pzval) : PHashTable;
 function Z_VARREC(z: pzval): TVarRec;
 
  procedure zend_addref_p(z: pzval); cdecl;
@@ -1306,7 +1330,7 @@ begin
   {$IFDEF PHP7}
   begin
   pzs^.len := strlen(zend_pchar(key));
-  pzs^.val := zend_pchar(key);
+  pzs^.val := estrdup(zend_pchar(key));
   Result := zend_hash_del_key_or_index(v.value.arr, pzs) = SUCCESS
   end;
   {$ELSE}
@@ -1326,7 +1350,7 @@ begin
   {$IFDEF PHP7}
   begin
   pzs^.len := strlen(zend_pchar(inttostr(idx)));
-  pzs^.val := zend_pchar(inttostr(idx));
+  pzs^.val := estrdup(zend_pchar(inttostr(idx)));
   Result := zend_hash_del_key_or_index(v.value.arr, pzs) = SUCCESS
   end;
   {$ELSE}
@@ -2458,6 +2482,9 @@ begin
   zend_register_constant := GetProcAddress(PHPLib, 'zend_register_constant');
 
   zend_register_auto_global := GetProcAddress(PHPLib, 'zend_register_auto_global');
+  {$IFDEF PHP5}
+  zend_activate_auto_globals := GetProcAddress(PHPLib, 'zend_activate_auto_globals');
+  {$ENDIF}
 
   // -- tsrm_shutdown
   tsrm_shutdown := GetProcAddress(PHPLib, 'tsrm_shutdown');
@@ -2725,6 +2752,8 @@ begin
   {$IFDEF PHP7}
   // -- zend_parse_parameters_throw
   zend_parse_parameters_throw := GetProcAddress(PHPLib, 'zend_parse_parameters_throw');
+  ZvalGetArgs  := GetProcAddress(PHPLib, 'zend_get_parameters_ex');
+  _zend_get_parameters_array_ex := GetProcAddress(PHPLib, '_zend_get_parameters_array_ex');
   {$ELSE}
   // -- zend_indent
   zend_indent := GetProcAddress(PHPLib, 'zend_indent');
@@ -3026,34 +3055,64 @@ function zend_get_parameters_ex(number: integer; var Params: pzval_array): integ
 var
   i  : integer;
 begin
-  SetLength(Params, number);
+
   if number = 0 then
   begin
     Result := SUCCESS;
     Exit;
   end;
+  {$IFDEF PHP7}
+  Params.value.arr.nNumOfElements := number;
+  for i := 0 to number - 1 do
+    zend_hash_index_add_empty_element(Params.value.arr, i);
+  Result := ZvalGetArgs(number, @Params);
+  {$ELSE}
+   SetLength(Params, number);
   for i := 0 to number - 1 do
     New(Params[i]);
-
   Result := zend_get_parameters(number, number, Params);
+  {$ENDIF}
 end;
 
 function zend_get_parameters_my(number: integer; var Params: pzval_array; TSRMLS_DC: Pointer): integer;
 var
   i  : integer;
-  p: pppzval;
+
+  p:
+  {$IFDEF PHP7}
+  pzval
+  {$ELSE}
+  pppzval
+  {$ENDIF};
 begin
-  SetLength(Params, number);
   if number = 0 then
   begin
     Result := SUCCESS;
     Exit;
   end;
+  {$IFDEF PHP7}
+  Params.value.arr.nNumOfElements := number;
+  for i := 0 to number - 1 do
+    zend_hash_index_add_empty_element(Params.value.arr, i);
+
+  p := emalloc(number * sizeOf(zval));
+  Result := _zend_get_parameters_array_ex(number, p);
+
+  for i := 0 to number - 1 do
+  begin
+    _zend_hash_update_ind(Params.value.arr, i, p, '', 0);
+     if i <> number then
+         inc(integer(p), sizeof(zval));
+  end;
+
+  efree(p);
+    _zend_get_parameters_array_ex(number, p);
+  {$ELSE}
+  SetLength(Params, number);
   for i := 0 to number - 1 do
     New(Params[i]);
-  {$IFNDEF PHP700}
+
   p := emalloc(number * sizeOf(ppzval));
-  {$ENDIF}
   Result := _zend_get_parameters_array_ex(number, p, TSRMLS_DC);
 
   for i := 0 to number - 1 do
@@ -3064,8 +3123,9 @@ begin
   end;
 
   efree(p);
+  {$ENDIF}
 end;
-
+{$IFNDEF PHP7}
 function zend_get_parameters(ht: integer; param_count: integer; Params: array of ppzval): integer; assembler; register;
 asm
   push  esi
@@ -3092,15 +3152,20 @@ asm
   loop   @toploop2
   pop     esi
 end;
-
+{$ENDIF}
 procedure dispose_pzval_array(Params: pzval_array);
 var
   i : integer;
 begin
+  {$IFDEF PHP7}
+  if Params.value.arr.nNumOfElements>0 then
+    for i := 0 to Params.value.arr.nNumOfElements-1 do
+      Freemem(zend_hash_index_findZval(Params,i));
+  {$ELSE}
   if Length(Params)>0 then
-
   for i := 0 to High(Params) do
     FreeMem(Params[i]);
+  {$ENDIF}
   Params := nil;
 end;
 
@@ -3302,6 +3367,8 @@ begin
   if @zend_html_puts = nil then raise EPHP4DelphiException.Create('zend_html_puts');
   {$IFDEF PHP7}
   if @zend_parse_parameters_throw = nil then EPHP4DelphiException.Create('zend_parse_parameters_throw');
+  if @ZvalGetArgs = nil then EPHP4DelphiException.Create('ZvalGetArgs');
+  if @_zend_get_parameters_array_ex = nil then EPHP4DelphiException.Create('_zend_get_parameters_array_ex');
   {$ELSE}
   if @zend_indent = nil then raise EPHP4DelphiException.Create('zend_indent');
   {$ENDIF}
@@ -3418,7 +3485,7 @@ begin
       break;
       {$IFDEF PHP7}
       pzs^.len := strlen(ptr.fname);
-      pzs^.val := ptr.fname;
+      pzs^.val := estrdup(ptr.fname);
       zend_hash_del_key_or_index(function_table, pzs);
       {$ELSE}
       zend_hash_del_key_or_index(function_table, ptr.fname, strlen(ptr.fname) +1, 0, HASH_DEL_KEY);
@@ -3614,7 +3681,7 @@ begin
   end;
 
   if {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} = IS_BOOL then
-     Result := zend_bool(z.value.lval)
+     Result := boolean(zend_bool(z.value.lval))
   else
     case {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} of
        IS_DOUBLE: if Trunc(z.value.dval) = 0 then Result := false else Result := true;
@@ -3766,9 +3833,9 @@ begin
   Result := {$IFDEF PHP7} z.value.arr {$ELSE}z.value.ht{$ENDIF};
 end;
 
-function Z_OBJ_HANDLE(z :pzval) : zend_object_handle;
+function Z_OBJ_HANDLE(z :pzval) : {$IFDEF PHP7} P_zend_object_handlers {$ELSE} zend_object_handle{$ENDIF};
 begin
-  Result := z.value.obj.handle;
+  Result := {$IFDEF PHP7}z.value.obj.handlers{$ELSE}z.value.obj.handle{$ENDIF};
 end;
 
 function Z_OBJ_HT(z : pzval) : {$IFDEF PHP7}hzend_types.P_zend_object_handlers{$ELSE}pzend_object_handlers{$ENDIF};
@@ -3824,7 +3891,7 @@ var pz: Pzend_string;
 begin
   {$IFDEF PHP7}
     pz^.len := strlen(arKey);
-    pz^.val := arKey;
+    pz^.val := estrdup(arKey);
    if Assigned(_zend_hash_add_or_update) then
    Result := _zend_hash_add_or_update(ht, pz, pData, flag, '', 0).u2.fe_iter_idx
   {$ELSE}

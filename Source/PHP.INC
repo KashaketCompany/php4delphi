@@ -62,9 +62,9 @@ backward compatibility between PHP versions.
   {$DEFINE ZEND_WIN32}
   {$DEFINE PHP_COMPILER_ID}
 {$ENDIF}
-{..$DEFINE soulengine_build}
-{..$DEFINE PHP7}
-{..$DEFINE P_CUT}
+{$DEFINE soulengine_build}
+{.$DEFINE PHP7}
+{.$DEFINE P_CUT}
  {$IFDEF PHP7}
   {$DEFINE COMPILER_VC14}
   {$DEFINE PHP560}

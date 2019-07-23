@@ -38,8 +38,7 @@ interface
 uses
   Windows, Messages, SysUtils, System.Types, Classes, VCL.Graphics,
   PHPCommon, WinApi.WinSock,
-  {$IFDEF PHP7} hzend_types, {$ENDIF}
-  ZendTypes, PHPTypes, PHPAPI, ZENDAPI,
+  {$IFDEF PHP7} hzend_types, {$ELSE} ZendTypes, {$ENDIF} PHPTypes, PHPAPI, ZENDAPI,
   DelphiFunctions, phpFunctions, strUtils, varUtils,
   {$IFDEF PHP_UNICE}WideStrUtils, {$ENDIF}
   {$IFDEF soulengine_build} VCL.Dialogs, {$ENDIF}

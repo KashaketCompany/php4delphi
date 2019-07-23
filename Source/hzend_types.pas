@@ -132,7 +132,28 @@ SAPI_HEADER_DO_SEND			=	2        ;
  SAPI_DEFAULT_CHARSET	=	PHP_DEFAULT_CHARSET;
  SAPI_PHP_VERSION_HEADER	=	'X-Powered-By: PHP/" PHP_VERSION';
 
-
+   //zend_constants.h
+const
+  CONST_CS                                        = (1 shl 0) { Case Sensitive }
+  ;
+  CONST_PERSISTENT                                = (1 shl 1) { Persistent }
+  ;
+const
+  ZEND_INTERNAL_FUNCTION                          = 1;
+  ZEND_USER_FUNCTION                              = 2;
+  ZEND_OVERLOADED_FUNCTION                        = 3;
+  ZEND_EVAL_CODE                                  = 4;
+  ZEND_INTERNAL_CLASS                             = 1;
+  ZEND_USER_CLASS                                 = 2;
+  ZEND_EVAL                                       = (1 shl 0);
+  ZEND_INCLUDE                                    = (1 shl 1);
+  ZEND_INCLUDE_ONCE                               = (1 shl 2);
+  ZEND_REQUIRE                                    = (1 shl 3);
+  ZEND_REQUIRE_ONCE                               = (1 shl 4);
+  ZEND_ISSET                                      = (1 shl 0);
+  ZEND_ISEMPTY                                    = (1 shl 1);
+  ZEND_CT                                         = (1 shl 0);
+  ZEND_RT                                         = (1 shl 1);
 type
   pppointer = ^ppointer;
 
@@ -378,7 +399,7 @@ type
   PBucket = ^Bucket;
   Pzend_refcounted_h = ^zend_refcounted_h;
   Pzend_auto_global = ^zend_auto_global;
-  Pzend_internal_function = ^zend_internal_function;
+  Pzend_internal_function = ^tzend_internal_function;
   P_zend_internal_function = ^_zend_internal_function;
   P_zend_call_kind = ^_zend_call_kind;
   P_zend_auto_global = ^_zend_auto_global;
@@ -592,8 +613,40 @@ Pzend_ptr_stack = ^zend_ptr_stack;
           end;
     end;
     zval = _zval_struct;
-
-
+  PZendConstant = ^TZendConstant;
+  zend_constant = record
+    value: zval;
+    flags: Integer;
+    name: zend_pchar;
+    name_len: uint;
+    module_number: Integer;
+  end;
+  TZendConstant = zend_constant;
+  Pzend_syntax_highlighter_ini = ^Tzend_syntax_highlighter_ini;
+  zend_syntax_highlighter_ini =
+    record
+    highlight_html    : zend_pchar;
+    highlight_comment : zend_pchar;
+    highlight_default : zend_pchar;
+    highlight_string  : zend_pchar;
+    highlight_keyword : zend_pchar;
+  end;
+    PStat = ^TStat;
+  TStat = record
+    st_dev: Word;
+    st_ino: Word;
+    st_mode: Word;
+    st_nlink: SmallInt;
+    st_uid: SmallInt;
+    st_gid: SmallInt;
+    st_rdev: Word;
+    st_size: Longint;
+    st_atime: Longint;
+    st_mtime: Longint;
+    st_ctime: Longint;
+  end;
+  Stat = TStat;
+  Tzend_syntax_highlighter_ini = zend_syntax_highlighter_ini;
   compare_func_t = function (_para1:pointer; _para2:pointer):longint;cdecl;
 
   swap_func_t = procedure (_para1:pointer; _para2:pointer);cdecl;
@@ -706,7 +759,7 @@ zend_ini_parser_cb_t = procedure (arg1:pzval; arg2:pzval; arg3:pzval; callback_t
     end;
     HashTable = _zend_array ;
     	zend_array = _zend_array;
-
+    pzval_array = pzval;
   _zend_ast = record
       kind : zend_ast_kind;
       attr : zend_ast_attr;
@@ -949,6 +1002,7 @@ end;
     end;
   zend_stream = _zend_stream;
 
+  PZendFileHandle = ^_zend_file_handle;
   _zend_file_handle = record
       handle : record
           case longint of
@@ -991,7 +1045,7 @@ end;
   zend_utility_values = _zend_utility_values;
 
   zend_write_func_t = function (str:zend_pchar; str_length:size_t):longint;cdecl;
-
+  zend_write_t = zend_write_func_t;
 
   zend_error_handling_t = (EH_NORMAL = 0,EH_SUPPRESS,EH_THROW);
 
@@ -1216,7 +1270,7 @@ end;
       module : P_zend_module_entry;
       reserved : array[0..3] of pointer;
     end;
-  zend_internal_function = _zend_internal_function;
+  tzend_internal_function = _zend_internal_function;
 
 
 
@@ -1236,7 +1290,7 @@ end;
             arg_info : Pzend_arg_info;
           end );
         2 : ( op_array : zend_op_array );
-        3 : ( internal_function : zend_internal_function );
+        3 : ( internal_function : tzend_internal_function );
       end;
 
   zend_function = _zend_function;
@@ -1884,6 +1938,7 @@ end;
       prev : P_zend_arena;
     end;
    zend_arena = _zend_arena;
+  Pzend_compiler_globals = ^_zend_compiler_globals;
   _zend_compiler_globals = record
       loop_var_stack : zend_stack;
       active_class_entry : P_zend_class_entry;
@@ -1933,7 +1988,7 @@ end;
     end;
   zend_objects_store = _zend_objects_store;
 
-
+  Pzend_executor_globals = ^_zend_executor_globals;
   _zend_executor_globals = record
       uninitialized_zval : zval;
       error_zval : zval;
@@ -2826,7 +2881,7 @@ zend_hash_to_packed:procedure(ht:PHashTable); cdecl;
 zend_hash_extend:procedure(ht:PHashTable; nSize:uint32_t; _packed:zend_bool); cdecl;
 _zend_hash_add_or_update:function(ht:PHashTable; key:Pzend_string; pData:Pzval; flag:uint32_t; __zend_filename:Pchar; __zend_lineno:uint):Pzval; cdecl;
 _zend_hash_update:function(ht:PHashTable; key:Pzend_string; pData:Pzval; __zend_filename:Pchar; __zend_lineno:uint):Pzval; cdecl;
-_zend_hash_update_ind:function(ht:PHashTable; key:Pzend_string; pData:Pzval; __zend_filename:Pchar; __zend_lineno:uint):Pzval; cdecl;
+_zend_hash_update_ind:function(ht:PHashTable; key:Cardinal; pData:Pzval; __zend_filename:Pchar; __zend_lineno:uint):Pzval; cdecl;
 _zend_hash_add:function(ht:PHashTable; key:Pzend_string; pData:Pzval; __zend_filename:Pchar; __zend_lineno:uint):Pzval; cdecl;
 _zend_hash_add_new:function(ht:PHashTable; key:Pzend_string; pData:Pzval; __zend_filename:Pchar; __zend_lineno:uint):Pzval; cdecl;
 _zend_hash_str_add_or_update:function(ht:PHashTable; key:Pchar; len:size_t; pData:Pzval; flag:uint32_t; __zend_filename:Pchar; __zend_lineno:uint):Pzval; cdecl;

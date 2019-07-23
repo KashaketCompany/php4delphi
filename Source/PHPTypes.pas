@@ -16,7 +16,7 @@ unit PHPTypes;
 interface
 
 uses
-  {$IFNDEF FPC} Windows{$ELSE} LCLType{$ENDIF}, {$IFDEF PHP7}hzend_types,{$ENDIF} ZENDTypes;
+  {$IFNDEF FPC} Windows{$ELSE} LCLType{$ENDIF}, {$IFDEF PHP7} hzend_types {$ELSE} ZendTypes {$ENDIF};
 
 {$IFDEF PHP4}
 const

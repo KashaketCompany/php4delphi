@@ -23,8 +23,7 @@ interface
    {$IFDEF PHP_UNICE}WideStrUtils, {$ENDIF}
    {$IFDEF VERSION6} Variants,
    {$ENDIF}
-   {$IFDEF PHP7} hzend_types, {$ENDIF}
-   ZendTypes, PHPTypes, ZendAPI, PHPAPI ;
+  {$IFDEF PHP7} hzend_types, {$ELSE} ZendTypes, {$ENDIF} PHPTypes, ZendAPI, PHPAPI ;
 
 type
   TParamType = (tpString, tpInteger, tpFloat, tpBoolean, tpArray, tpUnknown);

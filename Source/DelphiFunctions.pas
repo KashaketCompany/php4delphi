@@ -692,7 +692,7 @@ procedure RegisterInternalClasses(p : pointer);
 
 begin
   {$IFDEF PHP7}
-    object_functions
+   !
   {$ELSE}
   object_functions[0].fname := 'delphi_classname';
   object_functions[0].handler := @delphi_object_classname;
