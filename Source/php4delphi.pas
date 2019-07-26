@@ -194,11 +194,12 @@ type
     property Locked : boolean read FLocked write FLocked;
   end;
   { TPHPEngine }
-
+  TPHPEngineInitEvent =  procedure(Sender:TObject;TSRMLS_DC:Pointer) of object;
   TPHPEngine = class(TPHPComponent, IUnknown, IPHPEngine)
   private
     FINIPath : AnsiString;
     FOnEngineStartup  : TNotifyEvent;
+    FAddMods          : TArray<Pzend_module_entry>;
     FOnEngineShutdown : TNotifyEvent;
     FEngineActive     : boolean;
     FHandleErrors     : boolean;
@@ -245,6 +246,7 @@ type
     constructor Create(AOwner : TComponent); override;
     destructor Destroy; override;
     procedure AddFunction(FN: zend_ustr; Func: Pointer);
+    procedure AddModule(Module_entry: Pzend_module_entry);
     procedure  StartupEngine; virtual;
     procedure  ShutdownEngine; virtual;
     procedure  LockEngine; virtual;
@@ -1285,7 +1287,6 @@ begin
      FOnReadPost(Self, FPostStream);
 
     zend_alter_ini_entry('max_execution_time', 19, zend_pchar(TimeStr), Length(TimeStr), ZEND_INI_SYSTEM, ZEND_INI_STAGE_RUNTIME);
-
     php_request_startup(TSRMLS_D);
     if Assigned(FOnRequestStartup) then
       FOnRequestStartup(Self);
@@ -1339,7 +1340,6 @@ begin
   end;
 
 end;
-
 
 procedure TpsvCustomPHP.PrepareVariables;
 var
@@ -1904,6 +1904,7 @@ end;
 procedure TPHPEngine.StartupEngine;
 var
  i : integer;
+  x: Pzend_module_entry;
 begin
   if PHPEngine <> Self then
    begin
@@ -1943,8 +1944,14 @@ begin
 
       php_module_startup(@delphi_sapi_module, @FLibraryModule, 1);
 
-
       TSRMLS_D := ts_resource_ex(0, nil);
+      if Length(FAddMods) > 0 then
+      for x in FAddMods do
+      begin
+        zend_register_module_ex(x, TSRMLS_D);
+        zend_startup_module_ex(x, TSRMLS_D);
+      end;
+
 
       PrepareIniEntry;
       RegisterConstants;
@@ -2059,8 +2066,18 @@ begin
 end;
 
 procedure TPHPEngine.RemoveRequest;
+var
+  x: Pzend_module_entry;
+  xp: function(_type : integer; module_number : integer; TSRMLS_DC : pointer):integer;cdecl;
 begin
   InterlockedDecrement(FRequestCount);
+  if Length(FAddMods) > 0 then
+    for x in FAddMods do
+    begin
+      xp := x^.request_shutdown_func;
+       if(Assigned(xp)) then
+         xp(x^._type, x^.module_number, TSRMLS_D);
+    end;
 end;
 
 procedure TPHPEngine.AddFunction(FN: zend_ustr; Func: Pointer);
@@ -2069,9 +2086,25 @@ begin
     MyFuncs.AddObject(FN, TObject(Func));
 end;
 
+procedure TPHPEngine.AddModule(Module_entry: Pzend_module_entry);
+begin
+  SetLength(FAddMods, Length(FAddMods)+1);
+  FAddMods[High(FAddMods)] := Module_entry;
+end;
+
 procedure TPHPEngine.AddRequest;
+var
+  x: Pzend_module_entry;
+  xp: function(_type : integer; module_number : integer; TSRMLS_DC : pointer):integer;cdecl;
 begin
   InterlockedIncrement(FRequestCount);
+    if Length(FAddMods) > 0 then
+    for x in FAddMods do
+    begin
+      xp := x^.request_startup_func;
+       if(Assigned(xp)) then
+          xp(x^._type, x^.module_number, TSRMLS_D);
+    end;
 end;
 
 initialization

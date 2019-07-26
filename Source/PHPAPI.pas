@@ -218,8 +218,8 @@ php_url_encode: function (s : zend_pchar; len : Integer; new_length : PInteger) 
 
 php_raw_url_encode: function (s : zend_pchar; len : Integer; new_length : PInteger) : zend_pchar; cdecl;
 
-{$IFDEF PHP510}
-php_register_extensions: function (ptr : pointer; count: integer; TSRMLS_DC: pointer) : integer; cdecl;
+{$IFDEF PHP5}
+php_register_extensions: function (ptr : PPzend_module_entry; count: integer; TSRMLS_DC: pointer) : integer; cdecl;
 {$ELSE}
 php_startup_extensions: function (ptr: pointer; count : integer) : integer; cdecl;
 {$ENDIF}
@@ -802,7 +802,7 @@ begin
 
   php_raw_url_encode                  := GetProcAddress(PHPLib, 'php_raw_url_encode');
 
-  {$IFDEF PHP510}
+  {$IFDEF PHP5}
   php_register_extensions              := GetProcAddress(PHPLib, 'php_register_extensions');
   {$ELSE}
   php_startup_extensions              := GetProcAddress(PHPLib, 'php_startup_extensions');
@@ -866,7 +866,7 @@ begin
   if @php_url_encode = nil then raise EPHP4DelphiException.Create('php_url_encode');
   if @php_raw_url_encode = nil then raise EPHP4DelphiException.Create('php_raw_url_encode');
 
-  {$IFDEF PHP510}
+  {$IFDEF PHP5}
   if @php_register_extensions = nil then raise EPHP4DelphiException.Create('php_register_extensions');
   {$ELSE}
   if @php_startup_extensions = nil then raise EPHP4DelphiException.Create('php_startup_extensions');

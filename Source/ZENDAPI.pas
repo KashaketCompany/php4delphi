@@ -729,6 +729,12 @@ procedure ZEND_PUTS(str: zend_pchar);
 var
   zend_register_internal_class     : function(class_entry: pzend_class_entry; TSRMLS_DC: pointer): Pzend_class_entry; cdecl;
   zend_register_internal_class_ex  : function(class_entry: pzend_class_entry; parent_ce: pzend_class_entry; parent_name: zend_pchar; TSRMLS_DC: pointer): Pzend_class_entry; cdecl;
+  zend_startup_module              : function(module_entry: Pzend_module_entry):integer; cdecl;
+  zend_startup_module_ex           : function(module_entry: Pzend_module_entry; TSRMLS_DC: pointer):integer; cdecl;
+  zend_register_module_ex          : function(module_entry: Pzend_module_entry; TSRMLS_DC: pointer): Pzend_module_entry;cdecl;
+  zend_register_internal_module    : function(module_entry: Pzend_module_entry; TSRMLS_DC: pointer): Pzend_module_entry;cdecl;
+  zend_startup_modules             : function(TSRMLS_DC:pointer):integer;
+  zend_collect_module_handlers     : function(TSRMLS_DC:pointer):integer;
   function ZvalInt(z:zval):Integer;
   function ZvalDouble(z:zval):Double;
   function ZvalBool(z:zval):Boolean;
@@ -2922,11 +2928,29 @@ begin
   // -- _object_and_properties_init
   _object_and_properties_init := GetProcAddress(PHPLib, '_object_and_properties_init');
 
-    // -- zend_register_internal_class
+  // -- zend_register_internal_class
   zend_register_internal_class := GetProcAddress(PHPLib, 'zend_register_internal_class');
 
   // -- zend_register_internal_class_ex
   zend_register_internal_class_ex := GetProcAddress(PHPLib, 'zend_register_internal_class_ex');
+
+  // -- zend_startup_module
+  zend_startup_module  := GetProcAddress(PHPLib, 'zend_startup_module');
+
+  // -- zend_startup_module_ex
+  zend_startup_module_ex  := GetProcAddress(PHPLib, 'zend_startup_module_ex');
+
+  // -- zend_register_module_ex
+  zend_register_module_ex := GetProcAddress(PHPLib, 'zend_register_module_ex');
+
+  // --  zend_register_internal_module
+  zend_register_internal_module := GetProcAddress(PHPLib, 'zend_register_internal_module');
+
+  // -- zend_startup_modules
+  zend_startup_modules := GetProcAddress(PHPLib, 'zend_startup_modules');
+
+  // -- zend_collect_module_handlers
+  zend_collect_module_handlers := GetProcAddress(PHPLib, 'zend_collect_module_handlers');
 
   // -- get_zend_version
   get_zend_version := GetProcAddress(PHPLib, 'get_zend_version');
@@ -3431,6 +3455,13 @@ begin
   if @_object_and_properties_init = nil then raise EPHP4DelphiException.Create('_object_and_properties_init');
   if @zend_register_internal_class = nil then raise EPHP4DelphiException.Create('zend_register_internal_class');
   if @zend_register_internal_class_ex = nil then raise EPHP4DelphiException.Create('zend_register_internal_class_ex');
+  if @zend_startup_module = nil then raise EPHP4DelphiException.Create('zend_startup_module');
+  if @zend_startup_module_ex = nil then raise EPHP4DelphiException.Create('zend_startup_module_ex');
+  if @zend_register_module_ex = nil then raise EPHP4DelphiException.Create('zend_register_module_ex');
+  if @zend_register_internal_module = nil then raise EPHP4DelphiException.Create('zend_register_internal_module');
+  if @zend_startup_modules = nil then raise EPHP4DelphiException.Create('zend_startup_modules');
+  if @zend_collect_module_handlers = nil then raise EPHP4DelphiException.Create('zend_collect_module_handlers');
+
   if @get_zend_version = nil then raise EPHP4DelphiException.Create('get_zend_version');
   if @zend_make_printable_zval = nil then raise EPHP4DelphiException.Create('zend_make_printable_zval');
   if @zend_print_zval = nil then raise EPHP4DelphiException.Create('zend_print_zval');

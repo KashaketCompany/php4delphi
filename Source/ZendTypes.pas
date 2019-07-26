@@ -1204,6 +1204,7 @@ type
   end;
   {$ENDIF}
   Pzend_module_entry = ^Tzend_module_entry;
+  PPzend_module_entry = ^Pzend_module_entry;
   p_zend_module_entry = ^_zend_module_entry;
   _zend_module_entry = record
     size                  : word;
