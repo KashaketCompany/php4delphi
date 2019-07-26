@@ -251,8 +251,9 @@ var
   zend_hash_find                                  : function(ht: {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; arKey: zend_pchar; nKeyLength: uint;
     pData: Pointer): Integer; cdecl;
 
-  zend_hash_quick_find                            : function(ht: {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; arKey: zend_pchar;
-    nKeyLength: uint; h: ulong; pData: Pointer): Integer; cdecl;
+  zend_hash_quick_find                            :
+   function(ht: {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; arKey: zend_pchar;
+    nKeyLength: uint; h: ulong; out pData: ppzval): Integer; cdecl;
 
   zend_hash_index_find                            : function(ht: {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; h: ulong; pData: Pointer): Integer; cdecl;
 
@@ -570,7 +571,7 @@ var
   {$IFDEF PHP7}
   function(param_count:longint):longint; cdecl varargs;
   {$ELSE}
-  function(param_count : Integer; Args : ppzval) :integer; cdecl varargs;
+  function(param_count : Integer; Args : ppzval): integer; cdecl varargs;
   {$ENDIF}
   {$IFDEF PHP7}
    ZvalGetArgs: function(Count: Integer; Args: ppzval): Integer;cdecl varargs;
@@ -1152,7 +1153,7 @@ Begin
   {$ELSE}
   z^._type
   {$ENDIF}  := _type;
-  z.value.lval := v;
+  z^.value.lval := v;
 End;
 
 procedure ZvalVAL(z:pzval);
@@ -2946,7 +2947,7 @@ begin
   ZendGetParameters := GetProcAddress(PHPLib, 'zend_get_parameters');
 
   // - zend_get_parameters_ex (native call)
-  zend_get_params_ex := GetProcAddress(PHPLib, 'zend_get_params_ex');
+  zend_get_params_ex := GetProcAddress(PHPLib, 'zend_get_parameters_ex');
   {$IFDEF PHP5}
   zend_destroy_file_handle := GetProcAddress(PHPLib, 'zend_destroy_file_handle');
   {$ENDIF}
