@@ -876,7 +876,7 @@ var
  zend_ini_deactivate : function(TSRMLS_D : pointer) : integer; cdecl;
 
 function GetGlobalResource(resource_name: AnsiString) : pointer;
-
+function GetGlobalResourceDC(resource_name: AnsiString;TSRMLS_DC:pointer) : pointer;
 function GetCompilerGlobals : Pzend_compiler_globals;
 function GetExecutorGlobals : pzend_executor_globals;
 function GetAllocGlobals : pointer;
@@ -1595,10 +1595,13 @@ function ZendToVariant(const Value: pppzval): Variant; overload;
   S: String;
 begin
  case {$IFDEF PHP7} Value^^^.u1.v._type {$ELSE}Value^^^._type{$ENDIF} of
+ 0: Result := Null;
  1: Result := Value^^^.value.lval;
  2: Result := Value^^^.value.dval;
- 6: begin S := Value^^^.value.str.val; Result := S; end;
- 4,5: Result := Null;
+ 3: Result := boolean(Value^^^.value.lval);
+ 8: begin S := Value^^^.value.str.val; Result := S; end;
+ 6: begin S := Value^^^.value.str.val; Result := S; end
+ else Result := Null;
  end;
 end;
 
@@ -3631,6 +3634,31 @@ begin
   end;
 end;
 
+function GetGlobalResourceDC(resource_name: AnsiString;TSRMLS_DC:pointer) : pointer;
+var
+ global_id : pointer;
+ global_value : integer;
+ global_ptr   : pointer;
+begin
+  Result := nil;
+  try
+    global_id := GetProcAddress(PHPLib, zend_pchar(resource_name));
+    if Assigned(global_id) then
+     begin
+       global_value := integer(global_id^);
+       asm
+         mov ecx, global_value
+         mov edx, dword ptr TSRMLS_DC
+         mov eax, dword ptr [edx]
+         mov ecx, dword ptr [eax+ecx*4-4]
+         mov global_ptr, ecx
+       end;
+       Result := global_ptr;
+     end;
+  except
+    Result := nil;
+  end;
+end;
 
 function GetCompilerGlobals : Pzend_compiler_globals;
 begin
