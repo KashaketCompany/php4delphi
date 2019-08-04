@@ -725,6 +725,9 @@ var
 
 procedure ZEND_PUTS(str: zend_pchar);
 
+type
+  TObjectAConvertMethod = procedure(v:variant;z:pzval);
+  TObjectBConvertMethod = function(a: pzval):Variant;
 
 var
   zend_register_internal_class     : function(class_entry: pzend_class_entry; TSRMLS_DC: pointer): Pzend_class_entry; cdecl;
@@ -799,13 +802,14 @@ procedure ArrayToHash(Keys,AR: Array of Variant; var HT: pzval); overload;
 function ToStrA(V: Variant): zend_ustr;
 function ToStr(V: Variant): String;
 function toWChar(s: zend_pchar): PWideChar;
-function ZendToVariant(const Value: pzval): Variant;
+function ZendToVariant(const Value: pzval;cobj: TObjectBConvertMethod=nil): Variant;
 {$IFNDEF PHP7}
 overload;
-function ZendToVariant(const Value: ppzval): Variant; overload;
-function ZendToVariant(const Value: pppzval): Variant; overload;
+function ZendToVariant(const Value: ppzval;cobj: TObjectBConvertMethod=nil): Variant; overload;
+function ZendToVariant(const Value: pppzval;cobj: TObjectBConvertMethod=nil): Variant; overload;
 {$ENDIF}
-procedure VariantToZend(const Value: Variant; z: pzval);
+procedure VariantToZend(const Value: Variant; z: pzval;
+cobj: TObjectAConvertMethod=nil);
 procedure ZVAL_STRING(z: pzval; s: zend_pchar; duplicate: boolean);
 procedure ZVAL_STRINGU(z: pzval; s: PUtf8Char; duplicate: boolean);
 procedure ZVAL_STRINGW(z: pzval; s: PWideChar; duplicate: boolean);
@@ -1601,7 +1605,8 @@ begin
     end;
 end;
 
-function ZendToVariant(const Value: pzval): Variant; overload;
+function ZendToVariant(const Value: pzval;
+cobj: TObjectBConvertMethod=nil): Variant; overload;
   Var
   S: String;
 begin
@@ -1611,7 +1616,11 @@ begin
  2: Result := Value^.value.dval;
  3: Result := boolean(Value^.value.lval);
  4: Result := HashToVarArray(Value^.value.ht);
- //5: Result := object //HERE;
+ 5:
+  if Assigned(cobj) then
+    Result := cobj(Value)
+  else
+    Result := Null;
  7: Result := Value^.value.lval;
  6: begin S := Value^.value.str.val; Result := S; end;
  8: begin S := Value^.value.str.val; Result := S; end;
@@ -1620,7 +1629,8 @@ begin
  end;
 end;
 
-procedure VariantToZend(const Value:Variant;z:pzval);
+procedure VariantToZend(const Value:Variant;z:pzval;
+cobj: TObjectAConvertMethod=nil);
 var
  W : WideString;
  S: String;
@@ -1673,14 +1683,41 @@ begin
      //<==указатель на вызывающую функцию... хз точно не пойму
      //вообщем на метод с типом Dispatch (вызов, выброс)... забыл я
      //ну метод в классе коро.че
+    varDispatch    :
+     begin
+       if Assigned(cobj) then
+        cobj(Value, z)
+       else
+        ZVALVAL(z);
+     end;
     //varAny : integer(TVarData(Value).VAny
      //<==указатель на метод*(любой)
      //
-
+     varAny    :
+     begin
+       if Assigned(cobj) then
+        cobj(Value, z)
+       else
+        ZVALVAL(z);
+     end;
      //varRecord : integer(TVarData(Value).VRecord)
      //<==запись... я до сих пор не разобрался как с ними через RTTI работать
+     varRecord    :
+     begin
+       if Assigned(cobj) then
+        cobj(Value, z)
+       else
+        ZVALVAL(z);
+     end;
      //varObject : integer(TVarData(Value).VObject)
      //<==объект...
+     varObject    :
+     begin
+       if Assigned(cobj) then
+        cobj(Value, z)
+       else
+        ZVALVAL(z, integer(TObject(TVarData(Value).VPointer^)));
+     end;
      varStrArg    : //Peter Enz
          begin
            if Assigned ( TVarData(Value).VString ) then
@@ -1719,12 +1756,12 @@ begin
   end;
 end;
 
-function ZendToVariant(const Value: ppzval): Variant; overload;
+function ZendToVariant(const Value: ppzval;cobj: TObjectBConvertMethod=nil): Variant; overload;
 begin
 Result := ZendToVariant(Value^);
 end;
 
-function ZendToVariant(const Value: pppzval): Variant; overload;
+function ZendToVariant(const Value: pppzval;cobj: TObjectBConvertMethod=nil): Variant; overload;
 begin
 Result := ZendToVariant(Value^^);
 end;
