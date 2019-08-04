@@ -198,7 +198,7 @@ procedure delphi_date(ht : integer; return_value : pzval; this_ptr : pzval;
       return_value_used : integer; TSRMLS_DC : pointer); cdecl;
 {$ENDIF}
 begin
-  ZVAL_DOUBLE(return_value, Date);
+  ZVALVAL(return_value, Date);
 end;
 
 //proto string delphi_extract_file_dir(string source)
@@ -658,7 +658,7 @@ procedure delphi_is_uc(ht : integer; return_value : pzval; this_ptr : pzval;
       return_value_used : integer; TSRMLS_DC : pointer);
 {$ENDIF}
 begin
-    {$IFDEF PHP_UNICE}ZVAL_TRUE{$ELSE}ZVAL_FALSE{$ENDIF}(return_value);
+    ZVALVAL(return_value, {$IFDEF PHP_UNICE}TRUE{$ELSE}FALSE{$ENDIF});
 end;
 
 {$IFDEF PHP510}

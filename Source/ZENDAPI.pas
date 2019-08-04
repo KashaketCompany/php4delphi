@@ -747,6 +747,8 @@ var
   procedure ZvalVAL(z:pzval; v:Integer; const _type:Integer = IS_LONG) overload;
   procedure ZvalVAL(z:pzval) overload;
   procedure ZvalVAL(z:pzval; v:Double) overload;
+  procedure ZvalVAL(z:pzval; v:SmallInt) overload;
+  procedure ZvalVAL(z:pzval; v:Extended) overload;
   procedure ZvalVAL(z: pzval; s: zend_ustr; len: Integer = 0); overload;
   procedure ZvalString(z:pzval) overload;
   procedure ZvalString(z:pzval; s:zend_pchar; len:Integer = 0) overload;
@@ -776,13 +778,7 @@ function ZValArrayKeyFind(v: pzval; idx: Integer; out pData: ppzval)
  function GetArgPZval(Args: TVarRec; const _type: Integer = IS_LONG;
   Make: Boolean = false): pzval;
 procedure ZVAL_RESOURCE(value: pzval; l: longint);
-procedure ZVAL_BOOL(z: pzval; b: boolean);
-procedure ZVAL_NULL(z: pzval);
-procedure ZVAL_LONG(z: pzval; l: longint);
-procedure ZVAL_DOUBLE(z: pzval; d: double);
 procedure ZVAL_EMPTY_STRING(z: pzval);
-procedure ZVAL_TRUE(z: pzval);
-procedure ZVAL_FALSE(z: pzval);
 function add_next_index_variant(arg: pzval; value: variant): integer;
 procedure ZVAL_ARRAY(z: pzval; arr:  TWSDate); overload;
 procedure ZVAL_ARRAY(z: pzval; arr:  TASDate); overload;
@@ -803,10 +799,13 @@ procedure ArrayToHash(Keys,AR: Array of Variant; var HT: pzval); overload;
 function ToStrA(V: Variant): zend_ustr;
 function ToStr(V: Variant): String;
 function toWChar(s: zend_pchar): PWideChar;
+function ZendToVariant(const Value: pzval): Variant;
 {$IFNDEF PHP7}
-function ZendToVariant(const Value: pppzval): Variant; overload;
+overload;
 function ZendToVariant(const Value: ppzval): Variant; overload;
+function ZendToVariant(const Value: pppzval): Variant; overload;
 {$ENDIF}
+procedure VariantToZend(const Value: Variant; z: pzval);
 procedure ZVAL_STRING(z: pzval; s: zend_pchar; duplicate: boolean);
 procedure ZVAL_STRINGU(z: pzval; s: PUtf8Char; duplicate: boolean);
 procedure ZVAL_STRINGW(z: pzval; s: PWideChar; duplicate: boolean);
@@ -1022,16 +1021,6 @@ begin
   value^.value.lval := l;
 end;
 
-procedure ZVAL_BOOL(z: pzval; b: boolean);
-begin
-  {$IFDEF PHP7}
-  z^.u1.v._type
-  {$ELSE}
-  z^._type
-  {$ENDIF} := IS_BOOL;
-  z^.value.lval := integer(b);
-end;
-
 procedure ZVAL_NULL(z: pzval);
 begin
   {$IFDEF PHP7}
@@ -1041,25 +1030,6 @@ begin
   {$ENDIF}  := IS_NULL;
 end;
 
-procedure ZVAL_LONG(z: pzval; l: longint);
-begin
-  {$IFDEF PHP7}
-  z^.u1.v._type
-  {$ELSE}
-  z^._type
-  {$ENDIF}  := IS_LONG;
-  z^.value.lval := l;
-end;
-
-procedure ZVAL_DOUBLE(z: pzval; d: double);
-begin
-  {$IFDEF PHP7}
-  z^.u1.v._type
-  {$ELSE}
-  z^._type
-  {$ENDIF}  := IS_DOUBLE;
-  z^.value.dval := d;
-end;
 procedure ZvalString(z:pzval);
 begin
   z^.value.str.len := 0;
@@ -1180,6 +1150,27 @@ Begin
   {$ENDIF} := IS_LONG;
   z.value.dval := v;
 End;
+
+procedure ZvalVAL(z:pzval; v:SmallInt);
+begin
+  {$IFDEF PHP7}
+  z^.u1.v._type
+  {$ELSE}
+  z^._type
+  {$ENDIF}  := IS_LONG;
+  z^.value.lval := v;
+end;
+
+procedure ZvalVAL(z:pzval; v:Extended);
+Begin
+  {$IFDEF PHP7}
+  z^.u1.v._type
+  {$ELSE}
+  z^._type
+  {$ENDIF} := IS_LONG;
+  z.value.dval := v;
+End;
+
 procedure ZvalVAL(z: pzval; s: zend_ustr; len: Integer = 0);
 var
   lens: Integer;
@@ -1554,17 +1545,6 @@ begin
   {$IFDEF PHP7} z^.u1.v._type {$ELSE} z^._type {$ENDIF} := IS_STRING;
 end;
 
-procedure ZVAL_TRUE(z: pzval);
-begin
-  {$IFDEF PHP7} z^.u1.v._type {$ELSE} z^._type {$ENDIF} := IS_BOOL;
-  z^.value.lval := 1;
-end;
-
-procedure ZVAL_FALSE(z: pzval);
-begin
-  {$IFDEF PHP7} z^.u1.v._type {$ELSE} z^._type {$ENDIF} := IS_BOOL;
-  z^.value.lval := 0;
-end;
 function ToStrA(V: Variant): zend_ustr;
 begin
   Result := V;
@@ -1589,33 +1569,164 @@ begin
   ss := ss2;
   Result := PWideChar(ss);
 end;
+function HashToVarArray(const Value:{$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}): Variant;
+  Var
+  Len,I: Integer;
+  tmp : pppzval;
+begin
+ len := zend_hash_num_elements(Value);
+ Result := VarArrayCreate([0, len - 1], varVariant);
+ for i:=0 to len-1 do
+  begin
+    new(tmp);
 
-function ZendToVariant(const Value: pppzval): Variant; overload;
+    zend_hash_index_find(Value,i,tmp);
+
+    VarArrayPut(Result, ZendToVariant(tmp), [i]);
+    freemem(tmp);
+  end;
+end;
+procedure VarArrayToHash(var HT: pzval;Value: Variant);
+  Var
+  I,Len: Integer;
+  z: pzval;
+begin
+  _array_init(ht,nil,1);
+  len := TVarData(Value).VArray^.Bounds[0].ElementCount;
+    for i:= 0 to len - 1 do
+    begin
+      z := MAKE_STD_ZVAL;
+      VariantToZend(VarArrayGet(Value, [i]),z);
+      add_index_zval(HT, i, z);
+    end;
+end;
+
+function ZendToVariant(const Value: pzval): Variant; overload;
   Var
   S: String;
 begin
- case {$IFDEF PHP7} Value^^^.u1.v._type {$ELSE}Value^^^._type{$ENDIF} of
+ case {$IFDEF PHP7} Value^.u1.v._type {$ELSE}Value^._type{$ENDIF} of
  0: Result := Null;
- 1: Result := Value^^^.value.lval;
- 2: Result := Value^^^.value.dval;
- 3: Result := boolean(Value^^^.value.lval);
- 8: begin S := Value^^^.value.str.val; Result := S; end;
- 6: begin S := Value^^^.value.str.val; Result := S; end
+ 1: Result := Value^.value.lval;
+ 2: Result := Value^.value.dval;
+ 3: Result := boolean(Value^.value.lval);
+ 4: Result := HashToVarArray(Value^.value.ht);
+ //5: Result := object //HERE;
+ 7: Result := Value^.value.lval;
+ 6: begin S := Value^.value.str.val; Result := S; end;
+ 8: begin S := Value^.value.str.val; Result := S; end;
+ 9: Result := HashToVarArray(Value^.value.ht)
  else Result := Null;
  end;
 end;
 
-function ZendToVariant(const Value: ppzval): Variant; overload;
-  Var
-  S: String;
+procedure VariantToZend(const Value:Variant;z:pzval);
+var
+ W : WideString;
+ S: String;
 begin
-Result := Null;
- case {$IFDEF PHP7} Value^^.u1.v._type {$ELSE}Value^^._type{$ENDIF} of
- 1: Result := Value^^.value.lval;
- 2: Result := Value^^.value.dval;
- 6: begin S := Value^^.value.str.val; Result := S; end;
- 4,5: Result := Null;
- end;
+  if VarIsEmpty(value) then
+   begin
+     ZVALVAL(z);
+     Exit;
+   end;
+  case TVarData(Value).VType of
+  varString    : //Peter Enz
+         begin
+           if Assigned ( TVarData(Value).VString ) then
+             begin
+               ZVAL_STRING(z, TVarData(Value).VString , true);
+             end
+               else
+                 begin
+                   ZVAL_STRING(z, '', true);
+                 end;
+         end;
+
+  varUString    : //Peter Enz
+         begin
+            S := string(TVarData(Value).VUString);
+
+             ZVAL_STRING(z, zend_pchar(zend_ustr(S)), true);
+         end;
+
+     varOleStr    : //Peter Enz
+         begin
+           if Assigned ( TVarData(Value).VOleStr ) then
+             begin
+               W := WideString(Pointer(TVarData(Value).VOleStr));
+               ZVAL_STRINGW(z, PWideChar(W),  true);
+             end
+               else
+                 begin
+                   ZVAL_STRING(z, '', true);
+                 end;
+         end;
+
+     varWord     : ZVALVAL(z, TVarData(Value).VWord);
+  //HERE;
+  //    varVariant  :
+  //    varUnknown  :
+  //<=== следует искать через VarIs{TYPE}()
+
+    //varDispatch : integer(TVarData(Value).VDispatch
+     //<==указатель на вызывающую функцию... хз точно не пойму
+     //вообщем на метод с типом Dispatch (вызов, выброс)... забыл я
+     //ну метод в классе коро.че
+    //varAny : integer(TVarData(Value).VAny
+     //<==указатель на метод*(любой)
+     //
+
+     //varRecord : integer(TVarData(Value).VRecord)
+     //<==запись... я до сих пор не разобрался как с ними через RTTI работать
+     //varObject : integer(TVarData(Value).VObject)
+     //<==объект...
+     varStrArg    : //Peter Enz
+         begin
+           if Assigned ( TVarData(Value).VString ) then
+             begin
+               ZVAL_STRING(z, TVarData(Value).VString , true);
+             end
+               else
+                 begin
+                   ZVAL_STRING(z, '', true);
+                 end;
+         end;
+
+     varUStrArg    : //Peter Enz
+         begin
+            S := string(TVarData(Value).VUString);
+
+             ZVAL_STRING(z, zend_pchar(zend_ustr(S)), true);
+         end;
+     varInt64    : ZVALVAL(z, TVarData(Value).VInt64);
+     varUInt64   : ZVALVAL(z, TVarData(Value).VUInt64);
+     varShortInt : ZVALVAL(z, Integer(TVarData(Value).VShortInt));
+     varSmallInt : ZVALVAL(z, Integer(TVarData(Value).VSmallint));
+     varInteger  : ZVALVAL(z, TVarData(Value).VInteger);
+     varBoolean  : ZVALVAL(z, TVarData(Value).VBoolean);
+     varSingle   : ZVALVAL(z, TVarData(Value).VSingle);
+     varDouble   : ZVALVAL(z, TVarData(Value).VDouble);
+     varCurrency : ZVALVAL(z, TVarData(Value).VCurrency);
+     //!>
+     varError    : ZVALVAL(z, Integer(TVarData(Value).VError));
+
+     varByte     : ZVALVAL(z, Integer(TVarData(Value).VByte));
+     varDate     : ZVALVAL(z, TVarData(Value).VDate);
+     varArray    : VarArrayToHash(z, Value);
+     else
+       ZVALVAL(Z);
+  end;
+end;
+
+function ZendToVariant(const Value: ppzval): Variant; overload;
+begin
+Result := ZendToVariant(Value^);
+end;
+
+function ZendToVariant(const Value: pppzval): Variant; overload;
+begin
+Result := ZendToVariant(Value^^);
 end;
 
 procedure HashToArray(HT: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; var AR: TArrayVariant); overload;
@@ -1725,14 +1836,14 @@ begin
                    ZVAL_STRING(iz, '', true);
                  end;
          end;
-     varSmallInt : ZVAL_LONG(iz, TVarData(Value).VSmallint);
-     varInteger  : ZVAL_LONG(iz, TVarData(Value).VInteger);
-     varBoolean  : ZVAL_BOOL(iz, TVarData(Value).VBoolean);
-     varSingle   : ZVAL_DOUBLE(iz, TVarData(Value).VSingle);
-     varDouble   : ZVAL_DOUBLE(iz, TVarData(Value).VDouble);
-     varError    : ZVAL_LONG(iz, TVarData(Value).VError);
-     varByte     : ZVAL_LONG(iz, TVarData(Value).VByte);
-     varDate     : ZVAL_DOUBLE(iz, TVarData(Value).VDate);
+     varSmallInt : ZVALVAL(iz, TVarData(Value).VSmallint);
+     varInteger  : ZVALVAL(iz, TVarData(Value).VInteger);
+     varBoolean  : ZVALVAL(iz, TVarData(Value).VBoolean);
+     varSingle   : ZVALVAL(iz, TVarData(Value).VSingle);
+     varDouble   : ZVALVAL(iz, TVarData(Value).VDouble);
+     varError    : ZVALVAL(iz, TVarData(Value).VError);
+     varByte     : ZVALVAL(iz, TVarData(Value).VByte);
+     varDate     : ZVALVAL(iz, TVarData(Value).VDate);
      else
        ZVAL_NULL(iz);
    end;
@@ -1747,7 +1858,7 @@ var
 begin
  if _array_init(z, nil, 0) = FAILURE then //Создаём массив первого уровня
   begin
-    ZVAL_FALSE(z);
+    ZVALVAL(z,False);
     Exit;
   end;
 
@@ -1774,7 +1885,7 @@ var
 begin
  if _array_init(z, nil, 0) = FAILURE then //Создаём массив первого уровня
   begin
-    ZVAL_FALSE(z);
+    ZVALVAL(z,False);
     Exit;
   end;
 
@@ -1801,7 +1912,7 @@ var
 begin
  if _array_init(z, nil, 0) = FAILURE then //Создаём массив первого уровня
   begin
-    ZVAL_FALSE(z);
+    ZVALVAL(z,False);
     Exit;
   end;
 
@@ -1828,7 +1939,7 @@ var
 begin
  if _array_init(z, nil, 0) = FAILURE then //Создаём массив первого уровня
   begin
-    ZVAL_FALSE(z);
+    ZVALVAL(z,False);
     Exit;
   end;
 
@@ -1855,7 +1966,7 @@ var
 begin
  if _array_init(z, nil, 0) = FAILURE then //Создаём массив первого уровня
   begin
-    ZVAL_FALSE(z);
+    ZVALVAL(z,False);
     Exit;
   end;
 
@@ -1881,7 +1992,7 @@ var
 begin
  if _array_init(z, nil, 0) = FAILURE then //Создаём массив первого уровня
   begin
-    ZVAL_FALSE(z);
+    ZVALVAL(z,False);
     Exit;
   end;
 
@@ -1909,13 +2020,13 @@ var
 begin
  if _array_init(z, nil, 0) = FAILURE then //Создаём массив первого уровня
   begin
-    ZVAL_FALSE(z);
+    ZVALVAL(z,False);
     Exit;
   end;
 
   if arr.PVarArray.DimCount = 0 then
   begin
-    ZVAL_FALSE(z);
+    ZVALVAL(z,False);
     Exit;
   end;
 
@@ -1977,7 +2088,7 @@ var
 begin
  if _array_init(z, nil, 0) = FAILURE then
   begin
-    ZVAL_FALSE(z);
+    ZVALVAL(z,False);
     Exit;
   end;
 
@@ -1998,7 +2109,7 @@ begin
    end
    else
    begin
-      ZVAL_FALSE(z);
+      ZVALVAL(z,False);
    end;
 end;
 procedure ZVAL_ARRAYWC(z: pzval; keynames: Array of PWideChar; keyvals: Array of PWideChar);
@@ -2007,7 +2118,7 @@ var
 begin
  if _array_init(z, nil, 0) = FAILURE then
   begin
-    ZVAL_FALSE(z);
+    ZVALVAL(z,False);
     Exit;
   end;
 
@@ -2031,7 +2142,7 @@ begin
    end
    else
    begin
-      ZVAL_FALSE(z);
+      ZVALVAL(z,False);
     Exit;
    end;
 
@@ -2042,7 +2153,7 @@ var
 begin
  if _array_init(z, nil, 0) = FAILURE then //Создаём массив первого уровня
   begin
-    ZVAL_FALSE(z);
+    ZVALVAL(z,False);
     Exit;
   end;
    //z^.refcount := Length(keynames); //Передаём количество возвращаемых массивов
@@ -2071,7 +2182,7 @@ begin
    end
    else
    begin
-      ZVAL_FALSE(z);
+      ZVALVAL(z,False);
     Exit;
    end;
 
@@ -2082,7 +2193,7 @@ var
 begin
  if _array_init(z, nil, 0) = FAILURE then
   begin
-    ZVAL_FALSE(z);
+    ZVALVAL(z,False);
     Exit;
   end;
 
@@ -2107,7 +2218,7 @@ begin
    end
    else
    begin
-      ZVAL_FALSE(z);
+      ZVALVAL(z,False);
     Exit;
    end;
 
@@ -2118,7 +2229,7 @@ var
 begin
  if _array_init(z, nil, 0) = FAILURE then
   begin
-    ZVAL_FALSE(z);
+    ZVALVAL(z,False);
     Exit;
   end;
 
@@ -2142,7 +2253,7 @@ begin
    end
    else
    begin
-      ZVAL_FALSE(z);
+      ZVALVAL(z,False);
     Exit;
    end;
 
@@ -2153,7 +2264,7 @@ var
 begin
  if _array_init(z, nil, 0) = FAILURE then
   begin
-    ZVAL_FALSE(z);
+    ZVALVAL(z,False);
     Exit;
   end;
 
@@ -2177,7 +2288,7 @@ begin
    end
    else
    begin
-      ZVAL_FALSE(z);
+      ZVALVAL(z,False);
     Exit;
    end;
 

@@ -957,7 +957,7 @@ begin
   {$IFNDEF PHP510}
   return_value_ptr := nil;
   {$ENDIF}
-  ZVAL_NULL(return_value);
+  ZVALVAL(return_value);
   gl := GetSAPIGlobals;
   if gl = nil then
    Exit;
@@ -969,7 +969,7 @@ begin
        if lib <> nil then
        Lib.HandleRequest(ht, return_value, return_value_ptr, this_ptr, return_value_used, TSRMLS_DC);
      except
-      ZVAL_NULL(return_value);
+      ZVALVAL(return_value);
      end;
    end;
 end;
@@ -1570,7 +1570,7 @@ begin
            FZendVar.AsZendVariable := return_value;
            AFunction.OnExecute(Self, FParameters, ReturnValue, FZendVar, TSRMLS_DC);
            if FZendVar.ISNull then   {perform variant conversion}
-             variant2zval(ReturnValue, return_value);
+             VariantToZend(ReturnValue, return_value);
           finally
             FZendVar.Free;
           end;

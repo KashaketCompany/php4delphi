@@ -199,11 +199,6 @@ php_ini_long: function (name : zend_pchar; name_length : uint; orig : Integer) :
 php_ini_double: function(name : zend_pchar; name_length : uint; orig : Integer) : Double; cdecl;
 
 php_ini_string: function(name : zend_pchar; name_length : uint; orig : Integer) : zend_pchar; cdecl;
-
-function  zval2variant(value : zval) : variant;
-procedure variant2zval(value : variant; var z : pzval);
-
-
 var
 
 php_url_free: procedure (theurl : pphp_url); cdecl;
@@ -426,19 +421,6 @@ begin
    end;
 end;
 
-function zval2variant(value : zval) : variant;
-begin
-  case {$IFDEF PHP7}Value.u1.v._type{$ELSE}Value._type{$ENDIF} of
-   IS_NULL    : Result := NULL;
-   IS_LONG    : Result := Value.value.lval;
-   IS_DOUBLE  : Result := Value.value.dval;
-   IS_STRING  : Result := zend_ustr(Value.Value.str.val);
-   IS_BOOL    : Result := Boolean(Value.Value.lval);
-    else
-      Result := NULL;
-  end;
-end;
-
 function GetStringOf(const V: TVarData): string;
   begin
     case V.VType of
@@ -484,65 +466,6 @@ function GetStringOf(const V: TVarData): string;
       varByRef:}
     end;
 end;
-
-
-procedure variant2zval(value : variant;var z : pzval);
-var
- W : WideString;
- S: String;
-begin
-  if VarIsEmpty(value) then
-   begin
-     ZVAL_NULL(z);
-     Exit;
-   end;
-    //   MessageBoxA(0, zend_pchar(zend_ustr( TVarData(Value).VType.ToString)), '', 0 ) ;
-   case TVarData(Value).VType of
-     varString    : //Peter Enz
-         begin
-           if Assigned ( TVarData(Value).VString ) then
-             begin
-               ZVAL_STRING(z, TVarData(Value).VString , true);
-             end
-               else
-                 begin
-                   ZVAL_STRING(z, '', true);
-                 end;
-         end;
-
-     varUString    : //Peter Enz
-         begin
-            S := string(TVarData(Value).VUString);
-
-             ZVAL_STRING(z, zend_pchar(zend_ustr(S)), true);
-         end;
-
-     varOleStr    : //Peter Enz
-         begin
-           if Assigned ( TVarData(Value).VOleStr ) then
-             begin
-               W := WideString(Pointer(TVarData(Value).VOleStr));
-               ZVAL_STRINGW(z, PWideChar(W),  true);
-             end
-               else
-                 begin
-                   ZVAL_STRING(z, '', true);
-                 end;
-         end;
-     varSmallInt : ZVAL_LONG(z, Integer(TVarData(Value).VSmallint));
-     varInteger  : ZVAL_LONG(z, TVarData(Value).VInteger);
-     varBoolean  : ZVAL_BOOL(z, TVarData(Value).VBoolean);
-     varSingle   : ZVAL_DOUBLE(z, TVarData(Value).VSingle);
-     varDouble   : ZVAL_DOUBLE(z, TVarData(Value).VDouble);
-     varError    : ZVAL_LONG(z, Integer(TVarData(Value).VError));
-     varByte     : ZVAL_LONG(z, Integer(TVarData(Value).VByte));
-     varDate     : ZVAL_DOUBLE(z, TVarData(Value).VDate);
-     //varArray    : ZVAL_ARRAY(z,  Value);
-     else
-       ZVAL_NULL(Z);
-   end;
-end;
-
 
 function GetPHPGlobals(TSRMLS_DC : pointer) : Pphp_Core_Globals;
 var

@@ -657,7 +657,7 @@ begin
     Exit;
    end;
 
-  result := zval2variant(FValue^);
+  result := ZendToVariant(FValue);
 end;
 
 function TZendVariable.GetDataType: integer;
@@ -709,7 +709,7 @@ begin
    begin
     Exit;
    end;
-  ZVAL_BOOL(FValue, Value);
+  ZVALVAL(FValue, Value);
 end;
 
 procedure TZendVariable.SetAsDate(const Value: TDateTime);
@@ -718,7 +718,7 @@ begin
    begin
     Exit;
    end;
-  ZVAL_DOUBLE(FValue, Value);
+  ZVALVAL(FValue, Value);
 end;
 
 procedure TZendVariable.SetAsDateTime(const Value: TDateTime);
@@ -727,7 +727,7 @@ begin
    begin
     Exit;
    end;
-  ZVAL_DOUBLE(FValue, Value);
+  ZVALVAL(FValue, Value);
 end;
 
 procedure TZendVariable.SetAsFloat(const Value: double);
@@ -736,7 +736,7 @@ begin
    begin
     Exit;
    end;
-  ZVAL_DOUBLE(FValue, Value);
+  ZVALVAL(FValue, Value);
 end;
 
 procedure TZendVariable.SetAsInteger(const Value: integer);
@@ -745,7 +745,7 @@ begin
    begin
     Exit;
    end;
-  ZVAL_LONG(FValue, Value);
+  ZVALVAL(FValue, Value);
 end;
 
 procedure TZendVariable.SetAsString(const Value: zend_ustr);
@@ -754,7 +754,7 @@ begin
    begin
     Exit;
    end;
-  ZVAL_STRINGL(FValue, zend_pchar(Value), Length(Value), true);
+  ZVALVAL(FValue, zend_pchar(Value), Length(Value));
 end;
 
 procedure TZendVariable.SetAsTime(const Value: TDateTime);
@@ -763,7 +763,7 @@ begin
    begin
     Exit;
    end;
-  ZVAL_DOUBLE(FValue, Value);
+  ZVALVAL(FValue, Value);
 end;
 
 procedure TZendVariable.SetAsVariant(const Value: variant);
@@ -772,7 +772,7 @@ begin
    begin
     Exit;
    end;
-  variant2zval(Value, FValue);
+  VariantToZend(Value, FValue);
 end;
 
 
@@ -782,7 +782,7 @@ begin
    begin
     Exit;
    end;
-  ZVAL_NULL(FValue);
+  ZVALVAL(FValue);
 end;
 
 
