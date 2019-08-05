@@ -782,7 +782,11 @@ function ZValArrayKeyFind(v: pzval; idx: Integer; out pData: ppzval)
   Make: Boolean = false): pzval;
 procedure ZVAL_RESOURCE(value: pzval; l: longint);
 procedure ZVAL_EMPTY_STRING(z: pzval);
+
 function add_next_index_variant(arg: pzval; value: variant): integer;
+function add_index_variant(arg: pzval; index:integer; value: variant): integer;
+function add_assoc_variant(arg: pzval; key: zend_pchar; key_len: uint; value: variant): integer;
+
 procedure ZVAL_ARRAY(z: pzval; arr:  TWSDate); overload;
 procedure ZVAL_ARRAY(z: pzval; arr:  TASDate); overload;
 procedure ZVAL_ARRAY(z: pzval; arr:  array of string); overload;
@@ -1593,18 +1597,14 @@ end;
 procedure VarArrayToHash(var HT: pzval;Value: Variant);
   Var
   I,Len: Integer;
-  z: pzval;
 begin
   _array_init(ht,nil,1);
   len := TVarData(Value).VArray^.Bounds[0].ElementCount;
     for i:= 0 to len - 1 do
     begin
-      z := MAKE_STD_ZVAL;
-      VariantToZend(VarArrayGet(Value, [i]),z);
-      add_index_zval(HT, i, z);
+      add_index_variant(HT, i, VarArrayGet(Value, [i]));
     end;
 end;
-
 function ZendToVariant(const Value: pzval;
 cobj: TObjectBConvertMethod=nil): Variant; overload;
   Var
@@ -1793,45 +1793,24 @@ begin
   len := Length(AR);
   for i:=0 to len-1 do
    begin
-     case VarType(AR[i]) of
-     varInteger, varSmallint, varLongWord, 17: add_index_long(ht,i,AR[i]);
-     varDouble,varSingle: add_index_double(ht,i,AR[i]);
-     varBoolean: add_index_bool(ht,i,AR[I]);
-     varEmpty: add_index_null(ht,i);
-     varString: add_index_string(ht,i,zend_pchar(ToStr(AR[I])),1);
-     258: add_index_string(ht,i,zend_pchar(zend_ustr(ToStr(AR[I]))),1);
-     end;
+    add_index_variant(ht,i,AR[i]);
    end;
 end;
 
 procedure ArrayToHash(Keys,AR: Array of Variant; var HT: pzval); overload;
   Var
   I,Len: Integer;
-    v: Variant;
-    key: zend_pchar;
-    s: zend_pchar;
 begin
   _array_init(ht,nil,1);
   len := Length(AR);
   for i:=0 to len-1 do
    begin
-     v := AR[I];
-     key := zend_pchar(ToStrA(keys[i]));
-     s := zend_pchar(ToStrA(v));
-     case VarType(AR[i]) of
-     varInteger, varSmallint, varLongWord, 17: add_assoc_long_ex(ht,ToPChar(Keys[i]),strlen(ToPChar(Keys[i]))+1,AR[i]);
-     varDouble,varSingle: add_assoc_double_ex(ht,ToPChar(Keys[i]),strlen(ToPChar(Keys[i]))+1,AR[i]);
-     varBoolean: add_assoc_bool_ex(ht,ToPChar(Keys[i]),strlen(ToPChar(Keys[i]))+1,AR[I]);
-     varEmpty: add_assoc_null_ex(ht,ToPChar(Keys[i]),strlen(ToPChar(Keys[i]))+1);
-     varString,258: add_assoc_string_ex(ht,key,strlen(key)+1,s,1);
-     end;
+    add_assoc_variant(ht, ToPChar(Keys[i]),strlen(ToPChar(Keys[i]))+1,AR[i]);
    end;
 end;
 
 function add_next_index_variant(arg: pzval; value: variant): integer;
 var iz: pzval;
-    W: WideString;
-    S: String;
 begin
   iz := MAKE_STD_ZVAL;
   if VarIsEmpty(value) then
@@ -1840,54 +1819,37 @@ begin
      Result := add_next_index_zval(arg, iz);
      Exit;
    end;
-    //   MessageBoxA(0, zend_pchar(AnsiString( TVarData(Value).VType.ToString)), '', 0 ) ;
-   case TVarData(Value).VType of
-     varString    : //Peter Enz
-         begin
-           if Assigned ( TVarData(Value).VString ) then
-             begin
-               ZVAL_STRING(iz, TVarData(Value).VString , true);
-             end
-               else
-                 begin
-                   ZVAL_STRING(iz, '', true);
-                 end;
-         end;
-
-     varUString    : //Peter Enz
-         begin
-            S := string(TVarData(Value).VUString);
-
-             ZVAL_STRING(iz, zend_pchar(zend_ustr(S)), true);
-         end;
-
-     varOleStr    : //Peter Enz
-         begin
-           if Assigned ( TVarData(Value).VOleStr ) then
-             begin
-               W := WideString(Pointer(TVarData(Value).VOleStr));
-               ZVAL_STRINGW(iz, PWideChar(W),  true);
-             end
-               else
-                 begin
-                   ZVAL_STRING(iz, '', true);
-                 end;
-         end;
-     varSmallInt : ZVALVAL(iz, TVarData(Value).VSmallint);
-     varInteger  : ZVALVAL(iz, TVarData(Value).VInteger);
-     varBoolean  : ZVALVAL(iz, TVarData(Value).VBoolean);
-     varSingle   : ZVALVAL(iz, TVarData(Value).VSingle);
-     varDouble   : ZVALVAL(iz, TVarData(Value).VDouble);
-     varError    : ZVALVAL(iz, TVarData(Value).VError);
-     varByte     : ZVALVAL(iz, TVarData(Value).VByte);
-     varDate     : ZVALVAL(iz, TVarData(Value).VDate);
-     else
-       ZVAL_NULL(iz);
-   end;
-
-    Result := add_next_index_zval(arg, iz);
+   VariantToZend(Value,iz);
+   Result := add_next_index_zval(arg, iz);
 end;
 
+function add_index_variant(arg: pzval; index:integer; value: variant): integer;
+var iz: pzval;
+begin
+  iz := MAKE_STD_ZVAL;
+  if VarIsEmpty(value) then
+   begin
+     ZVAL_NULL(iz);
+     Result := add_index_zval(arg, index, iz);
+     Exit;
+   end;
+   VariantToZend(Value,iz);
+   Result := add_index_zval(arg, index, iz);
+end;
+
+function add_assoc_variant(arg: pzval; key: zend_pchar; key_len: uint; value: variant): integer;
+var iz: pzval;
+begin
+  iz := MAKE_STD_ZVAL;
+  if VarIsEmpty(value) then
+   begin
+     ZVAL_NULL(iz);
+     Result := add_assoc_zval_ex(arg, key, key_len, iz);
+     Exit;
+   end;
+   VariantToZend(Value,iz);
+   Result := add_assoc_zval_ex(arg, key, key_len, iz);
+end;
 
 procedure ZVAL_ARRAY(z: pzval; arr:  TWSDate); overload;
 var
@@ -2069,51 +2031,6 @@ begin
 
    for i := 0 to arr.DimCount-1 do
     begin
-    {V := TVarData(  arr[i] );
-    case V.VType of
-      varEmpty, varNull:
-        add_next_index_null(z);
-      varSmallInt:
-        add_next_index_string(z, zend_pchar(zend_ustr(IntToStr(V.VSmallInt))), 1);
-      varInteger:
-        add_next_index_string(z, zend_pchar(zend_ustr(IntToStr(V.VInteger))), 1);
-      varSingle:
-        add_next_index_string(z, zend_pchar(zend_ustr(V.VSingle.ToString())), 1);
-      varDouble:
-        add_next_index_double(z, V.VDouble);
-      varCurrency:
-        add_next_index_string(z, zend_pchar(zend_ustr(CurrToStr(V.VCurrency))), 1);
-      varDate:
-        add_next_index_string(z, zend_pchar(zend_ustr(DateTimeToStr(V.VDate))), 1);
-      varOleStr:
-        add_next_index_string(z, zend_pchar(zend_ustr(V.VOleStr)), 1);
-      varBoolean:
-        add_next_index_bool(z, V.VBoolean.ToInteger());
-      varByte:
-        add_next_index_string(z, zend_pchar(zend_ustr(IntToStr(V.VByte))), 1);
-      varWord:
-        add_next_index_string(z, zend_pchar(zend_ustr(IntToStr(V.VWord))), 1);
-      varShortInt:
-        add_next_index_string(z, zend_pchar(zend_ustr(IntToStr(V.VShortInt))), 1);
-      varLongWord:
-        add_next_index_long(z, V.VLongWord);
-      varInt64:
-        add_next_index_string(z, zend_pchar(zend_ustr(IntToStr(V.VInt64))), 1);
-      varString:
-        add_next_index_string(z, zend_pchar(zend_ustr(V.VString)), 1);
-      {$IFDEF SUPPORTS_UNICODE_STRING}{
-      varUString:
-        add_next_index_string(z, zend_pchar(zend_ustr(V.VUString)), 1);
-      {$ENDIF SUPPORTS_UNICODE_STRING}
-      {varArray,
-      varDispatch,
-      varError,
-      varUnknown,
-      varAny,
-      varByRef:}{
-      varObject:
-      add_next_index_long(z, Integer(
-    end;                               }
        add_next_index_variant(z, arr[i]);
     end;
     Exit;
