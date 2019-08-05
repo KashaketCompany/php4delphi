@@ -1503,7 +1503,16 @@ function TPHPEngine.GetConstantCount: integer;
 begin
   Result := FConstants.Count;
 end;
-
+{
+procedure log(i:String);
+var f:TextFile;
+begin
+  AssignFile(f, 'log.txt');
+  Append(f);
+  Write(f, #10 + #13 + i);
+  CloseFile(f);
+end;
+}
 procedure TPHPEngine.HandleRequest(ht: integer; return_value: pzval;
   return_value_ptr: ppzval; this_ptr: pzval; return_value_used: integer;
   TSRMLS_DC: pointer);
@@ -1519,7 +1528,6 @@ var
   ReturnValue : variant;
 begin
  FParameters := TFunctionParams.Create(nil, TFunctionParam);
- try
 
   if ht > 0 then
    begin
@@ -1564,23 +1572,22 @@ begin
                    FParameters[j].ZendValue := (Params[j]^);
                  end;
              end; { if ht > 0}
-
+          //log(FActiveFunctionName);
           FZendVar := TZendVariable.Create;
-          try
            FZendVar.AsZendVariable := return_value;
            AFunction.OnExecute(Self, FParameters, ReturnValue, FZendVar, TSRMLS_DC);
-           if FZendVar.ISNull then   {perform variant conversion}
-             VariantToZend(ReturnValue, return_value);
-          finally
-            FZendVar.Free;
-          end;
+           if Assigned(FZendVar) then
+           begin
+             if FZendVar.ISNull then   {perform variant conversion}
+               VariantToZend(ReturnValue, return_value);
+              FZendVar.Free;
+           end
+           else
+              VariantToZend(ReturnValue, return_value);
       end; {if assigned AFunction.OnExecute}
     end;
-
-  finally
     FParameters.Free;
     dispose_pzval_array(Params);
-  end;
 end;
 
 procedure TPHPEngine.PrepareIniEntry;

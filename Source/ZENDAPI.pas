@@ -1635,7 +1635,7 @@ var
  W : WideString;
  S: String;
 begin
-  if VarIsEmpty(value) then
+  if VarIsEmpty(value) or VarIsNull(Value) then
    begin
      ZVALVAL(z);
      Exit;

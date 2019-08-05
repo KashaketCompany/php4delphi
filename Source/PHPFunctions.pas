@@ -663,10 +663,7 @@ end;
 function TZendVariable.GetDataType: integer;
 begin
   if not Assigned(FValue) then
-   begin
-    Result := IS_NULL;
-    Exit;
-   end;
+    Exit(IS_NULL);
 
   Result := {$IFDEF PHP7}FValue^.u1.v._type{$ELSE} FValue^._type{$ENDIF};
 end;
@@ -674,20 +671,15 @@ end;
 function TZendVariable.GetIsNull: boolean;
 begin
   if not Assigned(FValue) then
-   begin
-    Result := true;
-    Exit;
-   end;
+    Exit(True);
+
   Result := {$IFDEF PHP7}FValue^.u1.v._type{$ELSE} FValue^._type{$ENDIF} = IS_NULL;
 end;
 
 function TZendVariable.GetTypeName: string;
 begin
   if not Assigned(FValue) then
-   begin
-    Result := 'null';
-    Exit;
-   end;
+    Exit('null');
 
   case {$IFDEF PHP7}FValue^.u1.v._type{$ELSE} FValue^._type{$ENDIF} of
 		IS_NULL:    result :=  'null';
