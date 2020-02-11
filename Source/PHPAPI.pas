@@ -345,7 +345,7 @@ function GetSAPIGlobals : Psapi_globals_struct;
 begin
   Result := nil;
   if Assigned(sapi_globals_id) then
-     Result := __asm_fetchval(integer(sapi_globals_id^), tsrmls_fetch);
+     Result := __asm_fetchval(IntPtr(sapi_globals_id^), tsrmls_fetch);
 end;
 function GetSAPIGlobals(TSRMLS_DC : pointer) : Psapi_globals_struct;
 var
@@ -354,7 +354,7 @@ begin
   Result := nil;
   sapi_global_id := GetProcAddress(PHPLib, 'sapi_globals_id');
   if Assigned(sapi_global_id) then
-     Result := __asm_fetchval(integer(sapi_globals_id^), TSRMLS_DC);
+     Result := __asm_fetchval(IntPtr(sapi_globals_id^), TSRMLS_DC);
 end;
 
 function GetStringOf(const V: TVarData): string;
@@ -407,7 +407,7 @@ function GetPHPGlobals(TSRMLS_DC : pointer) : Pphp_Core_Globals;
 begin
   Result := nil;
   if Assigned(core_globals_id) then
-     Result := Pphp_Core_Globals(__asm_fetchval(integer(core_globals_id^), TSRMLS_DC));
+     Result := Pphp_Core_Globals(__asm_fetchval(IntPtr(core_globals_id^), TSRMLS_DC));
 end;
 
 

@@ -3301,12 +3301,7 @@ begin
 
 end;
 
-function __asm_fetchval
-{$IFDEF CPUX64}
-(val_id: int64; tsrmls_dc_p: pointer)
-{$ELSE}
-(val_id: integer; tsrmls_dc_p: pointer)
-{$ENDIF}
+function __asm_fetchval(val_id: IntPtr; tsrmls_dc_p: pointer)
 : pointer; assembler; register;
 {$IFDEF CPUX64}
 asm
@@ -3335,7 +3330,7 @@ begin
     global_id := GetProcAddress(PHPLib, zend_pchar(resource_name));
     if Assigned(global_id) then
      begin
-       Result := __asm_fetchval(integer(global_id^), tsrmls_fetch);
+       Result := __asm_fetchval(IntPtr(global_id^), tsrmls_fetch);
      end;
   except
     Result := nil;
@@ -3351,7 +3346,7 @@ begin
     global_id := GetProcAddress(PHPLib, zend_pchar(resource_name));
     if Assigned(global_id) then
      begin
-       Result := __asm_fetchval(integer(global_id^), TSRMLS_DC);
+       Result := __asm_fetchval(IntPtr(global_id^), TSRMLS_DC);
      end;
   except
     Result := nil;
