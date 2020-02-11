@@ -20,6 +20,7 @@ unit zendAPI;
 interface
 
 uses
+VCL.Dialogs,
   {$IFNDEF FPC} Windows{$ELSE} LCLType,LCLIntf,dynlibs,libc{$ENDIF}, SysUtils,
   {$IFDEF PHP7} hzend_types, {$ElSE} ZendTypes, {$ENDIF} Variants,
   PHPTypes;
@@ -79,7 +80,15 @@ const
 {$IFNDEF PHP_UNICE}
 function AnsiFormat(const Format: AnsiString; const Args: array of const): AnsiString;
 {$ENDIF}
+function Lfunc(var Func: Pointer; addr: LPCWSTR): Bool;
 function  LoadZEND(const DllFilename: zend_ustr = PHPWin) : boolean;
+function __asm_fetchval
+{$IFDEF CPUX64}
+(val_id: int64; tsrmls_dc_p: pointer)
+{$ELSE}
+(val_id: integer; tsrmls_dc_p: pointer)
+{$ENDIF}
+: pointer;
 
 procedure UnloadZEND;
 function  ZENDLoaded: boolean;
@@ -138,14 +147,7 @@ var
   zend_disable_function : function(function_name : zend_pchar; function_name_length : uint; TSRMLS_DC : pointer) : integer; cdecl;
   zend_disable_class   : function(class_name : zend_pchar; class_name_length : uint; TSRMLS_DC : pointer) : integer; cdecl;
 
-
-{$IFDEF PHP4}
-  zend_hash_add_or_update  : function(ht: PHashTable; arKey: zend_pchar;
-    nKeyLength: uint; pData: Pointer; nDataSize: uint; pDest: Pointer;
-    flag: Integer): Integer; cdecl;
-{$ELSE}
 {$IFNDEF PHP7}
-var
  _zend_hash_add_or_update : function (ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; arKey : zend_pchar;
     nKeyLength : uint; pData : pointer; nDataSize : uint; pDes : pointer;
     flag : integer; __zend_filename: zend_pchar; __zend_lineno: uint) : integer; cdecl;
@@ -154,33 +156,10 @@ var
     nKeyLength : uint; pData : {$IFDEF PHP7}pzval{$ELSE}pointer{$ENDIF}; nDataSize : uint; pDes : pointer;
     flag : integer) : integer; cdecl;
 
-{$ENDIF}
 
 function zend_hash_add(ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; arKey : zend_pchar; nKeyLength : uint; pData : pointer; nDataSize : uint; pDest : pointer) : integer; cdecl;
 
 var
- {$IFDEF PHP4}
-  zend_hash_init                                  : function(ht: PHashTable; nSize: uint;
-    pHashFunction: pointer; pDestructor: pointer;
-    persistent: Integer): Integer; cdecl;
-
-  zend_hash_init_ex                               : function(ht: PHashTable; nSize: uint;
-    pHashFunction: pointer; pDestructor: pointer;
-    persistent: Integer; bApplyProtection: boolean): Integer; cdecl;
-
-
-  zend_hash_quick_add_or_update                   : function(ht: PHashTable; arKey: zend_pchar;
-    nKeyLength: uint; h: ulong; pData: Pointer; nDataSize: uint;
-    pDest: Pointer; flag: Integer): Integer; cdecl;
-
-  zend_hash_index_update_or_next_insert           : function(ht: PHashTable; h: ulong;
-    pData: Pointer; nDataSize: uint; pDest: Pointer; flag: Integer): Integer; cdecl;
-
-  zend_hash_merge                                 : procedure(target: PHashTable; source: PHashTable;
-    pCopyConstructor: pointer; tmp: Pointer; size: uint; overwrite: Integer); cdecl;
-
- {$ELSE}
-
  _zend_hash_init : function (ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; nSize : uint;
    pHashFunction : pointer; pDestructor : pointer; persistent: zend_bool;
    __zend_filename: zend_pchar; __zend_lineno: uint) : integer; cdecl;
@@ -193,8 +172,6 @@ var
  function zend_hash_init_ex (ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};  nSize : uint; pHashFunction : pointer;
  pDestructor : pointer;  persistent : zend_bool;  bApplyProtection : zend_bool): integer; cdecl;
 
-
-{$ENDIF}
  {$IFDEF PHP7}
  function zend_hash_num_elements(ht: Pzend_array): integer;
  function  add_char_to_string  (_result: Pzval; op1: Pzval; op2: Pzval): Integer;
@@ -313,25 +290,31 @@ var
 function zend_hash_get_current_data(ht: {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; pData: Pointer): Integer; cdecl;
 procedure zend_hash_internal_pointer_reset(ht: {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}); cdecl;
 
-
+// zend_constants.h
 var
   zend_get_constant                               : function(name: zend_pchar; name_len: uint; var result: zval;
-    TSRMLS_DC: Pointer): Integer; cdecl;
+    TSRMLS_DC: Pointer): IntPtr; cdecl;
+
+  zend_register_null_constant                     : procedure(name: zend_pchar; name_len: uint;
+    flags: IntPtr; module_number: IntPtr; TSRMLS_DC: Pointer); cdecl;
+
+  zend_register_bool_constant                     : procedure(name: zend_pchar; name_len: uint;
+    bval: zend_bool; flags: IntPtr; module_number: IntPtr; TSRMLS_DC: Pointer); cdecl;
 
   zend_register_long_constant                     : procedure(name: zend_pchar; name_len: uint;
-    lval: Longint; flags: Integer; module_number: Integer; TSRMLS_DC: Pointer); cdecl;
+    lval: Longint; flags: IntPtr; module_number: IntPtr; TSRMLS_DC: Pointer); cdecl;
 
-  zend_register_double_constant                   : procedure(name: zend_pchar; name_len: uint; dval: Double; flags: Integer; module_number: Integer;
-    TSRMLS_DC: Pointer); cdecl;
+  zend_register_double_constant                   : procedure(name: zend_pchar; name_len: uint;
+   dval: Double; flags: IntPtr; module_number: IntPtr; TSRMLS_DC: Pointer); cdecl;
 
-  zend_register_string_constant                   : procedure(name: zend_pchar; name_len: uint; strval: zend_pchar; flags: Integer; module_number: Integer;
-    TSRMLS_DC: Pointer); cdecl;
+  zend_register_string_constant                   : procedure(name: zend_pchar; name_len: uint;
+  strval: zend_pchar; flags: IntPtr; module_number: IntPtr; TSRMLS_DC: Pointer); cdecl;
 
   zend_register_stringl_constant                  : procedure(name: zend_pchar; name_len: uint;
-    strval: zend_pchar; strlen: uint; flags: Integer; module_number: Integer;
+    strval: zend_pchar; strlen: uint; flags: IntPtr; module_number: IntPtr;
     TSRMLS_DC: Pointer); cdecl;
 
-  zend_register_constant                          : function(var c: zend_constant; TSRMLS_DC: Pointer): Integer; cdecl;
+  zend_register_constant                          : function(var c: zend_constant; TSRMLS_DC: Pointer): IntPtr; cdecl;
 
   zend_register_auto_global :
   {$IFDEF PHP700}
@@ -358,26 +341,21 @@ var
   // deallocates all occurrences of a given id
   ts_free_id                                      : procedure(id: ts_rsrc_id); cdecl;
 
-  tsrm_shutdown                                   : procedure(); cdecl;
+  tsrm_shutdown                                   : procedure; cdecl;
   ts_resource_ex                                  : function(id: integer; p: pointer): pointer; cdecl;
   ts_free_thread                                  : procedure; cdecl;
 
   zend_error                                      : procedure(ErrType: integer; ErrText: zend_pchar); cdecl;
   zend_error_cb                                   : procedure; cdecl;
 
-  zend_eval_string                                : function(str: zend_pchar; val: pointer; strname: zend_pchar; tsrm: pointer): integer; cdecl;
+  zend_eval_string                                : function(str: zend_pchar; ret_val: pointer; strname: zend_pchar; tsrm: pointer): integer; cdecl;
+  zend_eval_string_ex                             : function(str:PAnsiChar;  retval_ptr:pzval; string_name:PAnsiChar; handle_exceptions:longint):longint; cdecl;
   zend_make_compiled_string_description           : function(a: zend_pchar; tsrm: pointer): zend_pchar; cdecl;
-
-  {$IFDEF PHP4}
-  _zval_copy_ctor                                 : function(val: pzval; __zend_filename: zend_pchar; __zend_lineno: uint): integer; cdecl;
-  _zval_dtor                                      : procedure(val: pzval; __zend_filename: zend_pchar; __zend_lineno: uint); cdecl;
-  {$ELSE}
   _zval_copy_ctor_func                            : procedure(val: pzval; __zend_filename: zend_pchar; __zend_lineno: uint); cdecl;
   _zval_dtor_func                                 : procedure(val: pzval; __zend_filename: zend_pchar; __zend_lineno: uint); cdecl;
   _zval_ptr_dtor: procedure(val: ppzval;  __zend_filename: zend_pchar); cdecl;
   procedure  _zval_copy_ctor (val: pzval; __zend_filename: zend_pchar; __zend_lineno: uint); cdecl;
   procedure _zval_dtor(val: pzval; __zend_filename: zend_pchar; __zend_lineno: uint); cdecl;
-  {$ENDIF}
 
 var
   zend_print_variable                             : function(val: pzval): integer; cdecl;
@@ -385,11 +363,6 @@ var
 
   zend_get_compiled_filename : function(TSRMLS_DC: Pointer): zend_pchar; cdecl;
   zend_get_compiled_lineno   : function(TSRMLS_DC: Pointer): integer; cdecl;
-
-
-{$IFDEF PHP4}
-function zval_copy_ctor(val : pzval) : integer;
-{$ENDIF}
 
 function ts_resource(id : integer) : pointer;
 function tsrmls_fetch : pointer;
@@ -556,17 +529,17 @@ var
   zend_html_putc                                  : procedure(c: zend_uchar); cdecl;
 
   zend_html_puts                                  : procedure(s: zend_pchar; len: uint; TSRMLS_DC: Pointer); cdecl;
+
+  	zend_parse_method_parameters:function(num_args:longint; TSRMLS_DC:Pointer; this_ptr:Pzval; type_spec:PAnsiChar):longint; cdecl varargs;
+
+	zend_parse_method_parameters_ex:function(flags:longint; num_args:longint; TSRMLS_DC:Pointer; this_ptr:Pzval; type_spec:PAnsiChar):longint; cdecl varargs;
+
   {$IFDEF PHP7}
   zend_parse_parameters_throw                     : function(num_args:longint; type_spec:PAnsiChar):longint; cdecl varargs;
   {$ELSE}
   zend_indent                                     : procedure; cdecl;
   {$ENDIF}
-  ZendGetParameters                               :
-  {$IFDEF PHP7}
-    function(ht:longint; param_count:longint):longint; cdecl varargs;
-  {$ELSE}
-    function: integer; cdecl;
-  {$ENDIF}
+  Zend_Get_Parameters                               : function(ht:longint; param_count:longint):longint; cdecl varargs;
   zend_get_params_ex :
   {$IFDEF PHP7}
   function(param_count:longint):longint; cdecl varargs;
@@ -577,15 +550,11 @@ var
    ZvalGetArgs: function(Count: Integer; Args: ppzval): Integer;cdecl varargs;
 	_zend_get_parameters_array_ex:function(param_count:longint; argument_array:Pzval):longint; cdecl;
   {$ELSE}
+  _zend_get_parameters_array: function(ht: integer; param_count:longint; argument_array: ppzval; TSRMLS_DC: pointer): integer; cdecl;
   _zend_get_parameters_array_ex : function(param_count: integer; argument_array:
   pppzval; TSRMLS_CC: pointer): integer; cdecl;
   {$ENDIF}
-function zend_get_parameters_ex(number: integer; var Params: pzval_array): integer;
 function zend_get_parameters_my(number: integer; var Params: pzval_array; TSRMLS_DC: Pointer): integer;
-{$IFNDEF PHP7}
-function zend_get_parameters(ht: integer; param_count: integer; Params: array of
-ppzval): integer;
-{$ENDIF}
 
 
 procedure dispose_pzval_array(Params: pzval_array);
@@ -614,21 +583,8 @@ var
 
   zend_wrong_param_count                          : procedure(TSRMLS_D: pointer); cdecl;
   _zend_hash_quick_add_or_update:function(ht: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; arKey: zend_pchar; nKeyLength: uint; h: uint; out pData: pzval; nDataSize: uint; pDest: PPointer; flag: Integer) : Integer; cdecl;
-  {$IFDEF PHP4}
-  add_property_long_ex                            : function(arg: pzval; key: zend_pchar; key_len: uint; l: longint): integer; cdecl;
-  {$ELSE}
   add_property_long_ex                            : function(arg: pzval; key: zend_pchar; key_len: uint; l: longint; TSRMLS_DC : pointer): integer; cdecl;
-  {$ENDIF}
 
-  {$IFDEF PHP4}
-  add_property_null_ex                            : function(arg: pzval; key: zend_pchar; key_len: uint): integer; cdecl;
-  add_property_bool_ex                            : function(arg: pzval; key: zend_pchar; key_len: uint; b: integer): integer; cdecl;
-  add_property_resource_ex                        : function(arg: pzval; key: zend_pchar; key_len: uint; r: integer): integer; cdecl;
-  add_property_double_ex                          : function(arg: pzval; key: zend_pchar; key_len: uint; d: double): integer; cdecl;
-  add_property_string_ex                          : function(arg: pzval; key: zend_pchar; key_len: uint; str: zend_pchar; duplicate: integer): integer; cdecl;
-  add_property_stringl_ex                         : function(arg: pzval; key: zend_pchar; key_len: uint; str: zend_pchar; len: uint; duplicate: integer): integer; cdecl;
-  add_property_zval_ex                            : function(arg: pzval; key: zend_pchar; key_len: uint; value: pzval): integer; cdecl;
-  {$ELSE}
   add_property_null_ex                            : function(arg: pzval; key: zend_pchar; key_len: uint; TSRMLS_DC: Pointer): integer; cdecl;
   add_property_bool_ex                            : function(arg: pzval; key: zend_pchar; key_len: uint; b: integer; TSRMLS_DC: Pointer): integer; cdecl;
   add_property_resource_ex                        : function(arg: pzval; key: zend_pchar; key_len: uint; r: integer; TSRMLS_DC: Pointer): integer; cdecl;
@@ -636,9 +592,8 @@ var
   add_property_string_ex                          : function(arg: pzval; key: zend_pchar; key_len: uint; str: zend_pchar; duplicate: integer; TSRMLS_DC: Pointer): integer; cdecl;
   add_property_stringl_ex                         : function(arg: pzval; key: zend_pchar; key_len: uint; str: zend_pchar; len: uint; duplicate: integer; TSRMLS_DC: Pointer): integer; cdecl;
   add_property_zval_ex                            : function(arg: pzval; key: zend_pchar; key_len: uint; value: pzval; TSRMLS_DC: Pointer): integer; cdecl;
-  {$ENDIF}
 
-  {$IFDEF P_CUT}
+  {$IFDEF CUTTED_PHP7dll}
   call_user_function : procedure(func:pzval; argv:pzval; argc:integer);cdecl;
   {$ELSE}
    call_user_function : function(function_table: PHashTable; object_pp: pzval;
@@ -651,17 +606,6 @@ var
                          no_separation: zend_uint; symbol_table: PHashTable;
                           TSRMLS_DC: Pointer): integer; cdecl;
   {$ENDIF}
-                          {
-call_user_function_ex(HashTable *function_table,
-                      zval **object_pp,
-                      zval *function_name,
-                      zval **retval_ptr_ptr,
-                      zend_uint param_count,
-                      zval **params[],
-                      int no_separation,
-                      HashTable *symbol_table
-                      TSRMLS_DC);
-}
 
 
   add_assoc_long_ex                               : function(arg: pzval; key: zend_pchar; key_len: uint; n: longint): integer; cdecl;
@@ -701,17 +645,9 @@ call_user_function_ex(HashTable *function_table,
 
   _array_init                                     : function(arg: pzval; __zend_filename: zend_pchar; __zend_lineno: uint): integer; cdecl;
 
-  {$IFDEF PHP4}
-  _object_init                                    : function(arg: pzval; __zend_filename: zend_pchar; __zend_lineno: uint; TSRMLS_DC: pointer): integer; cdecl;
-  {$ELSE}
   _object_init                                    : function(arg: pzval;TSRMLS_DC: pointer): integer; cdecl;
-  {$ENDIF}
 
-  {$IFDEF PHP4}
-  _object_init_ex                                 : function (arg: pzval; ce: pzend_class_entry; __zend_filename: zend_pchar; __zend_lineno: uint; TSRMLS_DC: pointer) : integer; cdecl;
-  {$ELSE}
   _object_init_ex                                 : function (arg: pzval; ce: pzend_class_entry; __zend_lineno : integer; TSRMLS_DC : pointer) : integer; cdecl;
-  {$ENDIF}
 
   _object_and_properties_init                     : function(arg: pzval; ce: pointer; properties: phashtable; __zend_filename: zend_pchar; __zend_lineno: uint; TSRMLS_DC: pointer): integer; cdecl;
 
@@ -823,7 +759,11 @@ procedure ZVAL_STRINGLW(z: pzval; s: PWideChar; l: integer; duplicate: boolean);
 
 procedure INIT_CLASS_ENTRY(var class_container: Tzend_class_entry; class_name: zend_pchar; functions:
 {$IFDEF PHP7}HashTable{$ELSE}pointer{$ENDIF});
-
+procedure zend_copy_constant(c: zend_constant);
+{$IF defined(PHP540) or defined(PHP550) or defined(PHP560)}
+procedure zend_copy_constants(target: PHashTable; source: PHashTable); cdecl;
+procedure zend_class_add_ref(aclass: Ppzend_class_entry); cdecl;
+{$ENDIF}
 
 var
   get_zend_version           : function(): zend_pchar; cdecl;
@@ -833,33 +773,26 @@ var
   zend_output_debug_string   : procedure(trigger_break: boolean; Msg: zend_pchar); cdecl;
 
 {$IFDEF PHP5}
+  {$IF not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
   zend_copy_constants: procedure(target: PHashTable; source: PHashTable); cdecl;
+  {$ENDIF}
   zend_objects_new : function (_object : pointer; class_type : pointer; TSRMLS_DC : pointer) : {$IFDEF PHP7}zend_object{$ELSE}_zend_object_value{$ENDIF}; cdecl;
   zend_objects_clone_obj: function(_object: pzval; TSRMLS_DC : pointer): {$IFDEF PHP7}zend_object{$ELSE}_zend_object_value{$ENDIF}; cdecl;
   zend_objects_store_add_ref: procedure (_object : pzval; TSRMLS_DC : pointer); cdecl;
   zend_objects_store_del_ref: procedure (_object : pzval; TSRMLS_DC : pointer); cdecl;
 
   function_add_ref: procedure (func: {$IFDEF PHP7}Pzend_function{$ELSE}PZendFunction{$ENDIF}); cdecl;
-
+  {$IF not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
   zend_class_add_ref: procedure(aclass: Ppzend_class_entry); cdecl;
-
+  {$ENDIF}
 
 {$ENDIF}
 
-
+{$IFNDEF COMPILER_VC9}
 const
   MSCRT = 'msvcrt.dll';
 
 //Microsoft C++ functions
-
-{$IFDEF PHP4}
-function  pipe(phandles : pointer; psize : uint; textmode : integer) : integer; cdecl; external MSCRT name '_pipe';
-procedure close(AHandle : THandle); cdecl; external MSCRT name '_close';
-function  _write(AHandle : integer; ABuffer : pointer; count : uint) : integer; cdecl; external MSCRT name '_write';
-function  setjmp(buf : jump_buf) : integer; cdecl; external  MSCRT name '_setjmp3';
-{$ENDIF}
-
-{$IFNDEF COMPILER_VC9}
 function  strdup(strSource : zend_pchar) : zend_pchar; cdecl; external MSCRT name '_strdup';
 {$ELSE}
 function  DupStr(strSource : zend_pchar) : zend_pchar; cdecl;
@@ -872,9 +805,6 @@ procedure ALLOC_ZVAL(out Result: pzval); overload;
 procedure INIT_PZVAL(p: pzval);
 function MAKE_STD_ZVAL: pzval; overload;
 procedure MAKE_STD_ZVAL(out Result: pzval); overload;
-{$IFNDEF QUIET_LOAD}
-procedure CheckZendErrors;
-{$ENDIF}
 
 var
   PHPLib : THandle = 0;
@@ -899,18 +829,22 @@ var
   zend_is_true : function(z : pzval) : integer; cdecl;
 
 function object_init(arg: pzval; ce: pzend_class_entry; TSRMLS_DC : pointer) : integer; cdecl; assembler;
-
 function Z_LVAL(z : Pzval) : longint;
 function Z_BVAL(z : Pzval) : boolean;
 function Z_DVAL(z : Pzval) : double;
 function Z_STRVAL(z : Pzval) : zend_ustr;
 function Z_STRUVAL(z : PZval): UTF8String;
 function Z_STRWVAL(z : pzval) : String;
+function Z_CHAR(z: PZval) : zend_uchar;
+function Z_WCHAR(z: PZval) : WideChar;
+function Z_ACHAR(z: PZVAL): AnsiChar;
+function Z_UCHAR(z: PZVAL): UTF8Char;
+
 function Z_STRLEN(z : Pzval) : longint;
 function Z_ARRVAL(z : Pzval ) : PHashTable;
 function Z_OBJ_HANDLE(z :Pzval) : {$IFDEF PHP7} P_zend_object_handlers {$ELSE} zend_object_handle{$ENDIF};
 function Z_OBJ_HT(z : Pzval) : {$IFDEF PHP7}P_zend_object_handlers{$ELSE}pzend_object_handlers{$ENDIF};
-function Z_OBJPROP(z : Pzval) : PHashTable;
+function Z_OBJPROP(z : Pzval;TSRMLS_DC:pointer=nil) : PHashTable;
 function Z_VARREC(z: pzval): TVarRec;
 
  procedure zend_addref_p(z: pzval); cdecl;
@@ -1580,7 +1514,7 @@ end;
 function HashToVarArray(const Value:{$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}): Variant;
   Var
   Len,I: Integer;
-  tmp : pppzval;
+  {$IFDEF PHP7}tmp : pzval;{$ELSE}tmp : pppzval;{$ENDIF}
 begin
  len := zend_hash_num_elements(Value);
  Result := VarArrayCreate([0, len - 1], varVariant);
@@ -1611,21 +1545,30 @@ cobj: TObjectBConvertMethod=nil): Variant; overload;
   S: String;
 begin
  case {$IFDEF PHP7} Value^.u1.v._type {$ELSE}Value^._type{$ENDIF} of
- 0: Result := Null;
- 1: Result := Value^.value.lval;
- 2: Result := Value^.value.dval;
- 3: Result := boolean(Value^.value.lval);
- 4: Result := HashToVarArray(Value^.value.ht);
- 5:
+ 0: Result := Null;                           //Null
+ 1: Result := Value^.value.lval;              //LongInt -> Integer
+ 2: Result := Value^.value.dval;              //Double
+ 3: Result := boolean(Value^.value.lval);     //Boolean
+ {$IFDEF PHP7}
+ 4: Result := HashToVarArray(Value^.value.arr);//Array
+ {$ELSE}
+ 4: Result := HashToVarArray(Value^.value.ht);//Array
+ {$ENDIF}
+ 5:                                           //Object
   if Assigned(cobj) then
     Result := cobj(Value)
   else
-    Result := Null;
- 7: Result := Value^.value.lval;
+    Result := Null;                           //String
  6: begin S := Value^.value.str.val; Result := S; end;
+ 7: Result := Value^.value.lval;              //Resource
+                                              //Constant
  8: begin S := Value^.value.str.val; Result := S; end;
- 9: Result := HashToVarArray(Value^.value.ht)
- else Result := Null;
+ {$IFDEF PHP7}
+  9: Result := HashToVarArray(Value^.value.arr) //Constant Array
+ {$ELSE}
+ 9: Result := HashToVarArray(Value^.value.ht) //Constant Array
+ {$ENDIF}
+ else Result := Null;                         //Unknown/undefined
  end;
 end;
 
@@ -2255,15 +2198,46 @@ end;
 procedure UnloadZEND;
 var
  H : THandle;
+ t: Integer;
 begin
-  H := InterlockedExchange(Integer(PHPLib), 0);
+  t := Integer(PHPLib);
+  H := InterlockedExchange(t, 0);
   if H > 0 then
   begin
     FreeLibrary(H);
   end;
 end;
+function Lfunc(var Func: Pointer; addr: LPCWSTR): BOOL;
+begin
+  Result := True;
+  Func := GetProcAddress(PHPLib, addr);
+  if Func = nil then
+  begin
+    {$IFNDEF QUIET_LOAD}
+    raise EPHP4DelphiException.Create(addr);
+    {$ENDIF}
+    Result := False;
+  end;
+end;
+procedure zend_copy_constant(c: zend_constant);
+begin
+  c.name := zend_strndup(c.name, c.name_len - 1);
+	if (c.flags and CONST_PERSISTENT) = 0 then
+    _zval_copy_ctor_func(@c.value, '', 0);
+end;
+{$IF defined(PHP540) or defined(PHP550) or defined(PHP560)}
 
+procedure zend_copy_constants(target: PHashTable;source: PHashTable);
+var tmp: zend_constant;
+begin
+	zend_hash_copy(target, source, @zend_copy_constant, @tmp, sizeof(zend_constant));
+end;
 
+procedure zend_class_add_ref(aclass: Ppzend_class_entry); cdecl;
+begin
+  Inc(aclass^.refcount,1);
+end;
+{$ENDIF}
 function LoadZEND(const DllFilename: zend_ustr = PHPWin) : boolean;
 var
   WriteFuncPtr  : pointer;
@@ -2271,7 +2245,7 @@ begin
  {$IFDEF QUIET_LOAD}
   Result := false;
  {$ENDIF}
-  PHPLib := {$IFDEF PHP_UNICE}LoadLibrary( PWideChar(WideString(DllFilename)) ){$ELSE}LoadLibraryA(zend_pchar(DllFileName)){$ENDIF};
+  PHPLib := LoadLibrary( PWideChar(WideString(DllFilename)) );
 
 {$IFNDEF QUIET_LOAD}
   if PHPLib = 0 then
@@ -2284,53 +2258,57 @@ begin
 {$ENDIF}
 
  {$IFDEF PHP5}
-   zend_copy_constants := GetProcAddress(PHPLib, 'zend_copy_constants');
-   zend_objects_new := GetProcAddress(PHPLib, 'zend_objects_new');
-   zend_objects_clone_obj := GetProcAddress(PHPLib, 'zend_objects_clone_obj');
-   function_add_ref := GetProcAddress(PHPLib, 'function_add_ref');
-   zend_class_add_ref := GetProcAddress(PHPLib, 'zend_class_add_ref');
+ {$IF not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
+   LFunc(@zend_copy_constants, 'zend_copy_constants');
+ {$ENDIF}
+   LFunc(@zend_objects_new, 'zend_objects_new');
+   LFunc(@zend_objects_clone_obj, 'zend_objects_clone_obj');
+   LFunc(@function_add_ref, 'function_add_ref');
+ {$IF not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
+   LFunc(@zend_class_add_ref, 'zend_class_add_ref');
+ {$ENDIF}
 
-   zend_objects_store_add_ref := GetProcAddress(PHPLib, 'zend_objects_store_add_ref');
-   zend_objects_store_del_ref := GetProcAddress(PHPLib, 'zend_objects_store_del_ref');
+   LFunc(@zend_objects_store_add_ref, 'zend_objects_store_add_ref');
+   LFunc(@zend_objects_store_del_ref, 'zend_objects_store_del_ref');
 
-   zend_get_std_object_handlers := GetProcAddress(PHPLib, 'zend_get_std_object_handlers');
-   zend_objects_get_address := GetProcAddress(PHPLib, 'zend_objects_get_address');
-   zend_is_true := GetProcAddress(PHPLib, 'zend_is_true');
+   LFunc(@zend_get_std_object_handlers, 'zend_get_std_object_handlers');
+   LFunc(@zend_objects_get_address, 'zend_objects_get_address');
+   LFunc(@zend_is_true, 'zend_is_true');
 {$ENDIF}
 
-  _zend_bailout := GetProcAddress(PHPLib, '_zend_bailout');
+  LFunc(@_zend_bailout, '_zend_bailout');
 
-  zend_disable_function := GetProcAddress(PHPLib, 'zend_disable_function');
-  zend_disable_class := GetProcAddress(PHPLib, 'zend_disable_class');
-  zend_register_list_destructors_ex   := GetProcAddress(PHPLib, 'zend_register_list_destructors_ex');
-  zend_register_resource :=           GetProcAddress(PHPLib, 'zend_register_resource');
-  zend_fetch_resource :=              GetProcAddress(PHPLib, 'zend_fetch_resource');
-  zend_list_insert :=                 GetProcAddress(PHPLib, 'zend_list_insert');
+  LFunc(@zend_disable_function, 'zend_disable_function');
+  LFunc(@zend_disable_class, 'zend_disable_class');
+  LFunc(@zend_register_list_destructors_ex, 'zend_register_list_destructors_ex');
+  LFunc(@zend_register_resource, 'zend_register_resource');
+  LFunc(@zend_fetch_resource, 'zend_fetch_resource');
+  LFunc(@zend_list_insert, 'zend_list_insert');
   {$IFNDEF PHP7}
-  _zend_list_addref :=                GetProcAddress(PHPLib, '_zend_list_addref');
-  _zend_list_delete :=                GetProcAddress(PHPLib, '_zend_list_delete');
-  _zend_list_find :=                  GetProcAddress(PHPLib, '_zend_list_find');
+  LFunc(@_zend_list_addref, '_zend_list_addref');
+  LFunc(@_zend_list_delete, '_zend_list_delete');
+  LFunc(@_zend_list_find, '_zend_list_find');
   {$ENDIF}
-  zend_rsrc_list_get_rsrc_type :=     GetProcAddress(PHPLib, 'zend_rsrc_list_get_rsrc_type');
-  zend_fetch_list_dtor_id :=          GetProcAddress(PHPLib, 'zend_fetch_list_dtor_id');
+  LFunc(@zend_rsrc_list_get_rsrc_type, 'zend_rsrc_list_get_rsrc_type');
+  LFunc(@zend_fetch_list_dtor_id, 'zend_fetch_list_dtor_id');
 
-  zend_get_compiled_filename := GetProcAddress(PHPLib, 'zend_get_compiled_filename');
+  LFunc(@zend_get_compiled_filename, 'zend_get_compiled_filename');
 
-  zend_get_compiled_lineno := GetProcAddress(PHPLib, 'zend_get_compiled_lineno');
+  LFunc(@zend_get_compiled_lineno, 'zend_get_compiled_lineno');
 
-  zend_ini_deactivate := GetProcAddress(PHPLib, 'zend_ini_deactivate');
+  LFunc(@zend_ini_deactivate, 'zend_ini_deactivate');
 
   // -- tsrm_startup
-  tsrm_startup := GetProcAddress(PHPLib, 'tsrm_startup');
+  LFunc(@tsrm_startup, 'tsrm_startup');
 
   // -- ts_allocate_id
-  ts_allocate_id := GetProcAddress(PHPLib, 'ts_allocate_id');
+  LFunc(@ts_allocate_id, 'ts_allocate_id');
 
   // -- ts_free_id
-  ts_free_id := GetProcAddress(PHPLib, 'ts_free_id');
+  LFunc(@ts_free_id, 'ts_free_id');
 
   // -- zend_strndup
-  zend_strndup := GetProcAddress(PHPLib,
+  LFunc(@zend_strndup,
   {$IFNDEF PHP7}
   'zend_strndup'
   {$ELSE}
@@ -2338,7 +2316,7 @@ begin
   {$ENDIF});
 
   // -- _emalloc
-  _emalloc := GetProcAddress(PHPLib,
+  LFunc(@_emalloc,
   {$IFNDEF PHP7}
   '_emalloc'
   {$ELSE}
@@ -2347,7 +2325,7 @@ begin
 
 
   // -- _efree
-  _efree := GetProcAddress(PHPLib,
+  LFunc(@_efree,
   {$IFNDEF PHP7}
   '_efree'
   {$ELSE}
@@ -2356,7 +2334,7 @@ begin
 
 
   // -- _ecalloc
-  _ecalloc := GetProcAddress(PHPLib,
+  LFunc(@_ecalloc,
   {$IFNDEF PHP7}
   '_ecalloc'
   {$ELSE}
@@ -2365,7 +2343,7 @@ begin
 
 
   // -- _erealloc
-  _erealloc := GetProcAddress(PHPLib,
+  LFunc(@_erealloc,
   {$IFNDEF PHP7}
   '_erealloc'
   {$else}
@@ -2374,7 +2352,7 @@ begin
 
 
   // -- _estrdup
-  _estrdup := GetProcAddress(PHPLib,
+  LFunc(@_estrdup,
   {$IFNDEF PHP7}
   '_estrdup'
   {$ELSE}
@@ -2382,7 +2360,7 @@ begin
   {$ENDIF});
 
   // -- _estrndup
-  _estrndup := GetProcAddress(PHPLib,
+  LFunc(@_estrndup,
   {$IFNDEF PHP7}
   '_estrndup'
   {$ELSE}
@@ -2390,7 +2368,7 @@ begin
   {$ENDIF});
 
   // -- _estrndup  Unicode
-  _estrndupu := GetProcAddress(PHPLib,
+  LFunc(@_estrndupu,
   {$IFNDEF PHP7}
   '_estrndup'
   {$ELSE}
@@ -2398,657 +2376,634 @@ begin
   {$ENDIF});
 
   // -- zend_set_memory_limit
-  zend_set_memory_limit := GetProcAddress(PHPLib, 'zend_set_memory_limit');
+  LFunc(@zend_set_memory_limit, 'zend_set_memory_limit');
 
   // -- start_memory_manager
-  start_memory_manager := GetProcAddress(PHPLib, 'start_memory_manager');
+  LFunc(@start_memory_manager, 'start_memory_manager');
 
   // -- shutdown_memory_manager
-  shutdown_memory_manager := GetProcAddress(PHPLib, 'shutdown_memory_manager');
+  LFunc(@shutdown_memory_manager, 'shutdown_memory_manager');
 
-  {$IFDEF PHP4}
-  // -- zend_hash_init
-  zend_hash_init := GetProcAddress(PHPLib, 'zend_hash_init');
+  LFunc(@_zend_hash_init, '_zend_hash_init');
+  LFunc(@_zend_hash_init_ex, '_zend_hash_init_ex');
 
-  // -- zend_hash_init_ex
-  zend_hash_init_ex := GetProcAddress(PHPLib, 'zend_hash_init_ex');
-
-  // -- zend_hash_quick_add_or_update
-  zend_hash_quick_add_or_update := GetProcAddress(PHPLib, 'zend_hash_quick_add_or_update');
-
-  // -- zend_hash_index_update_or_next_insert
-  zend_hash_index_update_or_next_insert := GetProcAddress(PHPLib, 'zend_hash_index_update_or_next_insert');
-
-  // -- zend_hash_merge
-  zend_hash_merge := GetProcAddress(PHPLib, 'zend_hash_merge');
-  {$ELSE}
-  _zend_hash_init := GetProcAddress(PHPLib, '_zend_hash_init');
-  _zend_hash_init_ex := GetProcAddress(PHPLib, '_zend_hash_init_ex');
-
-  {$ENDIF}
-
-  {$IFDEF PHP4}
   // -- zend_hash_add_or_update
-  zend_hash_add_or_update := GetProcAddress(PHPLib, 'zend_hash_add_or_update');
-  {$ELSE}
-  // -- zend_hash_add_or_update
-  _zend_hash_add_or_update := GetProcAddress(PHPLib,
+  LFunc(@_zend_hash_add_or_update,
   {$IFDEF PHP7}'_zend_hash_add_or_update@@16'{$ELSE}'_zend_hash_add_or_update'{$ENDIF});
-  {$ENDIF}
 
   // -- zend_hash_destroy
-  zend_hash_destroy := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_destroy@@4'{$ELSE}'zend_hash_destroy'{$ENDIF});
+  LFunc(@zend_hash_destroy, {$IFDEF PHP7}'zend_hash_destroy@@4'{$ELSE}'zend_hash_destroy'{$ENDIF});
 
   // -- zend_hash_clean
-  zend_hash_clean := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_clean@@4'{$ELSE}'zend_hash_clean'{$ENDIF});
+  LFunc(@zend_hash_clean, {$IFDEF PHP7}'zend_hash_clean@@4'{$ELSE}'zend_hash_clean'{$ENDIF});
 
   // -- zend_hash_add_empty_element
-  zend_hash_add_empty_element := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_add_empty_element@@8'{$ELSE}'zend_hash_add_empty_element'{$ENDIF});
+  LFunc(@zend_hash_add_empty_element, {$IFDEF PHP7}'zend_hash_add_empty_element@@8'{$ELSE}'zend_hash_add_empty_element'{$ENDIF});
 
   // -- zend_hash_graceful_destroy
-  zend_hash_graceful_destroy := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_graceful_destroy@@4'{$ELSE}'zend_hash_graceful_destroy'{$ENDIF});
+  LFunc(@zend_hash_graceful_destroy, {$IFDEF PHP7}'zend_hash_graceful_destroy@@4'{$ELSE}'zend_hash_graceful_destroy'{$ENDIF});
 
   // -- zend_hash_graceful_reverse_destroy
-  zend_hash_graceful_reverse_destroy := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_graceful_reverse_destroy@@4'{$ELSE}'zend_hash_graceful_reverse_destroy'{$ENDIF});
+  LFunc(@zend_hash_graceful_reverse_destroy, {$IFDEF PHP7}'zend_hash_graceful_reverse_destroy@@4'{$ELSE}'zend_hash_graceful_reverse_destroy'{$ENDIF});
 
   // -- zend_hash_apply
-  zend_hash_apply := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_apply@@8'{$ELSE}'zend_hash_apply'{$ENDIF});
+  LFunc(@zend_hash_apply, {$IFDEF PHP7}'zend_hash_apply@@8'{$ELSE}'zend_hash_apply'{$ENDIF});
 
   // -- zend_hash_apply_with_argument
-  zend_hash_apply_with_argument := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_apply_with_argument@@12'{$ELSE}'zend_hash_apply_with_argument'{$ENDIF});
+  LFunc(@zend_hash_apply_with_argument, {$IFDEF PHP7}'zend_hash_apply_with_argument@@12'{$ELSE}'zend_hash_apply_with_argument'{$ENDIF});
 
   // -- zend_hash_reverse_apply
-  zend_hash_reverse_apply := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_reverse_apply@@8'{$ELSE}'zend_hash_reverse_apply'{$ENDIF});
+  LFunc(@zend_hash_reverse_apply, {$IFDEF PHP7}'zend_hash_reverse_apply@@8'{$ELSE}'zend_hash_reverse_apply'{$ENDIF});
 
   // -- zend_hash_del_key_or_index
-  zend_hash_del_key_or_index := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_del@@8'{$ELSE}'zend_hash_del_key_or_index'{$ENDIF});
+  LFunc(@zend_hash_del_key_or_index, {$IFDEF PHP7}'zend_hash_del@@8'{$ELSE}'zend_hash_del_key_or_index'{$ENDIF});
 
   // -- zend_get_hash_value
-  zend_get_hash_value := GetProcAddress(PHPLib,
+  LFunc(@zend_get_hash_value,
   {$IFDEF PHP560}'zend_hash_func'{$ELSE}'zend_get_hash_value'{$ENDIF});
 
   // -- zend_hash_find
-  zend_hash_find := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_find@@8'{$ELSE}'zend_hash_find'{$ENDIF});
+  LFunc(@zend_hash_find, {$IFDEF PHP7}'zend_hash_find@@8'{$ELSE}'zend_hash_find'{$ENDIF});
 
   // -- zend_hash_quick_find
-  zend_hash_quick_find := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_find@@8'{$ELSE}'zend_hash_quick_find'{$ENDIF});
+  LFunc(@zend_hash_quick_find, {$IFDEF PHP7}'zend_hash_find@@8'{$ELSE}'zend_hash_quick_find'{$ENDIF});
 
   // -- zend_hash_index_find
-  zend_hash_index_find := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_index_find@@8'{$ELSE}'zend_hash_index_find'{$ENDIF});
+  LFunc(@zend_hash_index_find, {$IFDEF PHP7}'zend_hash_index_find@@8'{$ELSE}'zend_hash_index_find'{$ENDIF});
 
   // -- zend_hash_exists
-  zend_hash_exists := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_exists@@8'{$ELSE}'zend_hash_exists'{$ENDIF});
+  LFunc(@zend_hash_exists, {$IFDEF PHP7}'zend_hash_exists@@8'{$ELSE}'zend_hash_exists'{$ENDIF});
 
   // -- zend_hash_index_exists
-  zend_hash_index_exists := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_index_exists@@8'{$ELSE}'zend_hash_index_exists'{$ENDIF});
+  LFunc(@zend_hash_index_exists, {$IFDEF PHP7}'zend_hash_index_exists@@8'{$ELSE}'zend_hash_index_exists'{$ENDIF});
   {$IFDEF PHP7}
-  _zend_hash_add_or_update := GetProcAddress(PHPLib, '_zend_hash_add_or_update@@16');
-  _zend_hash_add := GetProcAddress(PHPLib, '_zend_hash_add@@12');
-  {$IFDEF P_CUT}
-  zend_hash_index_findZval := GetProcAddress(PHPLib,'zend_hash_index_findZval');
-  zend_symtable_findTest := GetProcAddress(PHPLib,'zend_symtable_findTest');
-  zend_hash_index_existsZval := GetProcAddress(PHPLib,'zend_hash_index_existsZval');
+  LFunc(@_zend_hash_add_or_update, '_zend_hash_add_or_update@@16');
+  LFunc(@_zend_hash_add, '_zend_hash_add@@12');
+  {$IFDEF CUTTED_PHP7dll}
+  LFunc(@zend_hash_index_findZval,'zend_hash_index_findZval');
+  LFunc(@zend_symtable_findTest,'zend_symtable_findTest');
+  LFunc(@zend_hash_index_existsZval,'zend_hash_index_existsZval');
   {$ENDIF}
   {$ELSE}
   // -- zend_hash_next_free_element
-  zend_hash_next_free_element := GetProcAddress(PHPLib, 'zend_hash_next_free_element');
+  LFunc(@zend_hash_next_free_element, 'zend_hash_next_free_element');
   {$ENDIF}
   // -- zend_hash_move_forward_ex
-  zend_hash_move_forward_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_move_forward_ex@@8'{$ELSE}'zend_hash_move_forward_ex'{$ENDIF});
+  LFunc(@zend_hash_move_forward_ex, {$IFDEF PHP7}'zend_hash_move_forward_ex@@8'{$ELSE}'zend_hash_move_forward_ex'{$ENDIF});
 
   // -- zend_hash_move_backwards_ex
-  zend_hash_move_backwards_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_move_backwards_ex@@8'{$ELSE}'zend_hash_move_backwards_ex'{$ENDIF});
+  LFunc(@zend_hash_move_backwards_ex, {$IFDEF PHP7}'zend_hash_move_backwards_ex@@8'{$ELSE}'zend_hash_move_backwards_ex'{$ENDIF});
 
   // -- zend_hash_get_current_key_ex
-  zend_hash_get_current_key_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_get_current_key_ex@@16'{$ELSE}'zend_hash_get_current_key_ex'{$ENDIF});
+  LFunc(@zend_hash_get_current_key_ex, {$IFDEF PHP7}'zend_hash_get_current_key_ex@@16'{$ELSE}'zend_hash_get_current_key_ex'{$ENDIF});
 
   // -- zend_hash_get_current_key_type_ex
-  zend_hash_get_current_key_type_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_get_current_key_type_ex@@8'{$ELSE}'zend_hash_get_current_key_type_ex'{$ENDIF});
+  LFunc(@zend_hash_get_current_key_type_ex, {$IFDEF PHP7}'zend_hash_get_current_key_type_ex@@8'{$ELSE}'zend_hash_get_current_key_type_ex'{$ENDIF});
 
   // -- zend_hash_get_current_data_ex
-  zend_hash_get_current_data_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_get_current_data_ex@@8'{$ELSE}'zend_hash_get_current_data_ex'{$ENDIF});
+  LFunc(@zend_hash_get_current_data_ex, {$IFDEF PHP7}'zend_hash_get_current_data_ex@@8'{$ELSE}'zend_hash_get_current_data_ex'{$ENDIF});
 
   // -- zend_hash_internal_pointer_reset_ex
-  zend_hash_internal_pointer_reset_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_internal_pointer_reset_ex@@8'{$ELSE}'zend_hash_internal_pointer_reset_ex'{$ENDIF});
+  LFunc(@zend_hash_internal_pointer_reset_ex, {$IFDEF PHP7}'zend_hash_internal_pointer_reset_ex@@8'{$ELSE}'zend_hash_internal_pointer_reset_ex'{$ENDIF});
 
   // -- zend_hash_internal_pointer_end_ex
-  zend_hash_internal_pointer_end_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_internal_pointer_end_ex@@8'{$ELSE}'zend_hash_internal_pointer_end_ex'{$ENDIF});
+  LFunc(@zend_hash_internal_pointer_end_ex, {$IFDEF PHP7}'zend_hash_internal_pointer_end_ex@@8'{$ELSE}'zend_hash_internal_pointer_end_ex'{$ENDIF});
 
   // -- zend_hash_copy
-  zend_hash_copy := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_copy@@12'{$ELSE}'zend_hash_copy'{$ENDIF});
+  LFunc(@zend_hash_copy, {$IFDEF PHP7}'zend_hash_copy@@12'{$ELSE}'zend_hash_copy'{$ENDIF});
 
 
   // -- zend_hash_sort
-  zend_hash_sort := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_sort_ex@@16'{$ELSE}'zend_hash_sort'{$ENDIF});
+  LFunc(@zend_hash_sort, {$IFDEF PHP7}'zend_hash_sort_ex@@16'{$ELSE}'zend_hash_sort'{$ENDIF});
 
   // -- zend_hash_compare
-  zend_hash_compare := GetProcAddress(PHPLib, 'zend_hash_compare');
+  LFunc(@zend_hash_compare, 'zend_hash_compare');
 
   // -- zend_hash_minmax
-  zend_hash_minmax := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_minmax@@12'{$ELSE}'zend_hash_minmax'{$ENDIF});
+  LFunc(@zend_hash_minmax, {$IFDEF PHP7}'zend_hash_minmax@@12'{$ELSE}'zend_hash_minmax'{$ENDIF});
 
   // -- zend_hash_num_elements
   {$IFNDEF PHP7}
-  zend_hash_num_elements := GetProcAddress(PHPLib, 'zend_hash_num_elements');
+  LFunc(@zend_hash_num_elements, 'zend_hash_num_elements');
   {$ENDIF}
 
   // -- zend_hash_rehash
-  zend_hash_rehash := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_hash_rehash@@4'{$ELSE}'zend_hash_rehash'{$ENDIF});
+  LFunc(@zend_hash_rehash, {$IFDEF PHP7}'zend_hash_rehash@@4'{$ELSE}'zend_hash_rehash'{$ENDIF});
 
   // -- zend_hash_func
-  zend_hash_func := GetProcAddress(PHPLib, 'zend_hash_func');
+  LFunc(@zend_hash_func, 'zend_hash_func');
 
   // -- zend_get_constant
-  zend_get_constant := GetProcAddress(PHPLib, 'zend_get_constant');
+  LFunc(@zend_get_constant, 'zend_get_constant');
+
+  // -- zend_register_null_constant
+  LFunc(@zend_register_null_constant, 'zend_register_null_constant');
+
+  // -- zend_register_bool_constant
+  LFunc(@zend_register_bool_constant, 'zend_register_bool_constant');
 
   // -- zend_register_long_constant
-  zend_register_long_constant := GetProcAddress(PHPLib, 'zend_register_long_constant');
+  LFunc(@zend_register_long_constant, 'zend_register_long_constant');
 
   // -- zend_register_double_constant
-  zend_register_double_constant := GetProcAddress(PHPLib, 'zend_register_double_constant');
+  LFunc(@zend_register_double_constant, 'zend_register_double_constant');
 
   // -- zend_register_string_constant
-  zend_register_string_constant := GetProcAddress(PHPLib, 'zend_register_string_constant');
+  LFunc(@zend_register_string_constant, 'zend_register_string_constant');
 
   // -- zend_register_stringl_constant
-  zend_register_stringl_constant := GetProcAddress(PHPLib, 'zend_register_stringl_constant');
+  LFunc(@zend_register_stringl_constant, 'zend_register_stringl_constant');
 
   // -- zend_register_constant
-  zend_register_constant := GetProcAddress(PHPLib, 'zend_register_constant');
+  LFunc(@zend_register_constant, 'zend_register_constant');
 
-  zend_register_auto_global := GetProcAddress(PHPLib, 'zend_register_auto_global');
+  LFunc(@zend_register_auto_global, 'zend_register_auto_global');
   {$IFDEF PHP5}
-  zend_activate_auto_globals := GetProcAddress(PHPLib, 'zend_activate_auto_globals');
+  LFunc(@zend_activate_auto_globals, 'zend_activate_auto_globals');
   {$ENDIF}
 
   // -- tsrm_shutdown
-  tsrm_shutdown := GetProcAddress(PHPLib, 'tsrm_shutdown');
+  LFunc(@tsrm_shutdown, 'tsrm_shutdown');
 
   // -- ts_resource_ex
-  ts_resource_ex := GetProcAddress(PHPLib, 'ts_resource_ex');
+  LFunc(@ts_resource_ex, 'ts_resource_ex');
 
   // -- ts_free_thread
-  ts_free_thread := GetProcAddress(PHPLib, 'ts_free_thread');
+  LFunc(@ts_free_thread, 'ts_free_thread');
 
   // -- zend_error
-  zend_error := GetProcAddress(PHPLib, 'zend_error');
+  LFunc(@zend_error, 'zend_error');
 
   // -- zend_error_cb
-  zend_error_cb := GetProcAddress(PHPLib, 'zend_error_cb');
+  LFunc(@zend_error_cb, 'zend_error_cb');
 
   // -- zend_eval_string
-  zend_eval_string := GetProcAddress(PHPLib, 'zend_eval_string');
+  LFunc(@zend_eval_string, 'zend_eval_string');
+
+  // -- zend_eval_string
+  LFunc(@zend_eval_string_ex, 'zend_eval_string_ex');
 
   // -- zend_make_compiled_string_description
-  zend_make_compiled_string_description := GetProcAddress(PHPLib, 'zend_make_compiled_string_description');
+  LFunc(@zend_make_compiled_string_description, 'zend_make_compiled_string_description');
 
-
-  {$IFDEF PHP4}
-  // -- _zval_dtor
-  _zval_dtor := GetProcAddress(PHPLib, '_zval_dtor');
-
-  // -- _zval_copy_ctor
-  _zval_copy_ctor := GetProcAddress(PHPLib, '_zval_copy_ctor');
-
-  {$ELSE}
-  _zval_copy_ctor_func := GetProcAddress(PHPLib, {$IFDEF PHP7}'_zval_copy_ctor_func@@4'{$ELSE}'_zval_copy_ctor_func'{$ENDIF});
-  _zval_dtor_func := GetProcAddress(PHPLib, {$IFDEF PHP7}'_zval_dtor_func@@4'{$ELSE}'_zval_dtor_func'{$ENDIF});
-  _zval_ptr_dtor := GetProcAddress(PHPLib, '_zval_ptr_dtor');
-
-  {$ENDIF}
+  LFunc(@_zval_copy_ctor_func, {$IFDEF PHP7}'_zval_copy_ctor_func@@4'{$ELSE}'_zval_copy_ctor_func'{$ENDIF});
+  LFunc(@_zval_dtor_func, {$IFDEF PHP7}'_zval_dtor_func@@4'{$ELSE}'_zval_dtor_func'{$ENDIF});
+  LFunc(@_zval_ptr_dtor, '_zval_ptr_dtor');
 
   // -- zend_print_variable
-  zend_print_variable := GetProcAddress(PHPLib, 'zend_print_variable');
+  LFunc(@zend_print_variable, 'zend_print_variable');
 
   // -- zend_stack_init
-  zend_stack_init := GetProcAddress(PHPLib, 'zend_stack_init');
+  LFunc(@zend_stack_init, 'zend_stack_init');
 
   // -- zend_stack_push
-  zend_stack_push := GetProcAddress(PHPLib, 'zend_stack_push');
+  LFunc(@zend_stack_push, 'zend_stack_push');
 
   // -- zend_stack_top
-  zend_stack_top := GetProcAddress(PHPLib, 'zend_stack_top');
+  LFunc(@zend_stack_top, 'zend_stack_top');
 
   // -- zend_stack_del_top
-  zend_stack_del_top := GetProcAddress(PHPLib, 'zend_stack_del_top');
+  LFunc(@zend_stack_del_top, 'zend_stack_del_top');
 
   // -- zend_stack_int_top
-  zend_stack_int_top := GetProcAddress(PHPLib, 'zend_stack_int_top');
+  LFunc(@zend_stack_int_top, 'zend_stack_int_top');
 
   // -- zend_stack_is_empty
-  zend_stack_is_empty := GetProcAddress(PHPLib, 'zend_stack_is_empty');
+  LFunc(@zend_stack_is_empty, 'zend_stack_is_empty');
 
   // -- zend_stack_destroy
-  zend_stack_destroy := GetProcAddress(PHPLib, 'zend_stack_destroy');
+  LFunc(@zend_stack_destroy, 'zend_stack_destroy');
 
   // -- zend_stack_base
-  zend_stack_base := GetProcAddress(PHPLib, 'zend_stack_base');
+  LFunc(@zend_stack_base, 'zend_stack_base');
 
   // -- zend_stack_count
-  zend_stack_count := GetProcAddress(PHPLib, 'zend_stack_count');
+  LFunc(@zend_stack_count, 'zend_stack_count');
 
   // -- zend_stack_apply
-  zend_stack_apply := GetProcAddress(PHPLib, 'zend_stack_apply');
+  LFunc(@zend_stack_apply, 'zend_stack_apply');
 
   // -- zend_stack_apply_with_argument
-  zend_stack_apply_with_argument := GetProcAddress(PHPLib, 'zend_stack_apply_with_argument');
+  LFunc(@zend_stack_apply_with_argument, 'zend_stack_apply_with_argument');
 
   // -- _convert_to_string
-  _convert_to_string := GetProcAddress(PHPLib, {$IFDEF PHP7}'_convert_to_string@@4'{$ELSE}'_convert_to_string'{$ENDIF});
+  LFunc(@_convert_to_string, {$IFDEF PHP7}'_convert_to_string@@4'{$ELSE}'_convert_to_string'{$ENDIF});
 
   // -- add_function
-  add_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'add_function@@12'{$ELSE}'add_function'{$ENDIF});
+  LFunc(@add_function, {$IFDEF PHP7}'add_function@@12'{$ELSE}'add_function'{$ENDIF});
 
   // -- sub_function
-  sub_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'sub_function@@12'{$ELSE}'sub_function'{$ENDIF});
+  LFunc(@sub_function, {$IFDEF PHP7}'sub_function@@12'{$ELSE}'sub_function'{$ENDIF});
 
   // -- mul_function
-  mul_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'mul_function@@12'{$ELSE}'mul_function'{$ENDIF});
+  LFunc(@mul_function, {$IFDEF PHP7}'mul_function@@12'{$ELSE}'mul_function'{$ENDIF});
 
   // -- div_function
-  div_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'div_function@@12'{$ELSE}'div_function'{$ENDIF});
+  LFunc(@div_function, {$IFDEF PHP7}'div_function@@12'{$ELSE}'div_function'{$ENDIF});
 
   // -- mod_function
-  mod_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'mod_function@@12'{$ELSE}'mod_function'{$ENDIF});
+  LFunc(@mod_function, {$IFDEF PHP7}'mod_function@@12'{$ELSE}'mod_function'{$ENDIF});
 
   // -- boolean_xor_function
-  boolean_xor_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'boolean_xor_function@@12'{$ELSE}'boolean_xor_function'{$ENDIF});
+  LFunc(@boolean_xor_function, {$IFDEF PHP7}'boolean_xor_function@@12'{$ELSE}'boolean_xor_function'{$ENDIF});
 
   // -- boolean_not_function
-  boolean_not_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'boolean_not_function@@8'{$ELSE}'boolean_not_function'{$ENDIF});
+  LFunc(@boolean_not_function, {$IFDEF PHP7}'boolean_not_function@@8'{$ELSE}'boolean_not_function'{$ENDIF});
 
   // -- bitwise_not_function
-  bitwise_not_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'bitwise_not_function@@8'{$ELSE}'bitwise_not_function'{$ENDIF});
+  LFunc(@bitwise_not_function, {$IFDEF PHP7}'bitwise_not_function@@8'{$ELSE}'bitwise_not_function'{$ENDIF});
 
   // -- bitwise_or_function
-  bitwise_or_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'bitwise_or_function@@12'{$ELSE}'bitwise_or_function'{$ENDIF});
+  LFunc(@bitwise_or_function, {$IFDEF PHP7}'bitwise_or_function@@12'{$ELSE}'bitwise_or_function'{$ENDIF});
 
   // -- bitwise_and_function
-  bitwise_and_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'bitwise_and_function@@12'{$ELSE}'bitwise_and_function'{$ENDIF});
+  LFunc(@bitwise_and_function, {$IFDEF PHP7}'bitwise_and_function@@12'{$ELSE}'bitwise_and_function'{$ENDIF});
 
   // -- bitwise_xor_function
-  bitwise_xor_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'bitwise_xor_function@@12'{$ELSE}'bitwise_xor_function'{$ENDIF});
+  LFunc(@bitwise_xor_function, {$IFDEF PHP7}'bitwise_xor_function@@12'{$ELSE}'bitwise_xor_function'{$ENDIF});
 
   // -- shift_left_function
-  shift_left_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'shift_left_function@@12'{$ELSE}'shift_left_function'{$ENDIF});
+  LFunc(@shift_left_function, {$IFDEF PHP7}'shift_left_function@@12'{$ELSE}'shift_left_function'{$ENDIF});
 
   // -- shift_right_function
-  shift_right_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'shift_right_function@@12'{$ELSE}'shift_right_function'{$ENDIF});
+  LFunc(@shift_right_function, {$IFDEF PHP7}'shift_right_function@@12'{$ELSE}'shift_right_function'{$ENDIF});
 
   // -- concat_function
-  concat_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'concat_function@@12'{$ELSE}'concat_function'{$ENDIF});
+  LFunc(@concat_function, {$IFDEF PHP7}'concat_function@@12'{$ELSE}'concat_function'{$ENDIF});
 
   // -- is_equal_function
-  is_equal_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'is_equal_function@@12'{$ELSE}'is_equal_function'{$ENDIF});
+  LFunc(@is_equal_function, {$IFDEF PHP7}'is_equal_function@@12'{$ELSE}'is_equal_function'{$ENDIF});
 
   // -- is_identical_function
-  is_identical_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'is_identical_function@@12'{$ELSE}'is_identical_function'{$ENDIF});
+  LFunc(@is_identical_function, {$IFDEF PHP7}'is_identical_function@@12'{$ELSE}'is_identical_function'{$ENDIF});
 
   // -- is_not_identical_function
-  is_not_identical_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'is_not_identical_function@@12'{$ELSE}'is_not_identical_function'{$ENDIF});
+  LFunc(@is_not_identical_function, {$IFDEF PHP7}'is_not_identical_function@@12'{$ELSE}'is_not_identical_function'{$ENDIF});
 
   // -- is_not_equal_function
-  is_not_equal_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'is_not_equal_function@@12'{$ELSE}'is_not_equal_function'{$ENDIF});
+  LFunc(@is_not_equal_function, {$IFDEF PHP7}'is_not_equal_function@@12'{$ELSE}'is_not_equal_function'{$ENDIF});
 
   // -- is_smaller_function
-  is_smaller_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'is_smaller_function@@12'{$ELSE}'is_smaller_function'{$ENDIF});
+  LFunc(@is_smaller_function, {$IFDEF PHP7}'is_smaller_function@@12'{$ELSE}'is_smaller_function'{$ENDIF});
 
   // -- is_smaller_or_equal_function
-  is_smaller_or_equal_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'is_smaller_or_equal_function@@12'{$ELSE}'is_smaller_or_equal_function'{$ENDIF});
+  LFunc(@is_smaller_or_equal_function, {$IFDEF PHP7}'is_smaller_or_equal_function@@12'{$ELSE}'is_smaller_or_equal_function'{$ENDIF});
 
   // -- increment_function
-  increment_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'increment_function@@4'{$ELSE}'increment_function'{$ENDIF});
+  LFunc(@increment_function, {$IFDEF PHP7}'increment_function@@4'{$ELSE}'increment_function'{$ENDIF});
 
   // -- decrement_function
-  decrement_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'decrement_function@@4'{$ELSE}'decrement_function'{$ENDIF});
+  LFunc(@decrement_function, {$IFDEF PHP7}'decrement_function@@4'{$ELSE}'decrement_function'{$ENDIF});
 
   // -- convert_scalar_to_number
-  convert_scalar_to_number := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_scalar_to_number@@4'{$ELSE}'convert_scalar_to_number'{$ENDIF});
+  LFunc(@convert_scalar_to_number, {$IFDEF PHP7}'convert_scalar_to_number@@4'{$ELSE}'convert_scalar_to_number'{$ENDIF});
 
   // -- convert_to_long
-  convert_to_long := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_to_long@@4'{$ELSE}'convert_to_long'{$ENDIF});
+  LFunc(@convert_to_long, {$IFDEF PHP7}'convert_to_long@@4'{$ELSE}'convert_to_long'{$ENDIF});
 
   // -- convert_to_double
-  convert_to_double := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_to_double@@4'{$ELSE}'convert_to_double'{$ENDIF});
+  LFunc(@convert_to_double, {$IFDEF PHP7}'convert_to_double@@4'{$ELSE}'convert_to_double'{$ENDIF});
 
   // -- convert_to_long_base
-  convert_to_long_base := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_to_long_base@@8'{$ELSE}'convert_to_long_base'{$ENDIF});
+  LFunc(@convert_to_long_base, {$IFDEF PHP7}'convert_to_long_base@@8'{$ELSE}'convert_to_long_base'{$ENDIF});
 
   // -- convert_to_null
-  convert_to_null := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_to_null@@4'{$ELSE}'convert_to_null'{$ENDIF});
+  LFunc(@convert_to_null, {$IFDEF PHP7}'convert_to_null@@4'{$ELSE}'convert_to_null'{$ENDIF});
 
   // -- convert_to_boolean
-  convert_to_boolean := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_to_boolean@@4'{$ELSE}'convert_to_boolean'{$ENDIF});
+  LFunc(@convert_to_boolean, {$IFDEF PHP7}'convert_to_boolean@@4'{$ELSE}'convert_to_boolean'{$ENDIF});
 
   // -- convert_to_array
-  convert_to_array := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_to_array@@4'{$ELSE}'convert_to_array'{$ENDIF});
+  LFunc(@convert_to_array, {$IFDEF PHP7}'convert_to_array@@4'{$ELSE}'convert_to_array'{$ENDIF});
 
   // -- convert_to_object
-  convert_to_object := GetProcAddress(PHPLib, {$IFDEF PHP7}'convert_to_object@@4'{$ELSE}'convert_to_object'{$ENDIF});
+  LFunc(@convert_to_object, {$IFDEF PHP7}'convert_to_object@@4'{$ELSE}'convert_to_object'{$ENDIF});
   {$IFNDEF PHP7}
   // -- add_char_to_string
-  add_char_to_string := GetProcAddress(PHPLib, 'add_char_to_string');
+  LFunc(@add_char_to_string, 'add_char_to_string');
 
   // -- add_string_to_string
-  add_string_to_string := GetProcAddress(PHPLib, 'add_string_to_string');
+  LFunc(@add_string_to_string, 'add_string_to_string');
   {$ENDIF}
   // -- zend_string_to_double
-  zend_string_to_double := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_strtod'{$ELSE}'zend_string_to_double'{$ENDIF});
+  LFunc(@zend_string_to_double, {$IFDEF PHP7}'zend_strtod'{$ELSE}'zend_string_to_double'{$ENDIF});
 
   // -- zval_is_true
-  zval_is_true := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_is_true@@4'{$ELSE}'zval_is_true'{$ENDIF});
+  LFunc(@zval_is_true, {$IFDEF PHP7}'zend_is_true@@4'{$ELSE}'zval_is_true'{$ENDIF});
 
   // -- compare_function
-  compare_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'compare_function@@12'{$ELSE}'compare_function'{$ENDIF});
+  LFunc(@compare_function, {$IFDEF PHP7}'compare_function@@12'{$ELSE}'compare_function'{$ENDIF});
 
   // -- numeric_compare_function
-  numeric_compare_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'numeric_compare_function@@8'{$ELSE}'numeric_compare_function'{$ENDIF});
+  LFunc(@numeric_compare_function, {$IFDEF PHP7}'numeric_compare_function@@8'{$ELSE}'numeric_compare_function'{$ENDIF});
 
   // -- string_compare_function
-  string_compare_function := GetProcAddress(PHPLib, {$IFDEF PHP7}'string_compare_function@@8'{$ELSE}'string_compare_function'{$ENDIF});
+  LFunc(@string_compare_function, {$IFDEF PHP7}'string_compare_function@@8'{$ELSE}'string_compare_function'{$ENDIF});
 
   // -- zend_str_tolower
-  zend_str_tolower := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_str_tolower@@8'{$ELSE}'zend_str_tolower'{$ENDIF});
+  LFunc(@zend_str_tolower, {$IFDEF PHP7}'zend_str_tolower@@8'{$ELSE}'zend_str_tolower'{$ENDIF});
 
   // -- zend_binary_zval_strcmp
-  zend_binary_zval_strcmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_zval_strcmp@@8'{$ELSE}'zend_binary_zval_strcmp'{$ENDIF});
+  LFunc(@zend_binary_zval_strcmp, {$IFDEF PHP7}'zend_binary_zval_strcmp@@8'{$ELSE}'zend_binary_zval_strcmp'{$ENDIF});
 
   // -- zend_binary_zval_strncmp
-  zend_binary_zval_strncmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_zval_strncmp@@12'{$ELSE}'zend_binary_zval_strncmp'{$ENDIF});
+  LFunc(@zend_binary_zval_strncmp, {$IFDEF PHP7}'zend_binary_zval_strncmp@@12'{$ELSE}'zend_binary_zval_strncmp'{$ENDIF});
 
   // -- zend_binary_zval_strcasecmp
-  zend_binary_zval_strcasecmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_zval_strcasecmp@@8'{$ELSE}'zend_binary_zval_strcasecmp'{$ENDIF});
+  LFunc(@zend_binary_zval_strcasecmp, {$IFDEF PHP7}'zend_binary_zval_strcasecmp@@8'{$ELSE}'zend_binary_zval_strcasecmp'{$ENDIF});
 
   // -- zend_binary_zval_strncasecmp
-  zend_binary_zval_strncasecmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_zval_strncasecmp@@12'{$ELSE}'zend_binary_zval_strncasecmp'{$ENDIF});
+  LFunc(@zend_binary_zval_strncasecmp, {$IFDEF PHP7}'zend_binary_zval_strncasecmp@@12'{$ELSE}'zend_binary_zval_strncasecmp'{$ENDIF});
 
   // -- zend_binary_strcmp
-  zend_binary_strcmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_strcmp@@16'{$ELSE}'zend_binary_strcmp'{$ENDIF});
+  LFunc(@zend_binary_strcmp, {$IFDEF PHP7}'zend_binary_strcmp@@16'{$ELSE}'zend_binary_strcmp'{$ENDIF});
 
   // -- zend_binary_strncmp
-  zend_binary_strncmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_strncmp@@20'{$ELSE}'zend_binary_strncmp'{$ENDIF});
+  LFunc(@zend_binary_strncmp, {$IFDEF PHP7}'zend_binary_strncmp@@20'{$ELSE}'zend_binary_strncmp'{$ENDIF});
 
   // -- zend_binary_strcasecmp
-  zend_binary_strcasecmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_strcasecmp@@16'{$ELSE}'zend_binary_strcasecmp'{$ENDIF});
+  LFunc(@zend_binary_strcasecmp, {$IFDEF PHP7}'zend_binary_strcasecmp@@16'{$ELSE}'zend_binary_strcasecmp'{$ENDIF});
 
   // -- zend_binary_strncasecmp
-  zend_binary_strncasecmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_binary_strncasecmp@@20'{$ELSE}'zend_binary_strncasecmp'{$ENDIF});
+  LFunc(@zend_binary_strncasecmp, {$IFDEF PHP7}'zend_binary_strncasecmp@@20'{$ELSE}'zend_binary_strncasecmp'{$ENDIF});
 
   // -- zendi_smart_strcmp
-  zendi_smart_strcmp := GetProcAddress(PHPLib, {$IFDEF PHP7}'zendi_smart_strcmp@@8'{$ELSE}'zendi_smart_strcmp'{$ENDIF});
+  LFunc(@zendi_smart_strcmp, {$IFDEF PHP7}'zendi_smart_strcmp@@8'{$ELSE}'zendi_smart_strcmp'{$ENDIF});
 
   // -- zend_compare_symbol_tables
-  zend_compare_symbol_tables := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_compare_symbol_tables@@8'{$ELSE}'zend_compare_symbol_tables'{$ENDIF});
+  LFunc(@zend_compare_symbol_tables, {$IFDEF PHP7}'zend_compare_symbol_tables@@8'{$ELSE}'zend_compare_symbol_tables'{$ENDIF});
 
   // -- zend_compare_arrays
-  zend_compare_arrays := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_compare_arrays@@8'{$ELSE}'zend_compare_arrays'{$ENDIF});
+  LFunc(@zend_compare_arrays, {$IFDEF PHP7}'zend_compare_arrays@@8'{$ELSE}'zend_compare_arrays'{$ENDIF});
 
   // -- zend_compare_objects
-  zend_compare_objects := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_compare_objects@@8'{$ELSE}'zend_compare_objects'{$ENDIF});
+  LFunc(@zend_compare_objects, {$IFDEF PHP7}'zend_compare_objects@@8'{$ELSE}'zend_compare_objects'{$ENDIF});
 
   // -- zend_atoi
-  zend_atoi := GetProcAddress(PHPLib, {$IFDEF PHP7}'zend_atoi@@8'{$ELSE}'zend_atoi'{$ENDIF});
+  LFunc(@zend_atoi, {$IFDEF PHP7}'zend_atoi@@8'{$ELSE}'zend_atoi'{$ENDIF});
 
   // -- get_active_function_name
-  get_active_function_name := GetProcAddress(PHPLib, 'get_active_function_name');
+  LFunc(@get_active_function_name, 'get_active_function_name');
 
   // -- zend_get_executed_filename
-  zend_get_executed_filename := GetProcAddress(PHPLib, 'zend_get_executed_filename');
+  LFunc(@zend_get_executed_filename, 'zend_get_executed_filename');
 
   // -- zend_get_executed_lineno
-  zend_get_executed_lineno := GetProcAddress(PHPLib, 'zend_get_executed_lineno');
+  LFunc(@zend_get_executed_lineno, 'zend_get_executed_lineno');
 
   // -- zend_set_timeout
-  zend_set_timeout := GetProcAddress(PHPLib, 'zend_set_timeout');
+  LFunc(@zend_set_timeout, 'zend_set_timeout');
 
   // -- zend_unset_timeout
-  zend_unset_timeout := GetProcAddress(PHPLib, 'zend_unset_timeout');
+  LFunc(@zend_unset_timeout, 'zend_unset_timeout');
 
   // -- zend_timeout
-  zend_timeout := GetProcAddress(PHPLib, 'zend_timeout');
+  LFunc(@zend_timeout, 'zend_timeout');
 
   // -- zend_highlight
-  zend_highlight := GetProcAddress(PHPLib, 'zend_highlight');
+  LFunc(@zend_highlight, 'zend_highlight');
 
   // -- zend_strip
-  zend_strip := GetProcAddress(PHPLib, 'zend_strip');
+  LFunc(@zend_strip, 'zend_strip');
 
   // -- highlight_file
-  highlight_file := GetProcAddress(PHPLib, 'highlight_file');
+  LFunc(@highlight_file, 'highlight_file');
 
   // -- highlight_string
-  highlight_string := GetProcAddress(PHPLib, 'highlight_string');
+  LFunc(@highlight_string, 'highlight_string');
 
   // -- zend_html_putc
-  zend_html_putc := GetProcAddress(PHPLib, 'zend_html_putc');
+  LFunc(@zend_html_putc, 'zend_html_putc');
 
   // -- zend_html_puts
-  zend_html_puts := GetProcAddress(PHPLib, 'zend_html_puts');
+  LFunc(@zend_html_puts, 'zend_html_puts');
+
+  LFunc(@zend_parse_method_parameters, 'zend_parse_method_parameters');
+  LFunc(@zend_parse_method_parameters_ex, 'zend_parse_method_parameters_ex');
+
   {$IFDEF PHP7}
   // -- zend_parse_parameters_throw
-  zend_parse_parameters_throw := GetProcAddress(PHPLib, 'zend_parse_parameters_throw');
-  ZvalGetArgs  := GetProcAddress(PHPLib, 'zend_get_parameters_ex');
-  _zend_get_parameters_array_ex := GetProcAddress(PHPLib, '_zend_get_parameters_array_ex');
+  LFunc(@zend_parse_parameters_throw, 'zend_parse_parameters_throw');
+  LFunc(@ZvalGetArgs, 'zend_get_parameters_ex');
   {$ELSE}
   // -- zend_indent
-  zend_indent := GetProcAddress(PHPLib, 'zend_indent');
+  LFunc(@zend_indent, 'zend_indent');
   {$ENDIF}
+  // -- _zend_get_parameters_array
+  LFunc(@_zend_get_parameters_array, '_zend_get_parameters_array');
+
   // -- _zend_get_parameters_array_ex
-  _zend_get_parameters_array_ex := GetProcAddress(PHPLib, {$IFDEF PHP7}{$ELSE}{$ENDIF}'_zend_get_parameters_array_ex');
+  LFunc(@_zend_get_parameters_array_ex, '_zend_get_parameters_array_ex');
 
   // -- zend_ini_refresh_caches
-  zend_ini_refresh_caches := GetProcAddress(PHPLib, 'zend_ini_refresh_caches');
+  LFunc(@zend_ini_refresh_caches, 'zend_ini_refresh_caches');
 
   // -- zend_alter_ini_entry
-  zend_alter_ini_entry := GetProcAddress(PHPLib, 'zend_alter_ini_entry');
-  zend_alter_ini_entry_ex:= GetProcAddress(PHPLib, 'zend_alter_ini_entry_ex');
+  LFunc(@zend_alter_ini_entry, 'zend_alter_ini_entry');
+  LFunc(@zend_alter_ini_entry_ex, 'zend_alter_ini_entry_ex');
   // -- zend_restore_ini_entry
-  zend_restore_ini_entry := GetProcAddress(PHPLib, 'zend_restore_ini_entry');
+  LFunc(@zend_restore_ini_entry, 'zend_restore_ini_entry');
 
   // -- zend_ini_long
-  zend_ini_long := GetProcAddress(PHPLib, 'zend_ini_long');
+  LFunc(@zend_ini_long, 'zend_ini_long');
 
   // -- zend_ini_double
-  zend_ini_double := GetProcAddress(PHPLib, 'zend_ini_double');
+  LFunc(@zend_ini_double, 'zend_ini_double');
 
   // -- zend_ini_string
-  zend_ini_string := GetProcAddress(PHPLib, 'zend_ini_string');
+  LFunc(@zend_ini_string, 'zend_ini_string');
 
   // -- compile_string
-  compile_string := GetProcAddress(PHPLib, 'compile_string');
+  LFunc(@compile_string, 'compile_string');
 
   // -- execute
-  execute := GetProcAddress(PHPLib, {$IFDEF PHP550}'zend_execute'{$ELSE}'execute'{$ENDIF});
+  LFunc(@execute, {$IFDEF PHP550}'zend_execute'{$ELSE}'execute'{$ENDIF});
 
   // -- zend_wrong_param_count
-  zend_wrong_param_count := GetProcAddress(PHPLib, 'zend_wrong_param_count');
+  LFunc(@zend_wrong_param_count, 'zend_wrong_param_count');
 
   // -- zend_hash_quick_add_or_update
-  _zend_hash_quick_add_or_update := GetProcAddress(PHPLib, '_zend_hash_quick_add_or_update');
+  LFunc(@_zend_hash_quick_add_or_update, '_zend_hash_quick_add_or_update');
 
   // -- add_property_long_ex
-  add_property_long_ex := GetProcAddress(PHPLib, 'add_property_long_ex');
+  LFunc(@add_property_long_ex, 'add_property_long_ex');
 
   // -- add_property_null_ex
-  add_property_null_ex := GetProcAddress(PHPLib, 'add_property_null_ex');
+  LFunc(@add_property_null_ex, 'add_property_null_ex');
 
   // -- add_property_bool_ex
-  add_property_bool_ex := GetProcAddress(PHPLib, 'add_property_bool_ex');
+  LFunc(@add_property_bool_ex, 'add_property_bool_ex');
 
   // -- add_property_resource_ex
-  add_property_resource_ex := GetProcAddress(PHPLib, 'add_property_resource_ex');
+  LFunc(@add_property_resource_ex, 'add_property_resource_ex');
 
   // -- add_property_double_ex
-  add_property_double_ex := GetProcAddress(PHPLib, 'add_property_double_ex');
+  LFunc(@add_property_double_ex, 'add_property_double_ex');
 
   // -- add_property_string_ex
-  add_property_string_ex := GetProcAddress(PHPLib, 'add_property_string_ex');
+  LFunc(@add_property_string_ex, 'add_property_string_ex');
 
   // -- add_property_stringl_ex
-  add_property_stringl_ex := GetProcAddress(PHPLib, 'add_property_stringl_ex');
+  LFunc(@add_property_stringl_ex, 'add_property_stringl_ex');
 
   // -- add_property_zval_ex
-  add_property_zval_ex := GetProcAddress(PHPLib, 'add_property_zval_ex');
+  LFunc(@add_property_zval_ex, 'add_property_zval_ex');
 
-  call_user_function := GetProcAddress(PHPLib, {$IFDEF P_CUT}'__call_function'{$ELSE}'call_user_function'{$ENDIF});
-  {$IFNDEF P_CUT}
-  call_user_function_ex := GetProcAddress(PHPLib, 'call_user_function_ex');
+  LFunc(@call_user_function, {$IFDEF CUTTED_PHP7dll}'__call_function'{$ELSE}'call_user_function'{$ENDIF});
+  {$IFNDEF CUTTED_PHP7dll}
+  LFunc(@call_user_function_ex, 'call_user_function_ex');
   {$ENDIF}
   // -- add_assoc_long_ex
-  add_assoc_long_ex := GetProcAddress(PHPLib, 'add_assoc_long_ex');
+  LFunc(@add_assoc_long_ex, 'add_assoc_long_ex');
 
   // -- add_assoc_null_ex
-  add_assoc_null_ex := GetProcAddress(PHPLib, 'add_assoc_null_ex');
+  LFunc(@add_assoc_null_ex, 'add_assoc_null_ex');
 
   // -- add_assoc_bool_ex
-  add_assoc_bool_ex := GetProcAddress(PHPLib, 'add_assoc_bool_ex');
+  LFunc(@add_assoc_bool_ex, 'add_assoc_bool_ex');
 
   // -- add_assoc_resource_ex
-  add_assoc_resource_ex := GetProcAddress(PHPLib, 'add_assoc_resource_ex');
+  LFunc(@add_assoc_resource_ex, 'add_assoc_resource_ex');
 
   // -- add_assoc_double_ex
-  add_assoc_double_ex := GetProcAddress(PHPLib, 'add_assoc_double_ex');
+  LFunc(@add_assoc_double_ex, 'add_assoc_double_ex');
 
   // -- add_assoc_string_ex
-  add_assoc_string_ex := GetProcAddress(PHPLib, 'add_assoc_string_ex');
+  LFunc(@add_assoc_string_ex, 'add_assoc_string_ex');
 
   // -- add_assoc_stringl_ex
-  add_assoc_stringl_ex := GetProcAddress(PHPLib, 'add_assoc_stringl_ex');
+  LFunc(@add_assoc_stringl_ex, 'add_assoc_stringl_ex');
 
   // -- add_assoc_zval_ex
-  add_assoc_zval_ex := GetProcAddress(PHPLib, 'add_assoc_zval_ex');
+  LFunc(@add_assoc_zval_ex, 'add_assoc_zval_ex');
 
   // -- add_index_long
-  add_index_long := GetProcAddress(PHPLib, 'add_index_long');
+  LFunc(@add_index_long, 'add_index_long');
 
   // -- add_index_null
-  add_index_null := GetProcAddress(PHPLib, 'add_index_null');
+  LFunc(@add_index_null, 'add_index_null');
 
   // -- add_index_bool
-  add_index_bool := GetProcAddress(PHPLib, 'add_index_bool');
+  LFunc(@add_index_bool, 'add_index_bool');
 
   // -- add_index_resource
-  add_index_resource := GetProcAddress(PHPLib, 'add_index_resource');
+  LFunc(@add_index_resource, 'add_index_resource');
 
   // -- add_index_double
-  add_index_double := GetProcAddress(PHPLib, 'add_index_double');
+  LFunc(@add_index_double, 'add_index_double');
 
   // -- add_index_string
-  add_index_string := GetProcAddress(PHPLib, 'add_index_string');
+  LFunc(@add_index_string, 'add_index_string');
 
   // -- add_index_stringl
-  add_index_stringl := GetProcAddress(PHPLib, 'add_index_stringl');
+  LFunc(@add_index_stringl, 'add_index_stringl');
 
   // -- add_index_zval
-  add_index_zval := GetProcAddress(PHPLib, 'add_index_zval');
+  LFunc(@add_index_zval, 'add_index_zval');
 
   // -- add_next_index_long
-  add_next_index_long := GetProcAddress(PHPLib, 'add_next_index_long');
+  LFunc(@add_next_index_long, 'add_next_index_long');
 
   // -- add_next_index_null
-  add_next_index_null := GetProcAddress(PHPLib, 'add_next_index_null');
+  LFunc(@add_next_index_null, 'add_next_index_null');
 
   // -- add_next_index_bool
-  add_next_index_bool := GetProcAddress(PHPLib, 'add_next_index_bool');
+  LFunc(@add_next_index_bool, 'add_next_index_bool');
 
   // -- add_next_index_resource
-  add_next_index_resource := GetProcAddress(PHPLib, 'add_next_index_resource');
+  LFunc(@add_next_index_resource, 'add_next_index_resource');
 
   // -- add_next_index_double
-  add_next_index_double := GetProcAddress(PHPLib, 'add_next_index_double');
+  LFunc(@add_next_index_double, 'add_next_index_double');
 
   // -- add_next_index_string
-  add_next_index_string := GetProcAddress(PHPLib, 'add_next_index_string');
+  LFunc(@add_next_index_string, 'add_next_index_string');
 
   // -- add_next_index_stringl
-  add_next_index_stringl := GetProcAddress(PHPLib, 'add_next_index_stringl');
+  LFunc(@add_next_index_stringl, 'add_next_index_stringl');
 
   // -- add_next_index_zval
-  add_next_index_zval := GetProcAddress(PHPLib, 'add_next_index_zval');
+  LFunc(@add_next_index_zval, 'add_next_index_zval');
 
   // -- add_get_assoc_string_ex
-  add_get_assoc_string_ex := GetProcAddress(PHPLib, 'add_get_assoc_string_ex');
+  LFunc(@add_get_assoc_string_ex, 'add_get_assoc_string_ex');
 
   // -- add_get_assoc_stringl_ex
-  add_get_assoc_stringl_ex := GetProcAddress(PHPLib, 'add_get_assoc_stringl_ex');
+  LFunc(@add_get_assoc_stringl_ex, 'add_get_assoc_stringl_ex');
 
   // -- add_get_index_long
-  add_get_index_long := GetProcAddress(PHPLib, 'add_get_index_long');
+  LFunc(@add_get_index_long, 'add_get_index_long');
 
   // -- add_get_index_double
-  add_get_index_double := GetProcAddress(PHPLib, 'add_get_index_double');
+  LFunc(@add_get_index_double, 'add_get_index_double');
 
   // -- add_get_index_string
-  add_get_index_string := GetProcAddress(PHPLib, 'add_get_index_string');
+  LFunc(@add_get_index_string, 'add_get_index_string');
 
   // -- add_get_index_stringl
-  add_get_index_stringl := GetProcAddress(PHPLib, 'add_get_index_stringl');
+  LFunc(@add_get_index_stringl, 'add_get_index_stringl');
 
   // -- _array_init
-  _array_init := GetProcAddress(PHPLib, '_array_init');
+  LFunc(@_array_init, '_array_init');
 
   // -- _object_init
-  _object_init := GetProcAddress(PHPLib, '_object_init');
+  LFunc(@_object_init, '_object_init');
 
   // -- _object_init_ex
-  _object_init_ex := GetProcAddress(PHPLib, '_object_init_ex');
+  LFunc(@_object_init_ex, '_object_init_ex');
 
   // -- _object_and_properties_init
-  _object_and_properties_init := GetProcAddress(PHPLib, '_object_and_properties_init');
+  LFunc(@_object_and_properties_init, '_object_and_properties_init');
 
   // -- zend_register_internal_class
-  zend_register_internal_class := GetProcAddress(PHPLib, 'zend_register_internal_class');
+  LFunc(@zend_register_internal_class, 'zend_register_internal_class');
 
   // -- zend_register_internal_class_ex
-  zend_register_internal_class_ex := GetProcAddress(PHPLib, 'zend_register_internal_class_ex');
+  LFunc(@zend_register_internal_class_ex, 'zend_register_internal_class_ex');
 
   // -- zend_startup_module
-  zend_startup_module  := GetProcAddress(PHPLib, 'zend_startup_module');
+  LFunc(@zend_startup_module, 'zend_startup_module');
 
   // -- zend_startup_module_ex
-  zend_startup_module_ex  := GetProcAddress(PHPLib, 'zend_startup_module_ex');
+  LFunc(@zend_startup_module_ex, 'zend_startup_module_ex');
 
   // -- zend_register_module_ex
-  zend_register_module_ex := GetProcAddress(PHPLib, 'zend_register_module_ex');
+  LFunc(@zend_register_module_ex, 'zend_register_module_ex');
 
   // --  zend_register_internal_module
-  zend_register_internal_module := GetProcAddress(PHPLib, 'zend_register_internal_module');
+  LFunc(@zend_register_internal_module, 'zend_register_internal_module');
 
   // -- zend_startup_modules
-  zend_startup_modules := GetProcAddress(PHPLib, 'zend_startup_modules');
+  LFunc(@zend_startup_modules, 'zend_startup_modules');
 
   // -- zend_collect_module_handlers
-  zend_collect_module_handlers := GetProcAddress(PHPLib, 'zend_collect_module_handlers');
+  LFunc(@zend_collect_module_handlers, 'zend_collect_module_handlers');
 
   // -- get_zend_version
-  get_zend_version := GetProcAddress(PHPLib, 'get_zend_version');
+  LFunc(@get_zend_version, 'get_zend_version');
 
   // -- zend_make_printable_zval
-  zend_make_printable_zval := GetProcAddress(PHPLib, 'zend_make_printable_zval');
+  LFunc(@zend_make_printable_zval, 'zend_make_printable_zval');
 
   // -- zend_print_zval
-  zend_print_zval := GetProcAddress(PHPLib, 'zend_print_zval');
+  LFunc(@zend_print_zval, 'zend_print_zval');
 
   // -- zend_print_zval_r
-  zend_print_zval_r := GetProcAddress(PHPLib, 'zend_print_zval_r');
+  LFunc(@zend_print_zval_r, 'zend_print_zval_r');
 
   // -- zend_output_debug_string
-  zend_output_debug_string := GetProcAddress(PHPLib, 'zend_output_debug_string');
+  LFunc(@zend_output_debug_string, 'zend_output_debug_string');
 
   // -- zend_get_parameters
-  ZendGetParameters := GetProcAddress(PHPLib, 'zend_get_parameters');
+  LFunc(@Zend_Get_Parameters, 'zend_get_parameters');
 
   // - zend_get_parameters_ex (native call)
-  zend_get_params_ex := GetProcAddress(PHPLib, 'zend_get_parameters_ex');
+  LFunc(@zend_get_params_ex, 'zend_get_parameters_ex');
   {$IFDEF PHP5}
-  zend_destroy_file_handle := GetProcAddress(PHPLib, 'zend_destroy_file_handle');
+  LFunc(@zend_destroy_file_handle, 'zend_destroy_file_handle');
   {$ENDIF}
 
- {$IFNDEF QUIET_LOAD}
- CheckZendErrors;
- {$ENDIF}
-
-  WriteFuncPtr := GetProcAddress(PHPLib, 'zend_write');
+  LFunc(WriteFuncPtr, 'zend_write');
   if Assigned(WriteFuncPtr) then
     @zend_write := pointer(WriteFuncPtr^);
 
@@ -3089,11 +3044,6 @@ begin
   {$ELSE}
   class_container.name_length := strlen(class_name);
   class_container.builtin_functions := functions;
-  {$ENDIF}
-  {$IFDEF PHP4}
-  class_container.handle_function_call := nil;
-  class_container.handle_property_get := nil;
-  class_container.handle_property_set := nil;
   {$ENDIF}
 end;
 {$IFNDEF PHP7}
@@ -3144,29 +3094,6 @@ begin
   INIT_PZVAL(Result);
 end;
 
-function zend_get_parameters_ex(number: integer; var Params: pzval_array): integer;
-var
-  i  : integer;
-begin
-
-  if number = 0 then
-  begin
-    Result := SUCCESS;
-    Exit;
-  end;
-  {$IFDEF PHP7}
-  Params.value.arr.nNumOfElements := number;
-  for i := 0 to number - 1 do
-    zend_hash_index_add_empty_element(Params.value.arr, i);
-  Result := ZvalGetArgs(number, @Params);
-  {$ELSE}
-   SetLength(Params, number);
-  for i := 0 to number - 1 do
-    New(Params[i]);
-  Result := zend_get_parameters(number, number, Params);
-  {$ENDIF}
-end;
-
 function zend_get_parameters_my(number: integer; var Params: pzval_array; TSRMLS_DC: Pointer): integer;
 var
   i  : integer;
@@ -3212,40 +3139,17 @@ begin
   begin
      Params[i]^ :=  p^^;
      if i <> number then
+     {$IFDEF CPUX64}
+        p^ := ppzval( integer(p^) + sizeof(ppzval) );
+     {$ELSE}
          inc(integer(p^), sizeof(ppzval));
+     {$ENDIF}
   end;
 
   efree(p);
   {$ENDIF}
 end;
-{$IFNDEF PHP7}
-function zend_get_parameters(ht: integer; param_count: integer; Params: array of ppzval): integer; assembler; register;
-asm
-  push  esi
-  mov   esi, ecx
-  mov   ecx, [ebp+8]
-  cmp   ecx, 0
-  je @first
-  @toploop:
-  {$IFDEF VERSION6}
-  push  [esi][ecx * 4]
-  {$ELSE}
-  push  dword [esi][ecx * 4]
-  {$ENDIF}
-  loop   @toploop
-  @first:
-  push    dword [esi]
-  push    edx
-  push    eax
-  call    ZendGetParameters
-  mov   ecx, [ebp+8]
-  add     ecx, 3
-  @toploop2:
-  pop     edx
-  loop   @toploop2
-  pop     esi
-end;
-{$ENDIF}
+
 procedure dispose_pzval_array(Params: pzval_array);
 var
   i : integer;
@@ -3274,271 +3178,6 @@ begin
   zend_error(E_PARSE, Error);
 end;}
 
-
-{$IFNDEF QUIET_LOAD}
-procedure CheckZendErrors;
-begin
-  if @zend_disable_function = nil then raise EPHP4DelphiException.Create('zend_disable_function');
-  if @zend_disable_class = nil then raise EPHP4DelphiException.Create('zend_disable_class');
-  if @zend_register_list_destructors_ex = nil then raise EPHP4DelphiException.Create('zend_register_list_destructors_ex');
-  if @zend_register_resource = nil then raise EPHP4DelphiException.Create('zend_register_resource');
-  if @zend_fetch_resource =    nil then raise EPHP4DelphiException.Create('zend_fetch_resource');
-  if @zend_list_insert =       nil then raise EPHP4DelphiException.Create('zend_list_insert');
-  {$IFNDEF PHP7}
-  if @_zend_list_addref =      nil then raise EPHP4DelphiException.Create('zend_list_addref');
-  if @_zend_list_delete =      nil then raise EPHP4DelphiException.Create('zend_list_delete');
-  if @_zend_list_find =        nil then raise EPHP4DelphiException.Create('_zend_list_find');
-  {$ENDIF}
-  if @zend_rsrc_list_get_rsrc_type =  nil then raise EPHP4DelphiException.Create('zend_rsrc_list_get_rsrc_type');
-  if @zend_fetch_list_dtor_id =       nil then raise EPHP4DelphiException.Create('zend_fetch_list_dtor_id');
-  if @zend_get_compiled_filename = nil then raise EPHP4DelphiException.Create('zend_get_compiled_filename');
-  if @zend_get_compiled_lineno = nil then raise EPHP4DelphiException.Create('zend_get_compiled_lineno');
-  if @tsrm_startup = nil then raise EPHP4DelphiException.Create('tsrm_startup');
-  if @ts_allocate_id = nil then raise EPHP4DelphiException.Create('ts_allocate_id');
-  if @ts_free_id = nil then raise EPHP4DelphiException.Create('ts_free_id');
-  if @zend_strndup = nil then raise EPHP4DelphiException.Create('zend_strndup');
-
-  if @_emalloc = nil then raise EPHP4DelphiException.Create('_emalloc');
-  if @_efree = nil then raise EPHP4DelphiException.Create('_efree');
-  if @_ecalloc = nil then raise EPHP4DelphiException.Create('_ecalloc');
-  if @_erealloc = nil then raise EPHP4DelphiException.Create('_erealloc');
-  if @_estrdup = nil then raise EPHP4DelphiException.Create('_estrdup');
-  if @_estrndup = nil then raise EPHP4DelphiException.Create('_estrndup');
-  if @zend_set_memory_limit = nil then raise EPHP4DelphiException.Create('zend_set_memory_limit');
-  if @start_memory_manager = nil then raise EPHP4DelphiException.Create('start_memory_manager');
-  if @shutdown_memory_manager = nil then raise EPHP4DelphiException.Create('shutdown_memory_manager');
-  {$IFDEF PHP4}
-  if @zend_hash_init = nil then raise EPHP4DelphiException.Create('zend_hash_init');
-  if @zend_hash_init_ex = nil then raise EPHP4DelphiException.Create('zend_hash_init_ex');
-  if @zend_hash_add_or_update = nil then raise EPHP4DelphiException.Create('zend_hash_add_or_update');
-  if @zend_hash_quick_add_or_update = nil then raise EPHP4DelphiException.Create('zend_hash_quick_add_or_update');
-  if @zend_hash_index_update_or_next_insert = nil then raise EPHP4DelphiException.Create('zend_hash_index_update_or_next_insert');
-  if @zend_hash_merge = nil then raise EPHP4DelphiException.Create('zend_hash_merge');
-  {$ENDIF}
-
-  {$IFDEF PHP5}
-  if @_zend_hash_add_or_update = nil then raise EPHP4DelphiException.Create('_zend_hash_add_or_update');
-  {$ENDIF}
-
-  if @zend_hash_destroy = nil then raise EPHP4DelphiException.Create('zend_hash_destroy');
-  if @zend_hash_clean = nil then raise EPHP4DelphiException.Create('zend_hash_clean');
-  if @zend_hash_add_empty_element = nil then raise EPHP4DelphiException.Create('zend_hash_add_empty_element');
-  if @zend_hash_graceful_destroy = nil then raise EPHP4DelphiException.Create('zend_hash_graceful_destroy');
-  if @zend_hash_graceful_reverse_destroy = nil then raise EPHP4DelphiException.Create('zend_hash_graceful_reverse_destroy');
-  if @zend_hash_apply = nil then raise EPHP4DelphiException.Create('zend_hash_apply');
-  if @zend_hash_apply_with_argument = nil then raise EPHP4DelphiException.Create('zend_hash_apply_with_argument');
-  if @zend_hash_reverse_apply = nil then raise EPHP4DelphiException.Create('zend_hash_reverse_apply');
-  if @zend_hash_del_key_or_index = nil then raise EPHP4DelphiException.Create('zend_hash_del_key_or_index');
-  if @zend_get_hash_value = nil then raise EPHP4DelphiException.Create('zend_get_hash_value');
-  if @zend_hash_find = nil then raise EPHP4DelphiException.Create('zend_hash_find');
-  if @zend_hash_quick_find = nil then raise EPHP4DelphiException.Create('zend_hash_quick_find');
-  if @zend_hash_index_find = nil then raise EPHP4DelphiException.Create('zend_hash_index_find');
-  if @zend_hash_exists = nil then raise EPHP4DelphiException.Create('zend_hash_exists');
-  if @zend_hash_index_exists = nil then raise EPHP4DelphiException.Create('zend_hash_index_exists');
-  {$IFDEF PHP7}
-  if @_zend_hash_add = nil then raise EPHP4DelphiException.Create('_zend_hash_add');
-  if @_zend_hash_add_or_update = nil then raise EPHP4DelphiException.Create('_zend_hash_add_or_update');
-
-  if @zend_hash_index_findZval = nil then raise EPHP4DelphiException.Create('zend_hash_index_findZval');
-  if @zend_symtable_findTest = nil then raise EPHP4DelphiException.Create('zend_symtable_findTest');
-  if @zend_hash_index_existsZval = nil then raise EPHP4DelphiException.Create('zend_hash_index_existsZval');
-
-  {$ENDIF}
-  {$IFNDEF PHP7}
-  if @zend_hash_next_free_element = nil then raise EPHP4DelphiException.Create('zend_hash_next_free_element');
-  {$ENDIF}
-  if @zend_hash_move_forward_ex = nil then raise EPHP4DelphiException.Create('zend_hash_move_forward_ex');
-  if @zend_hash_move_backwards_ex = nil then raise EPHP4DelphiException.Create('zend_hash_move_backwards_ex');
-  if @zend_hash_get_current_key_ex = nil then raise EPHP4DelphiException.Create('zend_hash_get_current_key_ex');
-  if @zend_hash_get_current_key_type_ex = nil then raise EPHP4DelphiException.Create('zend_hash_get_current_key_type_ex');
-  if @zend_hash_get_current_data_ex = nil then raise EPHP4DelphiException.Create('zend_hash_get_current_data_ex');
-  if @zend_hash_internal_pointer_reset_ex = nil then raise EPHP4DelphiException.Create('zend_hash_internal_pointer_reset_ex');
-  if @zend_hash_internal_pointer_end_ex = nil then raise EPHP4DelphiException.Create('zend_hash_internal_pointer_end_ex');
-  if @zend_hash_copy = nil then raise EPHP4DelphiException.Create('zend_hash_copy');
-  if @zend_hash_sort = nil then raise EPHP4DelphiException.Create('zend_hash_sort');
-  if @zend_hash_compare = nil then raise EPHP4DelphiException.Create('zend_hash_compare');
-  if @zend_hash_minmax = nil then raise EPHP4DelphiException.Create('zend_hash_minmax');
-  if @zend_hash_num_elements = nil then raise EPHP4DelphiException.Create('zend_hash_num_elements');
-  if @zend_hash_rehash = nil then raise EPHP4DelphiException.Create('zend_hash_rehash');
-  if @zend_hash_func = nil then raise EPHP4DelphiException.Create('zend_hash_func');
-  if @zend_get_constant = nil then raise EPHP4DelphiException.Create('zend_get_constant');
-  if @zend_register_long_constant = nil then raise EPHP4DelphiException.Create('zend_register_long_constant');
-  if @zend_register_double_constant = nil then raise EPHP4DelphiException.Create('zend_register_double_constant');
-  if @zend_register_string_constant = nil then raise EPHP4DelphiException.Create('zend_register_string_constant');
-  if @zend_register_stringl_constant = nil then raise EPHP4DelphiException.Create('zend_register_stringl_constant');
-  if @zend_register_constant = nil then raise EPHP4DelphiException.Create('zend_register_constant');
-  if @tsrm_shutdown = nil then raise EPHP4DelphiException.Create('tsrm_shutdown');
-  if @ts_resource_ex = nil then raise EPHP4DelphiException.Create('ts_resource_ex');
-  if @ts_free_thread = nil then raise EPHP4DelphiException.Create('ts_free_thread');
-  if @zend_error = nil then raise EPHP4DelphiException.Create('zend_error');
-  if @zend_error_cb = nil then raise EPHP4DelphiException.Create('zend_error_cb');
-  if @zend_eval_string = nil then raise EPHP4DelphiException.Create('zend_eval_string');
-  if @zend_make_compiled_string_description = nil then raise EPHP4DelphiException.Create('zend_make_compiled_string_description');
-
-  {$IFDEF PHP4}
-  if @_zval_dtor = nil then raise EPHP4DelphiException.Create('_zval_dtor');
-  if @_zval_copy_ctor = nil then raise EPHP4DelphiException.Create('_zval_copy_ctor');
-  {$ELSE}
-  if @_zval_dtor_func = nil then raise EPHP4DelphiException.Create('_zval_dtor_func');
-  if @_zval_copy_ctor_func = nil then raise EPHP4DelphiException.Create('_zval_copy_ctor_func');
- {$ENDIF}
-
-  if @zend_print_variable = nil then raise EPHP4DelphiException.Create('zend_print_variable');
-  if @zend_stack_init = nil then raise EPHP4DelphiException.Create('zend_stack_init');
-  if @zend_stack_push = nil then raise EPHP4DelphiException.Create('zend_stack_push');
-  if @zend_stack_top = nil then raise EPHP4DelphiException.Create('zend_stack_top');
-  if @zend_stack_del_top = nil then raise EPHP4DelphiException.Create('zend_stack_del_top');
-  if @zend_stack_int_top = nil then raise EPHP4DelphiException.Create('zend_stack_int_top');
-  if @zend_stack_is_empty = nil then raise EPHP4DelphiException.Create('zend_stack_is_empty');
-  if @zend_stack_destroy = nil then raise EPHP4DelphiException.Create('zend_stack_destroy');
-  if @zend_stack_base = nil then raise EPHP4DelphiException.Create('zend_stack_base');
-  if @zend_stack_count = nil then raise EPHP4DelphiException.Create('zend_stack_count');
-  if @zend_stack_apply = nil then raise EPHP4DelphiException.Create('zend_stack_apply');
-  if @zend_stack_apply_with_argument = nil then raise EPHP4DelphiException.Create('zend_stack_apply_with_argument');
-  if @_convert_to_string = nil then raise EPHP4DelphiException.Create('_convert_to_string');
-  if @add_function = nil then raise EPHP4DelphiException.Create('add_function');
-  if @sub_function = nil then raise EPHP4DelphiException.Create('sub_function');
-  if @mul_function = nil then raise EPHP4DelphiException.Create('mul_function');
-  if @div_function = nil then raise EPHP4DelphiException.Create('div_function');
-  if @mod_function = nil then raise EPHP4DelphiException.Create('mod_function');
-  if @boolean_xor_function = nil then raise EPHP4DelphiException.Create('boolean_xor_function');
-  if @boolean_not_function = nil then raise EPHP4DelphiException.Create('boolean_not_function');
-  if @bitwise_not_function = nil then raise EPHP4DelphiException.Create('bitwise_not_function');
-  if @bitwise_or_function = nil then raise EPHP4DelphiException.Create('bitwise_or_function');
-  if @bitwise_and_function = nil then raise EPHP4DelphiException.Create('bitwise_and_function');
-  if @bitwise_xor_function = nil then raise EPHP4DelphiException.Create('bitwise_xor_function');
-  if @shift_left_function = nil then raise EPHP4DelphiException.Create('shift_left_function');
-  if @shift_right_function = nil then raise EPHP4DelphiException.Create('shift_right_function');
-  if @concat_function = nil then raise EPHP4DelphiException.Create('concat_function');
-  if @is_equal_function = nil then raise EPHP4DelphiException.Create('is_equal_function');
-  if @is_identical_function = nil then raise EPHP4DelphiException.Create('is_identical_function');
-  if @is_not_identical_function = nil then raise EPHP4DelphiException.Create('is_not_identical_function');
-  if @is_not_equal_function = nil then raise EPHP4DelphiException.Create('is_not_equal_function');
-  if @is_smaller_function = nil then raise EPHP4DelphiException.Create('is_smaller_function');
-  if @is_smaller_or_equal_function = nil then raise EPHP4DelphiException.Create('is_smaller_or_equal_function');
-  if @increment_function = nil then raise EPHP4DelphiException.Create('increment_function');
-  if @decrement_function = nil then raise EPHP4DelphiException.Create('decrement_function');
-  if @convert_scalar_to_number = nil then raise EPHP4DelphiException.Create('convert_scalar_to_number');
-  if @convert_to_long = nil then raise EPHP4DelphiException.Create('convert_to_long');
-  if @convert_to_double = nil then raise EPHP4DelphiException.Create('convert_to_double');
-  if @convert_to_long_base = nil then raise EPHP4DelphiException.Create('convert_to_long_base');
-  if @convert_to_null = nil then raise EPHP4DelphiException.Create('convert_to_null');
-  if @convert_to_boolean = nil then raise EPHP4DelphiException.Create('convert_to_boolean');
-  if @convert_to_array = nil then raise EPHP4DelphiException.Create('convert_to_array');
-  if @convert_to_object = nil then raise EPHP4DelphiException.Create('convert_to_object');
-  if @add_char_to_string = nil then raise EPHP4DelphiException.Create('add_char_to_string');
-  if @add_string_to_string = nil then raise EPHP4DelphiException.Create('add_string_to_string');
-  if @zend_string_to_double = nil then raise EPHP4DelphiException.Create('zend_string_to_double');
-  if @zval_is_true = nil then raise EPHP4DelphiException.Create('zval_is_true');
-  if @compare_function = nil then raise EPHP4DelphiException.Create('compare_function');
-  if @numeric_compare_function = nil then raise EPHP4DelphiException.Create('numeric_compare_function');
-  if @string_compare_function = nil then raise EPHP4DelphiException.Create('string_compare_function');
-  if @zend_str_tolower = nil then raise EPHP4DelphiException.Create('zend_str_tolower');
-  if @zend_binary_zval_strcmp = nil then raise EPHP4DelphiException.Create('zend_binary_zval_strcmp');
-  if @zend_binary_zval_strncmp = nil then raise EPHP4DelphiException.Create('zend_binary_zval_strncmp');
-  if @zend_binary_zval_strcasecmp = nil then raise EPHP4DelphiException.Create('zend_binary_zval_strcasecmp');
-  if @zend_binary_zval_strncasecmp = nil then raise EPHP4DelphiException.Create('zend_binary_zval_strncasecmp');
-  if @zend_binary_strcmp = nil then raise EPHP4DelphiException.Create('zend_binary_strcmp');
-  if @zend_binary_strncmp = nil then raise EPHP4DelphiException.Create('zend_binary_strncmp');
-  if @zend_binary_strcasecmp = nil then raise EPHP4DelphiException.Create('zend_binary_strcasecmp');
-  if @zend_binary_strncasecmp = nil then raise EPHP4DelphiException.Create('zend_binary_strncasecmp');
-  if @zendi_smart_strcmp = nil then raise EPHP4DelphiException.Create('zendi_smart_strcmp');
-  if @zend_compare_symbol_tables = nil then raise EPHP4DelphiException.Create('zend_compare_symbol_tables');
-  if @zend_compare_arrays = nil then raise EPHP4DelphiException.Create('zend_compare_arrays');
-  if @zend_compare_objects = nil then raise EPHP4DelphiException.Create('zend_compare_objects');
-  if @zend_atoi = nil then raise EPHP4DelphiException.Create('zend_atoi');
-  if @get_active_function_name = nil then raise EPHP4DelphiException.Create('get_active_function_name');
-  if @zend_get_executed_filename = nil then raise EPHP4DelphiException.Create('zend_get_executed_filename');
-  if @zend_set_timeout = nil then raise EPHP4DelphiException.Create('zend_set_timeout');
-  if @zend_unset_timeout = nil then raise EPHP4DelphiException.Create('zend_unset_timeout');
-  if @zend_timeout = nil then raise EPHP4DelphiException.Create('zend_timeout');
-  if @zend_highlight = nil then raise EPHP4DelphiException.Create('zend_highlight');
-  if @zend_strip = nil then raise EPHP4DelphiException.Create('zend_strip');
-  if @highlight_file = nil then raise EPHP4DelphiException.Create('highlight_file');
-  if @highlight_string = nil then raise EPHP4DelphiException.Create('highlight_string');
-  if @zend_html_putc = nil then raise EPHP4DelphiException.Create('zend_html_putc');
-  if @zend_html_puts = nil then raise EPHP4DelphiException.Create('zend_html_puts');
-  {$IFDEF PHP7}
-  if @zend_parse_parameters_throw = nil then EPHP4DelphiException.Create('zend_parse_parameters_throw');
-  if @ZvalGetArgs = nil then EPHP4DelphiException.Create('ZvalGetArgs');
-  if @_zend_get_parameters_array_ex = nil then EPHP4DelphiException.Create('_zend_get_parameters_array_ex');
-  {$ELSE}
-  if @zend_indent = nil then raise EPHP4DelphiException.Create('zend_indent');
-  {$ENDIF}
-  if @_zend_get_parameters_array_ex = nil then raise EPHP4DelphiException.Create('_zend_get_parameters_array_ex');
-  if @zend_ini_refresh_caches = nil then raise EPHP4DelphiException.Create('zend_ini_refresh_caches');
-  if @zend_alter_ini_entry = nil then raise EPHP4DelphiException.Create('zend_alter_ini_entry');
-  if @zend_restore_ini_entry = nil then raise EPHP4DelphiException.Create('zend_restore_ini_entry');
-  if @zend_ini_long = nil then raise EPHP4DelphiException.Create('zend_ini_long');
-  if @zend_ini_double = nil then raise EPHP4DelphiException.Create('zend_ini_double');
-  if @zend_ini_string = nil then raise EPHP4DelphiException.Create('zend_ini_string');
-  if @compile_string = nil then raise EPHP4DelphiException.Create('compile_string');
-  if @execute = nil then raise EPHP4DelphiException.Create('execute');
-  if @zend_wrong_param_count = nil then raise EPHP4DelphiException.Create('zend_wrong_param_count');
-  if @add_property_long_ex = nil then raise EPHP4DelphiException.Create('add_property_long_ex');
-  if @add_property_null_ex = nil then raise EPHP4DelphiException.Create('add_property_null_ex');
-  if @add_property_bool_ex = nil then raise EPHP4DelphiException.Create('add_property_bool_ex');
-  if @add_property_resource_ex = nil then raise EPHP4DelphiException.Create('add_property_resource_ex');
-  if @add_property_double_ex = nil then raise EPHP4DelphiException.Create('add_property_double_ex');
-  if @add_property_string_ex = nil then raise EPHP4DelphiException.Create('add_property_string_ex');
-  if @add_property_stringl_ex = nil then raise EPHP4DelphiException.Create('add_property_stringl_ex');
-  if @add_property_zval_ex = nil then raise EPHP4DelphiException.Create('add_property_zval_ex');
-  if @call_user_function = nil then raise EPHP4DelphiException.Create('call_user_function');
-  {$IFNDEF P_CUT}
-  if @call_user_function_ex = nil then raise EPHP4DelphiException.Create('call_user_function_ex');
-  {$ENDIF}
-  if @add_assoc_long_ex = nil then raise EPHP4DelphiException.Create('add_assoc_long_ex');
-  if @add_assoc_null_ex = nil then raise EPHP4DelphiException.Create('add_assoc_null_ex');
-  if @add_assoc_bool_ex = nil then raise EPHP4DelphiException.Create('add_assoc_bool_ex');
-  if @add_assoc_resource_ex = nil then raise EPHP4DelphiException.Create('add_assoc_resource_ex');
-  if @add_assoc_double_ex = nil then raise EPHP4DelphiException.Create('add_assoc_double_ex');
-  if @add_assoc_string_ex = nil then raise EPHP4DelphiException.Create('add_assoc_string_ex');
-  if @add_assoc_stringl_ex = nil then raise EPHP4DelphiException.Create('add_assoc_stringl_ex');
-  if @add_assoc_zval_ex = nil then raise EPHP4DelphiException.Create('add_assoc_zval_ex');
-  if @add_index_long = nil then raise EPHP4DelphiException.Create('add_index_long');
-  if @add_index_null = nil then raise EPHP4DelphiException.Create('add_index_null');
-  if @add_index_bool = nil then raise EPHP4DelphiException.Create('add_index_bool');
-  if @add_index_resource = nil then raise EPHP4DelphiException.Create('add_index_resource');
-  if @add_index_double = nil then raise EPHP4DelphiException.Create('add_index_double');
-  if @add_index_string = nil then raise EPHP4DelphiException.Create('add_index_string');
-  if @add_index_stringl = nil then raise EPHP4DelphiException.Create('add_index_stringl');
-  if @add_index_zval = nil then raise EPHP4DelphiException.Create('add_index_zval');
-  if @add_next_index_long = nil then raise EPHP4DelphiException.Create('add_next_index_long');
-  if @add_next_index_null = nil then raise EPHP4DelphiException.Create('add_next_index_null');
-  if @add_next_index_bool = nil then raise EPHP4DelphiException.Create('add_next_index_bool');
-  if @add_next_index_resource = nil then raise EPHP4DelphiException.Create('add_next_index_resource');
-  if @add_next_index_double = nil then raise EPHP4DelphiException.Create('add_next_index_double');
-  if @add_next_index_string = nil then raise EPHP4DelphiException.Create('add_next_index_string');
-  if @add_next_index_stringl = nil then raise EPHP4DelphiException.Create('add_next_index_stringl');
-  if @add_next_index_zval = nil then raise EPHP4DelphiException.Create('add_next_index_zval');
-  if @add_get_assoc_string_ex = nil then raise EPHP4DelphiException.Create('add_get_assoc_string_ex');
-  if @add_get_assoc_stringl_ex = nil then raise EPHP4DelphiException.Create('add_get_assoc_stringl_ex');
-  if @add_get_index_long = nil then raise EPHP4DelphiException.Create('add_get_index_long');
-  if @add_get_index_double = nil then raise EPHP4DelphiException.Create('add_get_index_double');
-  if @add_get_index_string = nil then raise EPHP4DelphiException.Create('add_get_index_string');
-  if @add_get_index_stringl = nil then raise EPHP4DelphiException.Create('add_get_index_stringl');
-  if @_array_init = nil then raise EPHP4DelphiException.Create('_array_init');
-  if @_object_init = nil then raise EPHP4DelphiException.Create('_object_init');
-  if @_object_init_ex = nil then raise EPHP4DelphiException.Create('_object_init_ex');
-  if @_object_and_properties_init = nil then raise EPHP4DelphiException.Create('_object_and_properties_init');
-  if @zend_register_internal_class = nil then raise EPHP4DelphiException.Create('zend_register_internal_class');
-  if @zend_register_internal_class_ex = nil then raise EPHP4DelphiException.Create('zend_register_internal_class_ex');
-  if @zend_startup_module = nil then raise EPHP4DelphiException.Create('zend_startup_module');
-  if @zend_startup_module_ex = nil then raise EPHP4DelphiException.Create('zend_startup_module_ex');
-  if @zend_register_module_ex = nil then raise EPHP4DelphiException.Create('zend_register_module_ex');
-  if @zend_register_internal_module = nil then raise EPHP4DelphiException.Create('zend_register_internal_module');
-  if @zend_startup_modules = nil then raise EPHP4DelphiException.Create('zend_startup_modules');
-  if @zend_collect_module_handlers = nil then raise EPHP4DelphiException.Create('zend_collect_module_handlers');
-
-  if @get_zend_version = nil then raise EPHP4DelphiException.Create('get_zend_version');
-  if @zend_make_printable_zval = nil then raise EPHP4DelphiException.Create('zend_make_printable_zval');
-  if @zend_print_zval = nil then raise EPHP4DelphiException.Create('zend_print_zval');
-  if @zend_print_zval_r = nil then raise EPHP4DelphiException.Create('zend_print_zval_r');
-  if @zend_output_debug_string = nil then raise EPHP4DelphiException.Create('zend_output_debug_string');
-  if @ZendGetParameters = nil then raise EPHP4DelphiException.Create('zend_get_parameters');
-end;
-{$ENDIF}
-
 function zend_hash_get_current_data(ht:  {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; pData: Pointer): Integer; cdecl;
 begin
   result := zend_hash_get_current_data_ex(ht, pData, cardinal(nil));
@@ -3558,13 +3197,6 @@ function tsrmls_fetch : pointer;
 begin
   result := ts_resource_ex(0, nil);
 end;
-
-{$IFDEF PHP4}
-function zval_copy_ctor(val : pzval) : integer;
-begin
-  result := _zval_copy_ctor(val, nil, 0);
-end;
-{$ENDIF}
 
 function zend_unregister_functions(functions : {$IFDEF PHP7}P_zend_function_entry{$ELSE}pzend_function_entry{$ENDIF}; count : integer; function_table :  {$IFDEF PHP7} Pzend_array {$ELSE} PHashTable{$ENDIF}; TSRMLS_DC : pointer) : integer;
 var
@@ -3669,30 +3301,41 @@ begin
 
 end;
 
-
+function __asm_fetchval
+{$IFDEF CPUX64}
+(val_id: int64; tsrmls_dc_p: pointer)
+{$ELSE}
+(val_id: integer; tsrmls_dc_p: pointer)
+{$ENDIF}
+: pointer; assembler; register;
+{$IFDEF CPUX64}
+asm
+  mov rcx, val_id
+  mov rdx, dword64 ptr tsrmls_dc_p
+  mov rax, dword64 ptr [rdx]
+  mov rcx, dword64 ptr [rax+rcx*8-8]
+  mov Result, rcx
+end;
+{$ELSE}
+asm
+  mov ecx, val_id
+  mov edx, dword ptr tsrmls_dc_p
+  mov eax, dword ptr [edx]
+  mov ecx, dword ptr [eax+ecx*4-4]
+  mov Result, ecx
+end;
+{$ENDIF}
 
 function GetGlobalResource(resource_name: AnsiString) : pointer;
 var
  global_id : pointer;
- global_value : integer;
- global_ptr   : pointer;
- tsrmls_dc : pointer;
 begin
   Result := nil;
   try
     global_id := GetProcAddress(PHPLib, zend_pchar(resource_name));
     if Assigned(global_id) then
      begin
-       tsrmls_dc := tsrmls_fetch;
-       global_value := integer(global_id^);
-       asm
-         mov ecx, global_value
-         mov edx, dword ptr tsrmls_dc
-         mov eax, dword ptr [edx]
-         mov ecx, dword ptr [eax+ecx*4-4]
-         mov global_ptr, ecx
-       end;
-       Result := global_ptr;
+       Result := __asm_fetchval(integer(global_id^), tsrmls_fetch);
      end;
   except
     Result := nil;
@@ -3702,23 +3345,13 @@ end;
 function GetGlobalResourceDC(resource_name: AnsiString;TSRMLS_DC:pointer) : pointer;
 var
  global_id : pointer;
- global_value : integer;
- global_ptr   : pointer;
 begin
   Result := nil;
   try
     global_id := GetProcAddress(PHPLib, zend_pchar(resource_name));
     if Assigned(global_id) then
      begin
-       global_value := integer(global_id^);
-       asm
-         mov ecx, global_value
-         mov edx, dword ptr TSRMLS_DC
-         mov eax, dword ptr [edx]
-         mov ecx, dword ptr [eax+ecx*4-4]
-         mov global_ptr, ecx
-       end;
-       Result := global_ptr;
+       Result := __asm_fetchval(integer(global_id^), TSRMLS_DC);
      end;
   except
     Result := nil;
@@ -3763,6 +3396,20 @@ begin
 end;
 
 function object_init(arg: pzval; ce: pzend_class_entry; TSRMLS_DC : pointer) : integer; cdecl; assembler;
+{$IFDEF CPUX64}
+asm
+  mov rax, [rsp + 32]
+  mov rcx, [rsp + 24]
+  mov rdx, [rsp + 16]
+  pop rbp
+  push rax
+  push rcx
+  push rdx
+  call _object_init_ex
+  add rsp, $0c
+  ret
+end;
+{$ELSE}
 asm
   mov eax, [esp + 16]
   mov ecx, [esp + 12]
@@ -3775,6 +3422,7 @@ asm
   add esp, $0c
   ret
 end;
+{$ENDIF}
 
 
 function Z_LVAL(z : pzval) : longint;
@@ -3948,6 +3596,79 @@ begin
     end;
 end;
 
+function Z_CHAR(z: PZval) : zend_uchar;
+var S: zend_ustr;
+begin
+Result := #0;
+  if z = nil then
+      exit;
+
+  if {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} = IS_STRING then
+     S := z.value.str.val
+  else
+    case {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} of
+       IS_LONG: S := IntToStr(z.value.lval);
+       IS_DOUBLE: S := FloatToStr(z.value.dval);
+       IS_BOOL: if z.value.lval = 0 then S := '0' else S := '1';
+    end;
+  SetLength(S,1);
+  Result := zend_uchar(S[1]);
+end;
+function Z_ACHAR(z: PZVAL): AnsiChar;
+var S: AnsiString;
+begin
+Result := #0;
+  if z = nil then
+      exit;
+
+  if {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} = IS_STRING then
+     S := z.value.str.val
+  else
+    case {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} of
+       IS_LONG: S := IntToStr(z.value.lval);
+       IS_DOUBLE: S := FloatToStr(z.value.dval);
+       IS_BOOL: if z.value.lval = 0 then S := '0' else S := '1';
+    end;
+  SetLength(S,1);
+  Result := AnsiChar(S[1]);
+end;
+function Z_WCHAR(z: PZVAL): WideChar;
+var S: WideString;
+begin
+Result := #0;
+  if z = nil then
+      exit;
+
+  if {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} = IS_STRING then
+     S := z.value.str.val
+  else
+    case {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} of
+       IS_LONG: S := IntToStr(z.value.lval);
+       IS_DOUBLE: S := FloatToStr(z.value.dval);
+       IS_BOOL: if z.value.lval = 0 then S := '0' else S := '1';
+    end;
+  SetLength(S,1);
+  Result := WideChar(S[1]);
+end;
+function Z_UCHAR(z: PZVAL): UTF8Char;
+var S: UTF8String;
+begin
+Result := #0;
+  if z = nil then
+      exit;
+
+  if {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} = IS_STRING then
+     S := z.value.str.val
+  else
+    case {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} of
+       IS_LONG: S := IntToStr(z.value.lval);
+       IS_DOUBLE: S := FloatToStr(z.value.dval);
+       IS_BOOL: if z.value.lval = 0 then S := '0' else S := '1';
+    end;
+  SetLength(S,1);
+  Result := Utf8Char(S[1]);
+end;
+
 function Z_STRLEN(z : pzval) : longint;
 begin
   Result := Length(Z_STRVAL(z));
@@ -3968,15 +3689,14 @@ begin
   Result := z.value.obj.handlers;
 end;
 
-function Z_OBJPROP(z : pzval) : {$IFDEF PHP7}hzend_types.PHashTable{$ELSE}PHashTable{$ENDIF};
+function Z_OBJPROP(z : pzval;TSRMLS_DC:pointer=nil) : {$IFDEF PHP7}hzend_types.PHashTable{$ELSE}PHashTable{$ENDIF};
 {$IFDEF PHP7}
 begin
   Result := Z_OBJ_HT(z)^.get_properties(z);
 end;
 {$ELSE}
-var
- TSRMLS_DC : pointer;
 begin
+  if TSRMLS_DC = nil then
   TSRMLS_DC := ts_resource_ex(0, nil);
   Result := Z_OBJ_HT(z)^.get_properties(@z, TSRMLS_DC);
 end;

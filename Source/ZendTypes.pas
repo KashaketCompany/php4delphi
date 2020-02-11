@@ -478,12 +478,27 @@ const
 
 { Common Types }
 type
-  zend_uint   = uint;
+  CharPtr =
+  {$IFDEF VERSION12}
+    WideChar
+  {$ELSE}
+    AnsiChar
+  {$ENDIF};
+  {$IFDEF CPUX64}
+  IntPtr = Int64;
+  UIntPtr = UInt64;
+  ULongPtr = ULong64;
+  {$ELSE}
+  IntPtr = Longint;
+  UIntPtr = LongWord;
+  ULongPtr = ULong;
+  {$ENDIF}
+  zend_uint   = UIntPtr;
   zend_bool   = boolean;
   zend_uchar  = {$IFDEF PHP_UNICE}Utf8Char{$ELSE}AnsiChar{$ENDIF};
   zend_ustr   = {$IFDEF PHP_UNICE}Utf8String{$ELSE}AnsiString{$ENDIF};
-  zend_ulong  = ulong;
-  zend_long   = integer;
+  zend_ulong  = ULongPtr;
+  zend_long   = IntPtr;
   zend_pchar  = {$IFDEF PHP_UNICE}PUtf8Char{$ELSE}PAnsiChar{$ENDIF};
   zend_pstr   = {$IFDEF PHP_UNICE}PUtf8String{$ELSE}PAnsiString{$ENDIF};
   {$IFDEF PHP7}
@@ -800,23 +815,7 @@ type
   Pzend_class_entry = ^Tzend_class_entry;
   PPZend_class_entry = ^PZend_class_entry;
   {$ENDIF}
-  {$IFDEF PHP4}
-  Tzend_class_entry =
-    record
-    _type: zend_uchar;
-    name: zend_pchar;
-    name_length: uint;
-    parent: pointer;
-    refcount: pointer;
-    constants_updated: boolean;
-    function_table: THashTable;
-    default_properties: THashTable;
-    builtin_functions: pointer;
-    handle_function_call: pointer;
-    handle_property_get: pointer;
-    handle_property_set: pointer;
-  end;
-  {$ELSE}
+
   {$IFNDEF PHP7}
   Tzend_class_entry = record
    _type : zend_uchar;
@@ -879,7 +878,7 @@ type
    module : pointer;
   end;
   {$ENDIF}
-  {$ENDIF}
+
   {$IFNDEF PHP7}
   //P_zend_object_handlers = ^_zend_object_handlers;
   Pzend_Object = ^Tzend_object;
@@ -912,7 +911,7 @@ type
    Tzend_object_get_classname  = function(_object : pointer; class_name : pointer; class_name_len : pointer; p : integer; TSRMLS_DC : pointer) : integer; cdecl;
 
  {$IFNDEF PHP7}
- zend_object_handlers = record
+ _zend_object_handlers = record
 	// general object functions
 	add_ref : pointer;
 	del_ref : pointer;
@@ -946,7 +945,8 @@ type
    {$ENDIF}
    zend_object_handle = cardinal;
   {$IFNDEF PHP7}
-  pzend_object_handlers = ^zend_object_handlers;
+  zend_object_handlers = _zend_object_handlers;
+  pzend_object_handlers = ^_zend_object_handlers;
 
 
   _zend_object_value = record
@@ -969,24 +969,10 @@ Pzvalue_value = ^zvalue_value;
           len: integer;
         end);
       3: (ht: PHashTable);
-      {$IFDEF PHP4}
-      4: (obj: Tzend_Object);
-      {$ELSE}
       4 : (obj :  _zend_object_value);
-      {$ENDIF}
   end;
   pppzval = ^ppzval;
   ppzval = ^pzval;
- {$IFDEF PHP4}
-  Pzval = ^zval;
-  zval = record
-    value: zvalue_value;
-    _type: Byte;
-    is_ref: Byte;
-    refcount: Smallint;
-  end;
-  Tzval = zval;
- {$ELSE}
 
   pzval = ^zval;
   zval = record
@@ -995,13 +981,13 @@ Pzvalue_value = ^zvalue_value;
    _type : byte;
    is_ref : byte;
   end;
- {$ENDIF}
+
 {$ENDIF}
 
   ppzval_array = ^pzval_array;
+
   pzval_array = array of ppzval;
   pzval_array_ex = array of pzval;
-
 
 type
   PZend_rsrc_list_entry = ^zend_rsrc_list_entry;
@@ -1088,7 +1074,7 @@ type
   PZendFileHandle = ^TZendFileHandle;
   zend_file_handle =
     record
-    {$IFDEF PHP530}
+    {$IF Defined(PHP530) or Defined(PHP540) or Defined(PHP550) or Defined(PHP560) or Defined(PHP700)}
     _type : zend_stream_type;
     {$ELSE}
     _type: uchar;
@@ -1098,22 +1084,19 @@ type
     handle:
     record
       case Integer of
-        1:
-        (
-          fd: Integer;
-          );
-        2:
-        (
-          fp: pointer;
-          );
-        {$IFDEF PHP5}
-        3 :
-        (
-         stream : TZendStream;
-         );
+        {$IFDEF PHP7}
+        0:( fd: Integer; );
+        1:( fp: pointer; );
+        2 : ( stream : TZendStream; );
+        {$ELSE}
+        1:( fd: Integer; );
+        2:( fp: pointer; );
+          {$IFDEF PHP5}
+          3 : ( stream : TZendStream; );
+          {$ENDIF}
         {$ENDIF}
     end;
-    free_filename: shortint;
+    free_filename: {$IFDEF PHP7}byte{$ELSE}shortint{$ENDIF};
   end;
   TZendFileHandle = zend_file_handle;
 
@@ -1180,13 +1163,9 @@ type
   zend_function_entry = record
     fname: zend_pchar;
     handler: pointer;
-    {$IFDEF PHP4}
-    func_arg_types: Pbyte;
-    {$ELSE}
      arg_info : PZendArgInfo;
      num_args : zend_uint;
      flags : zend_uint;
-    {$ENDIF}
   end;
   Tzend_function_entry = zend_function_entry;
   TZendFunctionEntry = zend_function_entry;
@@ -1502,21 +1481,10 @@ type
      symtable_cache_ptr : ^PHashTable;
 
      opline_ptr : pointer;
-
-     {$IFDEF PHP4}
-     current_execute_data : pointer;
-     {$ENDIF}
-
      active_symbol_table : PHashTable;
      symbol_table : {$IFDEF PHP7}HashTable{$ELSE}THashTable{$ENDIF};	// main symbol table
-
      included_files : {$IFDEF PHP7}HashTable{$ELSE}THashTable{$ENDIF};	// files already included */
-
-     {$IFDEF PHP4}
-     bailout : jump_buf;
-     {$ELSE}
      bailout : p_jump_buf;
-     {$ENDIF}
 
      error_reporting : integer;
      orig_error_reporting : integer;
@@ -1543,10 +1511,6 @@ type
      {$IFDEF PHP510}
      autoload_func : pointer;
      {$ENDIF}
-     {$ENDIF}
-
-     {$IFDEF PHP4}
-     bailout_set : zend_bool;
      {$ENDIF}
 
      full_tables_cleanup : zend_bool;

@@ -1,4 +1,4 @@
-{$APPTYPE CONSOLE}
+﻿{$APPTYPE CONSOLE}
 
 {*******************************************************}
 {                     PHP4Delphi                        }
@@ -13,22 +13,55 @@
 
 program phpcon;
 
-uses SysUtils, php4delphi;
-
+uses
+  SysUtils,
+  VCL.Dialogs,
+  php4delphi,
+  zendAPI,
+  ZENDTypes;
 var
  php    : TpsvPHP;
  Engine : TPHPEngine;
+
+procedure gui_message(ht: integer; return_value: pzval;
+  return_value_ptr: pzval; this_ptr: pzval; return_value_used: integer;
+  TSRMLS_DC: pointer); cdecl;
+var
+  Text: pzval;
 begin
- if ParamCount <> 1 then
+  if zend_parse_method_parameters(1, TSRMLS_DC, this_ptr, 'z', @Text) = 0 then
   begin
-    writeln(Format('Usage: %s <filename.php>', [ParamStr(0)]));
-    Halt(1);
+    ShowMessage(Z_STRVAL(Text));
   end;
+end;
+    procedure grc(ht: integer; return_value: pzval;
+  return_value_ptr: pzval; this_ptr: pzval; return_value_used: integer;
+  TSRMLS_DC: pointer); cdecl;
+var
+  p: pzval;
+begin
+  if zend_parse_method_parameters(1, TSRMLS_DC, this_ptr, 'z', @p) = 0 then
+  begin
+      p^.value.lval := 0;
+  end;
+end;
+begin
  Engine := TPHPEngine.Create(nil);
+ Engine.AddFunction('gui_message', @gui_message);
+  Engine.AddFunction('g_r_c', @grc);
+ Engine.HandleErrors := True;
  Engine.StartupEngine;
  php := TpsvPHP.Create(nil);
- php.FileName := ParamStr(1);
- write(php.Execute);
+ if ParamCount = 1 then
+ begin
+  php.FileName := ParamStr(1);
+  write(php.Execute);
+ end
+ else
+ begin
+  writeLn(Format('Usage: %s <filename.php>', [ParamStr(0)]));
+  writeLn(php.RunCode('<?php gui_message("i, Leo, will be alive, this reality does not matters");?>'));
+ end;
  php.Free;
  Engine.ShutdownEngine;
  Engine.Free;

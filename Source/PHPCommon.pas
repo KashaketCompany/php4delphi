@@ -272,11 +272,7 @@ end;
 
 function TPHPVariable.GetAsInteger: integer;
 var
- {$IFDEF VERSION12}
- c : WideChar;
- {$ELSE}
- c : AnsiChar;
- {$ENDIF}
+ c: CharPtr;
 begin
   c := FormatSettings.DecimalSeparator;
   try
@@ -310,11 +306,7 @@ end;
 
 procedure TPHPVariable.SetAsInteger(const Value: integer);
 var
- {$IFDEF VERSION12}
- c : WideChar;
- {$ELSE}
- c : AnsiChar;
- {$ENDIF}
+ c: CharPtr;
 begin
   c := FormatSettings.DecimalSeparator;
   try

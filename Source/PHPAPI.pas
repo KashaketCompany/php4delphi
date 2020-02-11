@@ -22,7 +22,7 @@ interface
 
 uses
  {Windows} SysUtils,
-
+  VCL.Dialogs,
  {$IFDEF FPC}
   dynlibs
  {$ELSE}
@@ -66,7 +66,7 @@ var
 
  sapi_add_header_ex: function(header_line : zend_pchar; header_line_len : uint; duplicated : zend_bool; replace : zend_bool; TSRMLS_DC : pointer) : integer; cdecl;
 
- php_execute_script : function (primary_file: pointer; TSRMLS_D : pointer) : Integer; cdecl;
+ php_execute_script : function (primary_file: PZendFileHandle; TSRMLS_D : pointer) : {$IFDEF CPUX64} Int64 {$ELSE} Integer{$ENDIF}; cdecl;
 
  php_handle_aborted_connection:  procedure; cdecl;
 
@@ -120,7 +120,9 @@ var
   php_get_output_start_filename: function  (TSRMLS_D : pointer) : zend_pchar; cdecl;
   php_get_output_start_lineno: function (TSRMLS_D : pointer) : integer; cdecl;
   php_ob_handler_used: function (handler_name : zend_pchar; TSRMLS_DC : pointer) : integer; cdecl;
+  {$IF not Defined(PHP540) and not Defined(PHP550) and not Defined(PHP560)}
   php_ob_init_conflict: function (handler_new : zend_pchar; handler_set : zend_pchar; TSRMLS_DC : pointer) : integer; cdecl;
+  {$ENDIF}
   {$ENDIF}
 
 //php_output.h
@@ -175,7 +177,7 @@ php_print_info_htmlhead: procedure (TSRMLS_D : pointer); cdecl;
 
 
 
-{$IFNDEF P_CUT}
+{$IFNDEF CUTTED_PHP7dll}
 php_log_err: procedure (err_msg : zend_pchar; TSRMLS_DC : pointer); cdecl;
 {$ENDIF}
 php_html_puts: procedure (str : zend_pchar; str_len : integer; TSRMLS_DC : pointer); cdecl;
@@ -213,12 +215,7 @@ php_url_encode: function (s : zend_pchar; len : Integer; new_length : PInteger) 
 
 php_raw_url_encode: function (s : zend_pchar; len : Integer; new_length : PInteger) : zend_pchar; cdecl;
 
-{$IFDEF PHP5}
 php_register_extensions: function (ptr : PPzend_module_entry; count: integer; TSRMLS_DC: pointer) : integer; cdecl;
-{$ELSE}
-php_startup_extensions: function (ptr: pointer; count : integer) : integer; cdecl;
-{$ENDIF}
-
 php_error_docref0: procedure (const docref : zend_pchar; TSRMLS_DC : pointer; _type : integer; const Msg : zend_pchar); cdecl;
 php_error_docref: procedure (const docref : zend_pchar; TSRMLS_DC : pointer; _type : integer; const Msg : zend_pchar); cdecl;
 
@@ -235,7 +232,7 @@ function GetEnvVariables : pzval;
 function GetFilesVariables : pzval;
 
 function GetPHPGlobals(TSRMLS_DC : pointer) : Pphp_Core_Globals;
-function PG(TSRMLS_DC : pointer) : Pphp_Core_Globals;
+//function PG(TSRMLS_DC : pointer) : Pphp_Core_Globals;
 
 
 procedure PHP_FUNCTION(var AFunction : zend_function_entry; AName : zend_pchar; AHandler : pointer);
@@ -246,15 +243,12 @@ procedure UnloadPHP;
 
 function PHPLoaded : boolean;
 
-{$IFNDEF QUIET_LOAD}
-procedure CheckPHPErrors;
-{$ENDIF}
-
 function FloatToValue(Value: Extended): zend_ustr;
 function ValueToFloat(Value : zend_ustr) : extended;
 
 
 var
+//Info.h
 php_print_info: procedure (flag : Integer; TSRMLS_DC : pointer); cdecl;
 
 
@@ -275,12 +269,14 @@ php_info_print_table_row4: procedure (n4 : integer; c1, c2, c3, c4 : zend_pchar)
 php_info_print_table_row : procedure (n2 : integer; c1, c2 : zend_pchar); cdecl;
 
 php_info_print_table_end: procedure (); cdecl;
-
+{$IF Defined(PHP540) or Defined(PHP550) or Defined(PHP560)}
+php_write: function (const str : zend_pchar; str_length: uint; TSRMLS_DC : pointer) : integer; cdecl;
+{$ELSE}
 php_body_write: function (const str : zend_pchar; str_length: uint; TSRMLS_DC : pointer) : integer; cdecl;
 php_header_write: function (const str : zend_pchar; str_length: uint; TSRMLS_DC : pointer) : integer; cdecl;
+{$ENDIF}
 
-
-php_header: function() : integer; cdecl;
+php_header: function(TSRMLS_D: pointer) : integer; cdecl;
 php_setcookie: function (name : zend_pchar; name_len : integer; value : zend_pchar; value_len: integer;
     expires : longint; path : zend_pchar; path_len : integer; domain : zend_pchar; domain_len : integer;
     secure : integer; TSRMLS_DC : pointer) : integer; cdecl;
@@ -310,48 +306,20 @@ end;
 procedure UnloadPHP;
 var
  H : THandle;
+ vt: Integer;
 begin
-  H := InterlockedExchange(integer(PHPLib), 0);
+  vt := integer(PHPLib);
+  H := InterlockedExchange(vt, 0);
   if H > 0 then
   begin
     FreeLibrary(H);
   end;
 end;
 
-{$IFDEF PHP4}
-function GetSymbolsTable : PHashTable;
-var
- executor_globals : pointer;
- executor_globals_value : integer;
- executor_hash : PHashTable;
- tsrmls_dc : pointer;
-begin
-  if not PHPLoaded then
-   begin
-     Result := nil;
-     Exit;
-   end;
-
-  executor_globals := GetProcAddress(PHPLib, 'executor_globals_id');
-  executor_globals_value := integer(executor_globals^);
-  tsrmls_dc := tsrmls_fetch;
-  asm
-    mov ecx, executor_globals_value
-    mov edx, dword ptr tsrmls_dc
-    mov eax, dword ptr [edx]
-    mov ecx, dword ptr [eax+ecx*4-4]
-    add ecx, 0DCh
-    mov executor_hash, ecx
-  end;
-  Result := executor_hash;
-end;
-{$ELSE}
 function GetSymbolsTable : PHashTable;
 begin
   Result := @GetExecutorGlobals.symbol_table;
 end;
-
-{$ENDIF}
 
 function GetTrackHash(Name : zend_ustr) : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF};
 var
@@ -360,11 +328,7 @@ var
  ret  : integer;
 begin
  Result := nil;
-  {$IFDEF PHP4}
    arr := GetSymbolsTable;
-  {$ELSE}
-   arr := @GetExecutorGlobals.symbol_table;
-  {$ENDIF}
  if Assigned(Arr) then
   begin
     new(data);
@@ -378,47 +342,19 @@ end;
 
 
 function GetSAPIGlobals : Psapi_globals_struct;
-var
- sapi_globals_value : integer;
- sapi_globals : Psapi_globals_struct;
- tsrmls_dc : pointer;
 begin
   Result := nil;
   if Assigned(sapi_globals_id) then
-   begin
-     tsrmls_dc := tsrmls_fetch;
-     sapi_globals_value := integer(sapi_globals_id^);
-     asm
-       mov ecx, sapi_globals_value
-       mov edx, dword ptr tsrmls_dc
-       mov eax, dword ptr [edx]
-       mov ecx, dword ptr [eax+ecx*4-4]
-       mov sapi_globals, ecx
-     end;
-     Result := sapi_globals;
-   end;
+     Result := __asm_fetchval(integer(sapi_globals_id^), tsrmls_fetch);
 end;
 function GetSAPIGlobals(TSRMLS_DC : pointer) : Psapi_globals_struct;
 var
  sapi_global_id : pointer;
- sapi_globals_value : integer;
- sapi_globals : Psapi_globals_struct;
-
 begin
   Result := nil;
   sapi_global_id := GetProcAddress(PHPLib, 'sapi_globals_id');
   if Assigned(sapi_global_id) then
-   begin
-     sapi_globals_value := integer(sapi_global_id^);
-     asm
-       mov ecx, sapi_globals_value
-       mov edx, dword ptr tsrmls_dc
-       mov eax, dword ptr [edx]
-       mov ecx, dword ptr [eax+ecx*4-4]
-       mov sapi_globals, ecx
-     end;
-     Result := sapi_globals;
-   end;
+     Result := __asm_fetchval(integer(sapi_globals_id^), TSRMLS_DC);
 end;
 
 function GetStringOf(const V: TVarData): string;
@@ -468,33 +404,11 @@ function GetStringOf(const V: TVarData): string;
 end;
 
 function GetPHPGlobals(TSRMLS_DC : pointer) : Pphp_Core_Globals;
-var
- core_globals_value : integer;
- core_globals : Pphp_core_globals;
 begin
   Result := nil;
   if Assigned(core_globals_id) then
-   begin
-     core_globals_value := integer(core_globals_id^);
-     asm
-       mov ecx, core_globals_value
-       mov edx, dword ptr tsrmls_dc
-       mov eax, dword ptr [edx]
-       mov ecx, dword ptr [eax+ecx*4-4]
-       mov core_globals, ecx
-     end;
-     Result := core_globals;
-   end;
+     Result := Pphp_Core_Globals(__asm_fetchval(integer(core_globals_id^), TSRMLS_DC));
 end;
-
-
-
-function PG(TSRMLS_DC : pointer) : Pphp_Core_Globals;
-begin
-  result := GetPHPGlobals(TSRMLS_DC);
-end;
-
-
 
 
 procedure PHP_FUNCTION(var AFunction : zend_function_entry; AName : zend_pchar; AHandler : pointer);
@@ -502,18 +416,9 @@ begin
   AFunction.fname := AName;
 
   AFunction.handler := AHandler;
-  {$IFDEF PHP4}
-  AFunction.func_arg_types := nil;
-  {$ELSE}
   AFunction.arg_info := nil;
-  {$ENDIF}
 end;
 
-
-{procedure phperror(Error : zend_pchar);
-begin
-  zend_error(E_PARSE, Error);
-end;    }
 {$IFDEF PHP540}
 //HERE
 
@@ -544,322 +449,229 @@ begin
 
   php_default_post_reader          := GetProcAddress(PHPLib, 'php_default_post_reader');
 
-  sapi_add_header_ex               := GetProcAddress(PHPLib, 'sapi_add_header_ex');
+  LFunc(@sapi_add_header_ex, 'sapi_add_header_ex');
 
-  php_request_startup              := GetProcAddress(PHPLib, 'php_request_startup');
+  LFunc(@php_request_startup, 'php_request_startup');
 
-  php_request_shutdown             := GetProcAddress(PHPLib, 'php_request_shutdown');
+  LFunc(@php_request_shutdown, 'php_request_shutdown');
 
-  php_module_startup               := GetProcAddress(PHPLib, 'php_module_startup');
+  LFunc(@php_module_startup, 'php_module_startup');
 
-  php_module_shutdown              := GetProcAddress(PHPLib, 'php_module_shutdown');
+  LFunc(@php_module_shutdown, 'php_module_shutdown');
 
-  php_module_shutdown_wrapper      := GetProcAddress(PHPLib, 'php_module_shutdown_wrapper');
+  LFunc(@php_module_shutdown_wrapper, 'php_module_shutdown_wrapper');
 
-  sapi_startup                     := GetProcAddress(PHPLib, 'sapi_startup');
+  LFunc(@sapi_startup, 'sapi_startup');
 
-  sapi_shutdown                    := GetProcAddress(PHPLib, 'sapi_shutdown');
+  LFunc(@sapi_shutdown, 'sapi_shutdown');
 
-  sapi_activate                    := GetProcAddress(PHPLib, 'sapi_activate');
+  LFunc(@sapi_activate, 'sapi_activate');
 
-  sapi_deactivate                  := GetProcAddress(PHPLib, 'sapi_deactivate');
+  LFunc(@sapi_deactivate, 'sapi_deactivate');
 
-  php_execute_script               := GetProcAddress(PHPLib, 'php_execute_script');
+  LFunc(@php_execute_script, 'php_execute_script');
 
-  php_handle_aborted_connection    := GetProcAddress(PHPLib, 'php_handle_aborted_connection');
+  LFunc(@php_handle_aborted_connection, 'php_handle_aborted_connection');
 
-  php_register_variable            := GetProcAddress(PHPLib, 'php_register_variable');
+  LFunc(@php_register_variable, 'php_register_variable');
 
-  php_register_variable_safe       := GetProcAddress(PHPLib, 'php_register_variable_safe');
+  LFunc(@php_register_variable_safe, 'php_register_variable_safe');
 
-  php_register_variable_ex         := GetProcAddress(PHPLib, 'php_register_variable_ex');
+  LFunc(@php_register_variable_ex, 'php_register_variable_ex');
 
-  php_output_startup               := GetProcAddress(PHPLib, 'php_output_startup');
+  LFunc(@php_output_startup, 'php_output_startup');
 
-  php_output_activate              := GetProcAddress(PHPLib, 'php_output_activate');
+  LFunc(@php_output_activate, 'php_output_activate');
 
-  php_output_set_status            := GetProcAddress(PHPLib, 'php_output_set_status');
+  LFunc(@php_output_set_status, 'php_output_set_status');
 
-  php_output_register_constants    := GetProcAddress(PHPLib, 'php_output_register_constants');
+  LFunc(@php_output_register_constants, 'php_output_register_constants');
   {$IFDEF PHP540}
-  php_start_ob_buffer              := GetProcAddress(PHPLib, 'php_output_start_user');
+  LFunc(@php_start_ob_buffer, 'php_output_start_user');
 
-  php_start_ob_buffer_named        := GetProcAddress(PHPLib, 'php_output_start_internal');
+  LFunc(@php_start_ob_buffer_named, 'php_output_start_internal');
 
-  php_end_ob_buffer                := GetProcAddress(PHPLib, 'php_output_end');
+  LFunc(@php_end_ob_buffer, 'php_output_end');
 
-  php_end_ob_buffers               := GetProcAddress(PHPLib, 'php_output_end_all');
+  LFunc(@php_end_ob_buffers, 'php_output_end_all');
 
-  php_ob_get_buffer                := GetProcAddress(PHPLib, 'php_output_get_contents');
+  LFunc(@php_ob_get_buffer, 'php_output_get_contents');
 
-  php_ob_get_length                := GetProcAddress(PHPLib, 'php_output_get_length');
+  LFunc(@php_ob_get_length, 'php_output_get_length');
 
-  php_output_set_implicit_flush     :=GetProcAddress(PHPLib, 'php_output_set_implicit_flush');
+  LFunc(@php_output_set_implicit_flush, 'php_output_set_implicit_flush');
 
-  php_get_output_start_filename    := GetProcAddress(PHPLib, 'php_output_get_start_filename');
+  LFunc(@php_get_output_start_filename, 'php_output_get_start_filename');
 
-  php_get_output_start_lineno      := GetProcAddress(PHPLib, 'php_output_get_start_lineno');
+  LFunc(@php_get_output_start_lineno, 'php_output_get_start_lineno');
 
-  php_output_handler_started       := GetProcAddress(PHPLib, 'php_output_handler_started');
+  LFunc(@php_output_handler_started, 'php_output_handler_started');
   {$ELSE}
-  php_start_ob_buffer              := GetProcAddress(PHPLib, 'php_start_ob_buffer');
+  LFunc(@php_start_ob_buffer, 'php_start_ob_buffer');
 
-  php_start_ob_buffer_named        := GetProcAddress(PHPLib, 'php_start_ob_buffer_named');
+  php_start_ob_buffer_named, 'php_start_ob_buffer_named');
 
-  php_end_ob_buffer                := GetProcAddress(PHPLib, 'php_end_ob_buffer');
+  php_end_ob_buffer, 'php_end_ob_buffer');
 
-  php_end_ob_buffers               := GetProcAddress(PHPLib, 'php_end_ob_buffers');
+  php_end_ob_buffers, 'php_end_ob_buffers');
 
-  php_ob_get_buffer                := GetProcAddress(PHPLib, 'php_ob_get_buffer');
+  php_ob_get_buffer, 'php_ob_get_buffer');
 
-  php_ob_get_length                := GetProcAddress(PHPLib, 'php_ob_get_length');
+  php_ob_get_length, 'php_ob_get_length');
 
-  php_start_implicit_flush         := GetProcAddress(PHPLib, 'php_start_implicit_flush');
+  php_start_implicit_flush, 'php_start_implicit_flush');
 
-  php_end_implicit_flush           := GetProcAddress(PHPLib, 'php_end_implicit_flush');
+  php_end_implicit_flush, 'php_end_implicit_flush');
 
-  php_get_output_start_filename    := GetProcAddress(PHPLib, 'php_get_output_start_filename');
+  php_get_output_start_filename, 'php_get_output_start_filename');
 
-  php_get_output_start_lineno      := GetProcAddress(PHPLib, 'php_get_output_start_lineno');
+  php_get_output_start_lineno, 'php_get_output_start_lineno');
 
-  php_ob_handler_used              := GetProcAddress(PHPLib, 'php_ob_handler_used');
+  php_ob_handler_used, 'php_ob_handler_used');
 {$ENDIF}
+    {$IF not Defined(PHP540) and not Defined(PHP550) and not Defined(PHP560)}
+  php_ob_init_conflict, 'php_ob_init_conflict');
+    {$ENDIF}
+  LFunc(@php_strtoupper, 'php_strtoupper');
 
-  php_ob_init_conflict             := GetProcAddress(PHPLib, 'php_ob_init_conflict');
+  LFunc(@php_strtolower,'php_strtolower');
 
-  php_strtoupper                   := GetProcAddress(PHPLib, 'php_strtoupper');
+  LFunc(@php_strtr,   'php_strtr');
 
-  php_strtolower                   := GetProcAddress(PHPLib, 'php_strtolower');
+  LFunc(@php_stripcslashes, 'php_stripcslashes');
 
-  php_strtr                        := GetProcAddress(PHPLib, 'php_strtr');
+  LFunc(@php_basename, 'php_basename');
 
-  php_stripcslashes                := GetProcAddress(PHPLib, 'php_stripcslashes');
+  LFunc(@php_dirname, 'php_dirname');
 
-  php_basename                     := GetProcAddress(PHPLib, 'php_basename');
+  LFunc(@php_stristr, 'php_stristr');
 
-  php_dirname                      := GetProcAddress(PHPLib, 'php_dirname');
+  LFunc(@php_str_to_str, 'php_str_to_str');
 
-  php_stristr                      := GetProcAddress(PHPLib, 'php_stristr');
+  LFunc(@php_strip_tags, 'php_strip_tags');
 
-  php_str_to_str                   := GetProcAddress(PHPLib, 'php_str_to_str');
+  LFunc(@php_implode, 'php_implode');
 
-  php_strip_tags                   := GetProcAddress(PHPLib, 'php_strip_tags');
+  LFunc(@php_explode, 'php_explode');
 
-  php_implode                      := GetProcAddress(PHPLib, 'php_implode');
+  LFunc(@php_info_html_esc, 'php_info_html_esc');
 
-  php_explode                      := GetProcAddress(PHPLib, 'php_explode');
+  LFunc(@php_print_info_htmlhead, 'php_print_info_htmlhead');
 
-  php_info_html_esc                := GetProcAddress(PHPLib, 'php_info_html_esc');
+  LFunc(@php_print_info, 'php_print_info');
 
-  php_print_info_htmlhead          := GetProcAddress(PHPLib, 'php_print_info_htmlhead');
+  LFunc(@php_info_print_table_colspan_header, 'php_info_print_table_colspan_header');
 
-  php_print_info                   := GetProcAddress(PHPLib, 'php_print_info');
+  LFunc(@php_info_print_box_start, 'php_info_print_box_start');
 
-  php_info_print_table_colspan_header := GetProcAddress(PHPLib, 'php_info_print_table_colspan_header');
+  LFunc(@php_info_print_box_end, 'php_info_print_box_end');
 
-  php_info_print_box_start            := GetProcAddress(PHPLib, 'php_info_print_box_start');
+  LFunc(@php_info_print_hr, 'php_info_print_hr');
 
-  php_info_print_box_end              := GetProcAddress(PHPLib, 'php_info_print_box_end');
+  LFunc(@php_info_print_table_start, 'php_info_print_table_start');
 
-  php_info_print_hr                   := GetProcAddress(PHPLib, 'php_info_print_hr');
+  LFunc(@php_info_print_table_row1, 'php_info_print_table_row');
 
-  php_info_print_table_start          := GetProcAddress(PHPLib, 'php_info_print_table_start');
+  LFunc(@php_info_print_table_row2, 'php_info_print_table_row');
 
-  php_info_print_table_row1           := GetProcAddress(PHPLib, 'php_info_print_table_row');
+  LFunc(@php_info_print_table_row3, 'php_info_print_table_row');
 
-  php_info_print_table_row2           := GetProcAddress(PHPLib, 'php_info_print_table_row');
+  LFunc(@php_info_print_table_row4, 'php_info_print_table_row');
 
-  php_info_print_table_row3           := GetProcAddress(PHPLib, 'php_info_print_table_row');
+  LFunc(@php_info_print_table_row, 'php_info_print_table_row');
 
-  php_info_print_table_row4           := GetProcAddress(PHPLib, 'php_info_print_table_row');
-
-  php_info_print_table_row            := GetProcAddress(PHPLib, 'php_info_print_table_row');
-
-  php_info_print_table_end            := GetProcAddress(PHPLib, 'php_info_print_table_end');
-
-  php_body_write                      := GetProcAddress(PHPLib, 'php_body_write');
-
-  php_header_write                    := GetProcAddress(PHPLib, 'php_header_write');
-  {$IFNDEF P_CUT}
-  php_log_err                         := GetProcAddress(PHPLib, 'php_log_err');
+  LFunc(@php_info_print_table_end, 'php_info_print_table_end');
+  {$IF Defined(PHP540) or Defined(PHP550) or Defined(PHP560)}
+  LFunc(@php_write, 'php_write' );
+  {$ELSE}
+  LFunc(@php_body_write, 'php_body_write' );
+  LFunc(@php_header_write, 'php_header_write');
   {$ENDIF}
-  php_html_puts                       := GetProcAddress(PHPLib, 'php_html_puts');
-
-  _php_error_log                      := GetProcAddress(PHPLib, '_php_error_log');
-
-  php_print_credits                   := GetProcAddress(PHPLib, 'php_print_credits');
-
-  php_info_print_css                  := GetProcAddress(PHPLib, 'php_info_print_css');
-
-  php_set_sock_blocking               := GetProcAddress(PHPLib, 'php_set_sock_blocking');
-
-  php_copy_file                       := GetProcAddress(PHPLib, 'php_copy_file');
-
-  {$IFDEF PHP4}
-  php_flock                           := GetProcAddress(PHPLib, 'php_flock');
-  php_lookup_hostname                 := GetProcAddress(PHPLib, 'php_lookup_hostname');
+  {$IFNDEF CUTTED_PHP7dll}
+  LFunc(@php_log_err, 'php_log_err');
   {$ENDIF}
+  LFunc(@php_html_puts, 'php_html_puts');
 
+  LFunc(@_php_error_log, '_php_error_log');
 
-  php_header                          := GetProcAddress(PHPLib, 'php_header');
+  LFunc(@php_print_credits, 'php_print_credits');
 
-  php_setcookie                       := GetProcAddress(PHPLib, 'php_setcookie');
+  LFunc(@php_info_print_css, 'php_info_print_css');
 
-  php_escape_html_entities            := GetProcAddress(PHPLib, 'php_escape_html_entities');
+  LFunc(@php_set_sock_blocking, 'php_set_sock_blocking');
 
-  php_ini_long                        := GetProcAddress(PHPLib, 'zend_ini_long');
+  LFunc(@php_copy_file, 'php_copy_file');
 
-  php_ini_double                      := GetProcAddress(PHPLib, 'zend_ini_double');
+  LFunc(@php_header, 'php_header');
 
-  php_ini_string                      := GetProcAddress(PHPLib, 'zend_ini_string');
+  LFunc(@php_setcookie, 'php_setcookie');
 
-  php_url_free                        := GetProcAddress(PHPLib, 'php_url_free');
+  LFunc(@php_escape_html_entities, 'php_escape_html_entities');
 
-  php_url_parse                       := GetProcAddress(PHPLib, 'php_url_parse');
+  LFunc(@php_ini_long, 'zend_ini_long');
 
-  php_url_decode                      := GetProcAddress(PHPLib, 'php_url_decode');
+  LFunc(@php_ini_double, 'zend_ini_double');
 
-  php_raw_url_decode                  := GetProcAddress(PHPLib, 'php_raw_url_decode');
+  LFunc(@php_ini_string, 'zend_ini_string');
 
-  php_url_encode                      := GetProcAddress(PHPLib, 'php_url_encode');
+  LFunc(@php_url_free, 'php_url_free');
 
-  php_raw_url_encode                  := GetProcAddress(PHPLib, 'php_raw_url_encode');
+  LFunc(@php_url_parse, 'php_url_parse');
+
+  LFunc(@php_url_decode, 'php_url_decode');
+
+  LFunc(@php_raw_url_decode, 'php_raw_url_decode');
+
+  LFunc(@php_url_encode, 'php_url_encode');
+
+  LFunc(@php_raw_url_encode, 'php_raw_url_encode');
 
   {$IFDEF PHP5}
-  php_register_extensions              := GetProcAddress(PHPLib, 'php_register_extensions');
+  LFunc(@php_register_extensions, 'php_register_extensions');
   {$ELSE}
-  php_startup_extensions              := GetProcAddress(PHPLib, 'php_startup_extensions');
+  LFunc(@php_startup_extensions, 'php_startup_extensions');
   {$ENDIF}
 
-  php_error_docref0                   := GetProcAddress(PHPLib, 'php_error_docref0');
+  LFunc(@php_error_docref0, 'php_error_docref0');
 
-  php_error_docref                    := GetProcAddress(PHPLib, 'php_error_docref0');
+  LFunc(@php_error_docref, 'php_error_docref0');
 
-  php_error_docref1                   := GetProcAddress(PHPLib, 'php_error_docref1');
+  LFunc(@php_error_docref1, 'php_error_docref1');
 
-  php_error_docref2                   := GetProcAddress(PHPLib, 'php_error_docref2');
-
-
-
-  {$IFNDEF QUIET_LOAD}
-  CheckPHPErrors;
-  {$ENDIF}
+  LFunc(@php_error_docref2, 'php_error_docref2');
 
   Result := true;
 end;
 
-
-
-{$IFNDEF QUIET_LOAD}
-procedure CheckPHPErrors;
-begin
-  if @sapi_add_header_ex = nil then raise EPHP4DelphiException.Create('sapi_add_header_ex');
-  if @php_request_startup = nil then raise EPHP4DelphiException.Create('php_request_startup');
-  if @php_request_shutdown = nil then raise EPHP4DelphiException.Create('php_request_shutdown');
-  if @php_module_startup = nil then raise EPHP4DelphiException.Create('php_module_startup');
-  if @php_module_shutdown = nil then raise EPHP4DelphiException.Create('php_module_shutdown');
-  if @php_module_shutdown_wrapper = nil then raise EPHP4DelphiException.Create('php_module_shutdown_wrapper');
-  if @sapi_startup = nil then raise EPHP4DelphiException.Create('sapi_startup');
-  if @sapi_shutdown = nil then raise EPHP4DelphiException.Create('sapi_shutdown');
-  if @sapi_activate = nil then raise EPHP4DelphiException.Create('sapi_activate');
-  if @sapi_deactivate = nil then raise EPHP4DelphiException.Create('sapi_deactivate');
-  if @php_execute_script = nil then raise EPHP4DelphiException.Create('php_execute_script');
-  if @php_handle_aborted_connection = nil then raise EPHP4DelphiException.Create('php_handle_aborted_connection');
-  if @php_register_variable = nil then raise EPHP4DelphiException.Create('php_register_variable');
-  if @php_register_variable_safe = nil then raise EPHP4DelphiException.Create('php_register_variable_safe');
-  if @php_register_variable_ex = nil then raise EPHP4DelphiException.Create('php_register_variable_ex');
-  if @php_strip_tags = nil then raise EPHP4DelphiException.Create('php_strip_tags');
-  {$IFNDEF P_CUT}
-  if @php_log_err = nil then raise EPHP4DelphiException.Create('php_log_err');
-  {$ENDIF}
-  if @php_html_puts = nil then raise EPHP4DelphiException.Create('php_html_puts');
-  if @_php_error_log = nil then raise EPHP4DelphiException.Create('_php_error_log');
-  if @php_print_credits = nil then raise EPHP4DelphiException.Create('php_print_credits');
-  if @php_info_print_css = nil then raise EPHP4DelphiException.Create('php_info_print_css');
-  if @php_set_sock_blocking = nil then raise EPHP4DelphiException.Create('php_set_sock_blocking');
-  if @php_copy_file = nil then raise EPHP4DelphiException.Create('php_copy_file');
-
-  if @php_ini_long = nil then raise EPHP4DelphiException.Create('php_ini_long');
-  if @php_ini_double = nil then raise EPHP4DelphiException.Create('php_ini_double');
-  if @php_ini_string = nil then raise EPHP4DelphiException.Create('php_ini_string');
-  if @php_url_free = nil then raise EPHP4DelphiException.Create('php_url_free');
-  if @php_url_parse = nil then raise EPHP4DelphiException.Create('php_url_parse');
-  if @php_url_decode = nil then raise EPHP4DelphiException.Create('php_url_decode');
-  if @php_raw_url_decode = nil then raise EPHP4DelphiException.Create('php_raw_url_decode');
-  if @php_url_encode = nil then raise EPHP4DelphiException.Create('php_url_encode');
-  if @php_raw_url_encode = nil then raise EPHP4DelphiException.Create('php_raw_url_encode');
-
-  {$IFDEF PHP5}
-  if @php_register_extensions = nil then raise EPHP4DelphiException.Create('php_register_extensions');
-  {$ELSE}
-  if @php_startup_extensions = nil then raise EPHP4DelphiException.Create('php_startup_extensions');
-  {$ENDIF}
-  
-  if @php_error_docref0 = nil then raise EPHP4DelphiException.Create('php_error_docref0');
-  if @php_error_docref = nil then raise EPHP4DelphiException.Create('php_error_docref');
-  if @php_error_docref1 = nil then raise EPHP4DelphiException.Create('php_error_docref1');
-  if @php_error_docref2 = nil then raise EPHP4DelphiException.Create('php_error_docref2');
-end;
-{$ENDIF}
-
 function GetPostVariables: pzval;
-var
- TSRMLS_D : pointer;
- CoreGlobals : Pphp_Core_Globals;
 begin
- TSRMLS_D := ts_resource_ex(0, nil);
- CoreGlobals := PG(TSRMLS_D);
- Result := CoreGlobals^.http_globals[0];
+ Result := GetPHPGlobals(ts_resource_ex(0, nil))^.http_globals[0];
 end;
 
 function GetGetVariables : pzval;
-var
- TSRMLS_D : pointer;
- CoreGlobals : Pphp_Core_Globals;
 begin
- TSRMLS_D := ts_resource_ex(0, nil);
- CoreGlobals := PG(TSRMLS_D);
- Result := CoreGlobals^.http_globals[1];
+ Result := GetPHPGlobals(ts_resource_ex(0, nil))^.http_globals[1];
 end;
 
 function GetServerVariables : pzval;
-var
- TSRMLS_D : pointer;
- CoreGlobals : Pphp_Core_Globals;
 begin
- TSRMLS_D := ts_resource_ex(0, nil);
- CoreGlobals := PG(TSRMLS_D);
- Result := CoreGlobals^.http_globals[3];
+ Result := GetPHPGlobals(ts_resource_ex(0, nil))^.http_globals[3];
 end;
 
 function GetEnvVariables : pzval;
-var
- TSRMLS_D : pointer;
- CoreGlobals : Pphp_Core_Globals;
 begin
- TSRMLS_D := ts_resource_ex(0, nil);
- CoreGlobals := PG(TSRMLS_D);
- Result := CoreGlobals^.http_globals[4];
+ Result := GetPHPGlobals(ts_resource_ex(0, nil))^.http_globals[4];
 end;
 
 function GetFilesVariables : pzval;
-var
- TSRMLS_D : pointer;
- CoreGlobals : Pphp_Core_Globals;
 begin
- TSRMLS_D := ts_resource_ex(0, nil);
- CoreGlobals := PG(TSRMLS_D);
- Result := CoreGlobals^.http_globals[5];
+ Result := GetPHPGlobals(ts_resource_ex(0, nil))^.http_globals[5];
 end;
 
 
 function FloatToValue(Value: Extended): zend_ustr;
 var
-  {$IFDEF VERSION12}
-  c: WideChar;
-  {$ELSE}
-  c: AnsiChar;
-  {$ENDIF}
+  c: CharPtr;
 begin
   c := FormatSettings.DecimalSeparator;
   try
@@ -872,11 +684,7 @@ end;
 
 function ValueToFloat(Value : zend_ustr) : extended;
 var
-  {$IFDEF VERSION12}
-  c: WideChar;
-  {$ELSE}
-  c : AnsiChar;
-  {$ENDIF}
+  c: CharPtr;
 begin
   c := FormatSettings.DecimalSeparator;
   try

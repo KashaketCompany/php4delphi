@@ -18,13 +18,8 @@ interface
 uses
   {$IFNDEF FPC} Windows{$ELSE} LCLType{$ENDIF}, {$IFDEF PHP7} hzend_types {$ELSE} ZendTypes {$ENDIF};
 
-{$IFDEF PHP4}
 const
-  phpVersion = 4;
-{$ELSE}
-const
-  phpVersion = 5;
-{$ENDIF}
+  phpVersion = {$IFDEF PHP7}7{$ELSE}5{$ENDIF};
     
 const
   TRequestName : array [0..3] of zend_ustr =

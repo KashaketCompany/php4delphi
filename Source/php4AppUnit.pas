@@ -35,9 +35,7 @@ type
  private
   FBuffer  : zend_ustr;
   FVarList : TStringList;
-  {$IFDEF PHP5}
   FVirtualStream : TMemoryStream;
-  {$ENDIF}
   procedure SetVarList(AValue : TStringList);
  public
   constructor Create; virtual;
@@ -190,26 +188,23 @@ begin
   php_delphi_module.module_shutdown_func := nil;
   php_delphi_module.info_func := @php_info_delphi;
   php_delphi_module.version := '7.4';
-  {$IFDEF PHP4}
-  php_delphi_module.global_startup_func := nil;
-  {$ENDIF}
   php_delphi_module.request_shutdown_func := nil;
-  {$IFDEF PHP5}
+
   {$IFNDEF PHP520}
   php_delphi_module.global_id := 0;
   {$ENDIF}
-  {$ENDIF}
+
   php_delphi_module.module_started := 0;
   php_delphi_module._type := 0;
   php_delphi_module.handle := nil;
   php_delphi_module.module_number := 0;
 
   {$IFDEF PHP530}
-  {$IFNDEF COMPILER_VC9}
-  php_delphi_module.build_id := strdup(zend_pchar(ZEND_MODULE_BUILD_ID));
-  {$ELSE}
-  php_delphi_module.build_id := DupStr(zend_pchar(ZEND_MODULE_BUILD_ID));
-  {$ENDIF}
+    {$IFNDEF COMPILER_VC9}
+      php_delphi_module.build_id := strdup(zend_pchar(ZEND_MODULE_BUILD_ID));
+    {$ELSE}
+      php_delphi_module.build_id := DupStr(zend_pchar(ZEND_MODULE_BUILD_ID));
+    {$ENDIF}
   {$ENDIF}
 
 end;
@@ -228,18 +223,7 @@ var
 
 begin
   InfoBlock := TPHPInfoBlock(RequestID);
-
-  {$IFDEF PHP4}
-   ht := GetSymbolsTable
-  {$ELSE}
-    begin
-     EG := GetExecutorGlobals;
-     if Assigned(EG) then
-     ht := @EG.symbol_table
-      else
-        ht := nil;
-    end ;
-  {$ENDIF}
+   ht := GetSymbolsTable;
 
   if Assigned(ht) then
    begin
@@ -285,8 +269,7 @@ begin
    file_handle.opened_path := nil;
    file_handle.free_filename := 0;
    file_handle.handle.fp := nil;
-
-   PG(TSRMLS_D)^.register_globals := true;
+   GetPHPGlobals(TSRMLS_D)^.register_globals := true;
    gl := GetSAPIGlobals;
    TPHPInfoBlock(RequestID).FBuffer := '';
    gl^.server_context := pointer(RequestID);
@@ -295,9 +278,8 @@ begin
 
    php_request_startup(TSRMLS_D);
    result := php_execute_script(@file_handle, TSRMLS_D);
-   {$IFDEF PHP5}
    zend_destroy_file_handle(@file_handle, TSRMLS_D);
-   {$ENDIF}
+
    PrepareResult(RequestID, TSRMLS_D);
    php_request_shutdown(nil);
   except
@@ -477,7 +459,7 @@ begin
 
   TSRMLS_D := ts_resource_ex(0, nil);
 
-  PG(TSRMLS_D)^.register_globals := true;
+  GetPHPGlobals(TSRMLS_D)^.register_globals := true;
   gl := GetSAPIGlobals;
   TPHPInfoBlock(RequestID).FBuffer := '';
   gl^.server_context := pointer(RequestID);
@@ -645,19 +627,15 @@ begin
   inherited Create;
   FBuffer := '';
   FVarList := TStringList.Create;
-  {$IFDEF PHP5}
   FVirtualStream := TMemoryStream.Create;
-  {$ENDIF}
 end;
 
 destructor TPHPInfoBlock.Destroy;
 begin
   FBuffer := '';
   FVarList.Free;
-  {$IFDEF PHP5}
   if FVirtualStream <> nil then
    FreeAndNil(FVirtualStream);
-  {$ENDIF}
   inherited;
 end;
 
@@ -733,7 +711,9 @@ begin
      try
        delphi_sapi_module.shutdown(@delphi_sapi_module);
        sapi_shutdown;
+       {$IF not Defined(PHP550) and not Defined(PHP560)}
        tsrm_shutdown();
+       {$ENDIF}
      except
      end;
    end;

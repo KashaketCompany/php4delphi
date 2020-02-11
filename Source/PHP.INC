@@ -12,8 +12,7 @@
 { $Id: PHP.INC,v 7.4 10/2009 delphi32 Exp $ }
 
 {IMPORTANT:
-If you are using PHP version 4.2.x...4.3.0 please change $DEFINE PHP433 to $DEFINE PHP430
-If you are using PHP version 5.0 please change $DEFINE PHP433 to $DEFINE PHP5 or remove it
+If you are using PHP version 5.0 please add $DEFINE PHP5
 If you are using PHP version 5.0.4 please add $DEFINE PHP504
 If you are using PHP version 5.1.0 or higher please add $DEFINE PHP510
 If you are using PHP version 5.1.1 or higher please add $DEFINE PHP511
@@ -36,15 +35,6 @@ Sorry for such complicated configuration, but PHP team does not keep
 backward compatibility between PHP versions.
 }
 
-
-{.$DEFINE PHP4}
-{.$DEFINE PHP430}
-{.$DEFINE PHP433}
-{.$DEFINE PHP435}
-{.$DEFINE PHP446}
-
-{If you are using PHP 4 please comment $DEFINE PHP5}
-
 {PHP5 must be defined if you are using PHP5}
 {$DEFINE PHP5}
 
@@ -62,9 +52,9 @@ backward compatibility between PHP versions.
   {$DEFINE ZEND_WIN32}
   {$DEFINE PHP_COMPILER_ID}
 {$ENDIF}
-{$DEFINE soulengine_build}
+{s$DEFINE soulengine_build}
 {.$DEFINE PHP7}
-{.$DEFINE P_CUT}
+{.$DEFINE CUTTED_PHP7dll}
  {$IFDEF PHP7}
   {$DEFINE COMPILER_VC14}
   {$DEFINE PHP560}
@@ -86,20 +76,12 @@ backward compatibility between PHP versions.
 //problems
 
 {$IFDEF PHP_COMPILER_ID}
- {.$DEFINE COMPILER_VC6}
  {$DEFINE COMPILER_VC9}
 	{$IFNDEF PHP7}
 		{$IFDEF PHP550} {$DEFINE COMPILER_VC11} {$ENDIF}
 	{$ENDIF}
 {$ENDIF}
 
-{$IFDEF PHP5}
-  {$UNDEF PHP4}
-  {$UNDEF PHP430}
-  {$UNDEF PHP433}
-  {$UNDEF PHP435}
-  {$UNDEF PHP446}
-{$ENDIF}
 {$WARN UNIT_DEPRECATED OFF}
 
 {.$DEFINE QUIET_LOAD} //Do not show error while loading php4ts.dll or php5ts.dll (depends from php version)

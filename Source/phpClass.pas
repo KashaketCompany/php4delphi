@@ -156,7 +156,6 @@ type
     property    Properties : TClassProperties read FProperties write SetProperties;
   end;
 
-
 {$IFDEF PHP5}
 procedure RegisterClassHandlers;
 {$ENDIF}
@@ -174,11 +173,7 @@ var
  {$ENDIF}
 
 const
- {$IFDEF PHP4}
- le_classresource_name = 'TPHPCLASS4';
- {$ELSE}
  le_classresource_name = 'TPHPCLASS5';
- {$ENDIF}
 
 procedure class_destructor_handler(rsrc : PZend_rsrc_list_entry; TSRMLS_D : pointer); cdecl;
 var
@@ -223,211 +218,6 @@ begin
        end;
    end;
 end;
-
-{$IFDEF PHP4}
-
-//PHP4
-function class_set_property_handler(property_reference : Pzend_property_reference; value : pzval) : integer; cdecl;
-var
- this_ptr : pzval;
- OBJ : TPHPClassInstance;
- data: ^ppzval;
- element : pzend_list_element;
- prop  : pzend_overloaded_element;
- p : pointer;
- propname : zend_ustr;
- tsrmls : pointer;
- param : TClassProperty;
-begin
-  tsrmls := ts_resource_ex(0, nil);
-  element :=  property_reference^.elements_list^.head;
-  p := @element^.data;
-  prop := pzend_overloaded_element(p);
-  propname := prop^.element.value.str.val;
-
-  this_ptr := property_reference^._object;
-  new(data);
-  if zend_hash_find(this_ptr^.value.obj.properties, 'instance', strlen('instance') + 1, data) = SUCCESS then
-    Obj := zend_fetch_resource(data^, TSRMLS, -1, 'class resource', nil, 1, le_classresource)
-      else
-        OBJ := nil;
-  freemem(data);
-  if Assigned(Obj) then
-   begin
-    convert_to_string(value);
-    param := Obj.Properties.ByName(propname);
-    if Assigned(param) then
-     param.Value := value.value.str.val;
-   end;
-  Result := SUCCESS;
-end;
-
-
-
-//PHP4
-procedure class_call_function(ht : integer; return_value : pzval; this_ptr : pzval;
-      return_value_used : integer; TSRMLS_DC : pointer; property_reference : Pzend_property_reference ); cdecl;
-var
- OBJ : TPHPClassInstance;
- Producer : TPHPClass;
- M : TPHPClassMethod;
- data: ^ppzval;
- element : pzend_list_element;
- prop  : pzend_overloaded_element;
- p : pointer;
- MethodName : zend_ustr;
- Params : pzval_array;
- j : integer;
-begin
-  element :=  property_reference^.elements_list^.head;
-  p := @element^.data;
-  prop := pzend_overloaded_element(p);
-  MethodName := prop^.element.value.str.val;
-  this_ptr := property_reference^._object;
-  new(data);
-  if (zend_hash_find(this_ptr^.value.obj.properties, 'instance', strlen('instance') + 1, data) = SUCCESS) then
-   Obj := zend_fetch_resource(data^, TSRMLS_DC, -1, 'class resource', nil, 1, le_classresource)
-     else
-       Obj := nil;
-  freemem(data);
-
-  if not Assigned(Obj) then
-   begin
-     //not assigned obj = new instance (constructor)
-     class_call_constructor(MethodName, this_ptr);
-     exit;
-   end;
-
-  if ht > 0 then
-    begin
-      if ( not (zend_get_parameters_ex(ht, Params) = SUCCESS )) then
-        begin
-           zend_wrong_param_count(TSRMLS_DC);
-           Exit;
-        end;
-    end;
-
-
-   Producer := Obj.Producer;
-   if Assigned(Producer) then
-    begin
-      M := Producer.Methods.ByName(MethodName);
-      if Assigned(M) then
-       begin
-         if Assigned(M.FOnExecute) then
-          begin
-             if M.Parameters.Count <> ht then
-                begin
-                  zend_wrong_param_count(TSRMLS_DC);
-                   Exit;
-                end;
-
-               if ht > 0 then
-                  begin
-                     for j := 0 to ht - 1 do
-                       begin
-                         if not IsParamTypeCorrect(M.Parameters[j].ParamType, Params[j]^) then
-                            begin
-                              zend_error(E_WARNING, zend_pchar(Format('Wrong parameter type for %s()', [get_active_function_name(TSRMLS_DC)])));
-                               Exit;
-                             end;
-                             M.Parameters[j].Value := zval2variant(Params[j]^^);
-                           end;
-                  end; // if ht > 0
-
-
-             M.ZendVar.AsZendVariable := return_value; //direct access to zend variable
-             M.FOnExecute(Obj, M.Parameters, M.ReturnValue, M.FZendVar.AsZendVariable, this_ptr, TSRMLS_DC);
-             if M.ZendVar.ISNull then   //perform variant conversion
-              variant2zval(M.ReturnValue, return_value);
-
-          end;
-       end;
-    end;
-   dispose_pzval_array(Params);
-end;
-
-
-//PHP4
-procedure class_get_property_handler(val : pzval; property_reference : PZend_property_reference); cdecl;
-var
- this_ptr : pzval;
- element : pzend_list_element;
- prop  : pzend_overloaded_element;
- obj : TPHPClassInstance;
- p : pointer;
- propname : zend_ustr;
- tsrmls : pointer;
- data: ^ppzval;
- param : TClassProperty;
-begin
-  tsrmls := ts_resource_ex(0, nil);
-  element := property_reference^.elements_list^.head;
-  p := @element^.data;
-  prop := pzend_overloaded_element(p);
-  propname := prop^.element.value.str.val;
-  this_ptr := property_reference^._object;
-  new(data);
-  if ( zend_hash_find(this_ptr^.value.obj.properties, 'instance', strlen('instance') + 1, data) <> SUCCESS) then
-   Obj := nil
-     else
-       Obj := zend_fetch_resource(data^, TSRMLS, -1, 'class resource', nil, 1, le_classresource);
-  freemem(data);
-  if Assigned(Obj) then
-   begin
-    param := Obj.Properties.ByName(propname);
-    if Assigned(param) then
-     ZVAL_STRING(val, zend_pchar(param.value), true)
-       else
-         ZVAL_EMPTY_STRING(val)
-   end
-     else
-       ZVAL_STRING(val, 'undefined', true);
-end;
-
-//PHP4
-procedure _class_get_property_wrapper; assembler;
-asm
-  push        ebp
-  mov         ebp,esp
-  sub         esp,50h
-  push        ebx
-  push        esi
-  push        edi
-  lea         edi,[ebp-50h]
-  mov         ecx,14h
-  mov         eax,0CCCCCCCCh
-  rep         stosd
-  mov         eax,dword ptr [ebp+0Ch]
-  push        eax
-  lea         ecx,[ebp-10h]
-  push        ecx
-  call        class_get_property_handler
-  add         esp,8
-  mov         edx,dword ptr [ebp+8]
-  mov         eax,dword ptr [ebp-10h]
-  mov         dword ptr [edx],eax
-  mov         ecx,dword ptr [ebp-0Ch]
-  mov         dword ptr [edx+4],ecx
-  mov         eax,dword ptr [ebp-8]
-  mov         dword ptr [edx+8],eax
-  mov         ecx,dword ptr [ebp-4]
-  mov         dword ptr [edx+0Ch],ecx
-  mov         eax,dword ptr [ebp+8]
-
-  pop         edi
-  pop         esi
-  pop         ebx
-  add         esp,50h
-  cmp         ebp,esp
-  mov         esp,ebp
-  pop         ebp
-  ret
-end;
-{$ENDIF}
-
-
-
 
 {$IFDEF PHP5}
 
@@ -535,7 +325,7 @@ begin
 
   if ht > 0 then
     begin
-      if ( not (zend_get_parameters_ex(ht, Params) = SUCCESS )) then
+      if ( not (zend_get_parameters_my(ht, Params, TSRMLS_DC) = SUCCESS )) then
         begin
            zend_wrong_param_count(TSRMLS_DC);
            Result := FAILURE;
@@ -679,24 +469,12 @@ begin
 
     ZeroMemory(@FClassEntry, SizeOf(TZend_Class_Entry));
 
-    {$IFDEF PHP5}
     FClassFunction[0].fname := zend_pchar(FClassName);
     FClassFunction[0].handler := @class_init_new;
     INIT_CLASS_ENTRY(FClassEntry, zend_pchar(FClassName) , @FClassFunction);
-    {$ELSE}
-    INIT_CLASS_ENTRY(FClassEntry, zend_pchar(FClassName) , nil);
-    {$ENDIF}
 
 
     FClassObject := zend_register_internal_class(@FClassEntry,  tsrmls);
-
-    {$IFDEF PHP4}
-    FClassObject.handle_property_get :=   @_class_get_property_wrapper;
-    FClassObject.handle_property_set :=   @class_set_property_handler;
-    FClassObject.handle_function_call :=  @class_call_function;
-    {$ENDIF}
-
-
     Application.RegisterPHPClass(FClassName, FClassObject);
   end;
 end;
@@ -743,17 +521,8 @@ begin
   FClassObject := GetClassEntry;
   if not assigned(FClassObject) then
    Exit;
-   {$IFDEF PHP4}
-  _object_init_ex(return_value, FClassObject, nil, 0, TSRMLS);
-  {$ELSE}
   object_init(return_value, FClassObject,  TSRMLS );
-   {$ENDIF}
-
-  {$IFDEF PHP4}
-  add_property_resource_ex(return_value, 'instance', strlen('instance') +1, rn);
-  {$ELSE}
   add_property_resource_ex(return_value, 'instance', strlen('instance') +1, rn, TSRMLS);
-  {$ENDIF}
 
  {$IFDEF PHP5}
    return_value.value.obj.handlers := @ClassObjectHandlers;
@@ -787,18 +556,8 @@ begin
  FClassObject := Application.GetPHPClass(FClassName);
  if not assigned(FClassObject) then
   Exit;
-
-  {$IFDEF PHP4}
- _object_init_ex(AValue, FClassObject, nil, 0, TSRMLS);
-  {$ELSE}
   object_init(AValue, FClassObject, TSRMLS );
- {$ENDIF}
-
- {$IFDEF PHP4}
- add_property_resource_ex(AValue, 'instance', strlen('instance') +1, rn);
- {$ELSE}
  add_property_resource_ex(AValue, 'instance', strlen('instance') +1, rn, TSRMLS);
- {$ENDIF}
 
  {$IFDEF PHP5}
    AValue.value.obj.handlers := @ClassObjectHandlers;
@@ -882,11 +641,7 @@ end;
 
 function TClassProperty.GetAsInteger: integer;
 var
- {$IFDEF VERSION12}
- c : WideChar;
- {$ELSE}
- c : AnsiChar;
- {$ENDIF}
+ c: CharPtr;
 begin
   c := FormatSettings.DecimalSeparator;
   try
@@ -920,11 +675,7 @@ end;
 
 procedure TClassProperty.SetAsInteger(const Value: integer);
 var
- {$IFDEF VERSION12}
- c : WideChar;
- {$ELSE}
- c : AnsiChar;
- {$ENDIF}
+ c: CharPtr;
 begin
   c := FormatSettings.DecimalSeparator;
   try

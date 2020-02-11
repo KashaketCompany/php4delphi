@@ -94,9 +94,10 @@ type
     FRequestType : TPHPRequestType;
     FOnReadResult : TPHPReadResultEvent;
     FContentType: zend_ustr;
-    {$IFDEF PHP5}
-    FVirtualStream : TMemoryStream;
+    {$IFDEF sCPUX64}
+    FCode: zend_ustr;
     {$ENDIF}
+    FVirtualStream : TStringStream;
     procedure SetVariables(Value : TPHPVariables);
     procedure SetHeaders(Value : TPHPHeaders);
     function GetVariableCount: integer;
@@ -108,7 +109,7 @@ type
     procedure PrepareVariables; virtual;
     function RunTime : boolean;
     function GetThreadSafeResourceManager : pointer;
-    function  CreateVirtualFile(ACode : zend_ustr) : boolean;
+    function  CreateVirtualFile(A_code: zend_ustr) : boolean;
     procedure CloseVirtualFile;
     {$IFDEF PHP4}
     property  VirtualCode : string read FVirtualCode;
@@ -865,10 +866,10 @@ begin
                 else
                     error_type_str := 'Unknown error';
                end;
-              {$IFDEF P_CUT}
-               ShowMessage(zend_pchar(
+              {$IFDEF CUTTED_PHP7dll}
+               ShowMessage(
                 {$IFDEF PHP_UNICE}Format{$ELSE}AnsiFormat{$ENDIF}
-                ('PHP4DELPHI %s:  %s in %s on line %d', [error_type_str, buffer, error_filename, error_lineno])));
+                ('PHP4DELPHI %s:  %s in %s on line %d', [error_type_str, buffer, error_filename, error_lineno]));
               {$ELSE}
                 php_log_err(zend_pchar(
                {$IFDEF PHP_UNICE}Format{$ELSE}AnsiFormat{$ENDIF}
@@ -990,7 +991,7 @@ begin
   {$IFDEF PHP4}
   FVirtualCode := '';
   {$ELSE}
-  FVirtualStream := TMemoryStream.Create;
+  FVirtualStream := TStringStream.Create;
   {$ENDIF}
 end;
 
@@ -1031,6 +1032,9 @@ var
   {$IFDEF PHP5}
   ZendStream : TZendStream;
   {$ENDIF}
+  {$IFDEF sCPUX64}
+  z: pzval;
+  {$ENDIF}
 begin
 
   if not EngineActive then
@@ -1062,27 +1066,24 @@ begin
       if not FileExists(FFileName) then
         raise Exception.CreateFmt('File %s does not exists', [FFileName]);
      end;
-
     StartupRequest;
 
-
     ZeroMemory(@file_handle, sizeof(zend_file_handle));
-
+    {$IFNDEF sCPUX64}
     if FUseMapping then
      begin
        {$IFDEF PHP5}
        ZeroMemory(@ZendStream, sizeof(ZendStream));
        ZendStream.reader := delphi_stream_reader;
        ZendStream.closer := delphi_stream_closer;
-       {$IFDEF PHP530}
-       ZendStream.fsizer := delphi_stream_fsizer;
-       {$ELSE}
-       {$IFDEF PHP510}
-       ZendStream.fteller := delphi_stream_teller;
-       {$ENDIF}
-       ZendStream.interactive := 0;
-       {$ENDIF}
-
+         {$IFDEF PHP530}
+            ZendStream.fsizer := delphi_stream_fsizer;
+          {$ELSE}
+            {$IFDEF PHP510}
+             ZendStream.fteller := delphi_stream_teller;
+            {$ENDIF}
+            ZendStream.interactive := 0;
+          {$ENDIF}
        ZendStream.handle := FVirtualStream;
 
        file_handle._type := ZEND_HANDLE_STREAM;
@@ -1101,6 +1102,10 @@ begin
        {$ENDIF}
      end
       else
+    {$ENDIF}
+    {$IFDEF CPUX64}
+      if not FUseMapping then
+    {$ENDIF}
        begin
          file_handle._type := ZEND_HANDLE_FILENAME;
          file_handle.filename := zend_pchar(FFileName);
@@ -1109,7 +1114,21 @@ begin
        end;
 
     try
-      php_execute_script(@file_handle, TSRMLS_D);
+    begin
+      //ShowMessage('php_execute_script');
+      {$IFDEF CPUX64}
+      if FUseMapping then
+      begin
+        ShowMessage('eval');
+        z := ALLOC_ZVAL;
+        INIT_PZVAL(z);
+        z^._type := IS_STRING;
+        zend_eval_string(zend_pchar(FCode), z, 'SAPI execution', TSRMLS_D);
+      end
+      else
+      {$ENDIF}
+        PHPAPI.php_execute_script(@file_handle, TSRMLS_D);
+    end
     except
       FBuffer.Clear;
       try
@@ -1147,7 +1166,7 @@ begin
   end;
 end;
 
-function TpsvCustomPHP.RunCode(ACode : zend_ustr) : zend_ustr;
+function TpsvCustomPHP.RunCode(Acode : zend_ustr) : zend_ustr;
 begin
   if not EngineActive then
    begin
@@ -1158,19 +1177,26 @@ begin
   ClearHeaders;
   ClearBuffer;
   FUseMapping := true;
+
   try
    if FUseDelimiters then
     begin
       if Pos('<?', ACode) = 0 then
         ACode := Format('<? %s ?>', [ACode]);
     end;
+      {$IFDEF CPUX64}
+      FCode := Acode;
+      {$ELSE}
     if not CreateVirtualFile(ACode) then
       begin
         Result := '';
         Exit;
       end;
+      {$ENDIF}
      Result := Execute;
+     {$IFNDEF CPUX64}
      CloseVirtualFile;
+     {$ENDIF}
      finally
        FUseMapping := false;
      end;
@@ -1208,25 +1234,12 @@ var
   data: ^ppzval;
   cnt : integer;
   variable : pzval;
-  {$IFDEF PHP5}
-  EG : pzend_executor_globals;
-  {$ENDIF}
 begin
   if FVariables.Count = 0 then
    Exit;
 
   if FExecuteMethod = emServer then
-  {$IFDEF PHP4}
    ht := GetSymbolsTable
-  {$ELSE}
-    begin
-     EG := GetExecutorGlobals;
-     if Assigned(EG) then
-     ht := @EG.symbol_table
-      else
-        ht := nil;
-    end
-  {$ENDIF}
     else
      ht := GetTrackHash('_GET');
   if Assigned(ht) then
@@ -1278,19 +1291,22 @@ begin
 
   gl := GetSAPIGlobals;
   gl^.server_context := Self;
-
+  //ShowMessage('TpsvCustomPHP.StartupRequest -- RegisterGlobals');
   if PHPEngine.RegisterGlobals then
    GetPHPGlobals(TSRMLS_D)^.register_globals := true;
-
+  //ShowMessage('TpsvCustomPHP.StartupRequest -- Try');
   try
+  //ShowMessage('TpsvCustomPHP.StartupRequest -- FOnReadPost');
     if Assigned(FOnReadPost) then
      FOnReadPost(Self, FPostStream);
-
+   //ShowMessage('TpsvCustomPHP.StartupRequest -- zend_alter_ini_entry');
     zend_alter_ini_entry('max_execution_time', 19, zend_pchar(TimeStr), Length(TimeStr), ZEND_INI_SYSTEM, ZEND_INI_STAGE_RUNTIME);
+   //ShowMessage('TpsvCustomPHP.StartupRequest -- php_request_startup');
     php_request_startup(TSRMLS_D);
+   //ShowMessage('TpsvCustomPHP.StartupRequest -- FOnRequestStartup');
     if Assigned(FOnRequestStartup) then
       FOnRequestStartup(Self);
-
+    //ShowMessage('TpsvCustomPHP.StartupRequest --');
     FSessionActive := true;
   except
     FSessionActive := false;
@@ -1406,7 +1422,7 @@ begin
   {$ENDIF}
 end;
 
-function TpsvCustomPHP.CreateVirtualFile(ACode : zend_ustr): boolean;
+function TpsvCustomPHP.CreateVirtualFile(A_code : zend_ustr): boolean;
 {$IFDEF PHP4}
 var
  _handles : array[0..1] of THandle;
@@ -1422,7 +1438,7 @@ begin
      Exit; {empty buffer was provided}
    end;
 
-  FVirtualCode := ACode;
+  FVirtualCode := A_code;
 
   if pipe(@_handles, 4096, 0) = -1 then
    begin
@@ -1436,16 +1452,15 @@ begin
   FVirtualWriteHandle := _handles[1];
   Result := true;
   {$ELSE}
-  if ACode = '' then
+  if A_code = '' then
    Exit;
-  try
+   try
     FVirtualStream.Clear;
-    FVirtualStream.Write(ACode[1], Length(ACode));
-    FVirtualStream.Position := 0;
-    Result := true;
-  except
-    Result := false;
-  end;
+    FVirtualStream.WriteString(A_code);
+    FVirtualStream.Seek(0, TSeekOrigin.soBeginning);
+   finally
+    Result := True;
+   end;
   {$ENDIF}
 end;
 
@@ -1531,7 +1546,7 @@ begin
 
   if ht > 0 then
    begin
-     if ( not (zend_get_parameters_ex(ht, Params) = SUCCESS )) then
+     if ( not (zend_get_parameters_my(ht, Params, TSRMLS_DC) = SUCCESS )) then
       begin
         zend_wrong_param_count(TSRMLS_DC);
         Exit;
@@ -1592,7 +1607,7 @@ end;
 
 procedure TPHPEngine.PrepareIniEntry;
 var
-  p   : integer;
+  p, p2   : pointer;
   TimeStr : string;
 begin
   if not PHPLoaded then
@@ -1601,11 +1616,9 @@ begin
    if FHandleErrors then
    begin
     // p := integer(GetProcAddress(PHPLib, 'zend_do_print'));
-     p := integer(GetProcAddress(PHPLib, 'zend_error_cb'));
-     asm
-       mov edx, dword ptr [p]
-       mov dword ptr [edx], offset delphi_error_cb
-     end;
+     p := GetProcAddress(PHPLib, 'zend_error_cb');
+     p2 := @delphi_error_cb;
+     Move(p, p2, 1);
    end;
     {$IFNDEF PHP540}
   if FSafeMode then
@@ -1707,7 +1720,8 @@ begin
       strlen(zend_pchar(ConstantName)) + 1,
       zend_pchar(ConstantValue), CONST_PERSISTENT or CONST_CS, 0, TSRMLS_D);
   end;
-
+  zend_register_bool_constant( zend_pchar('UTF8_SUPPORT'), 13, {$IFDEF PHP_UNICE}TRUE{$ELSE}FALSE{$ENDIF},
+    CONST_PERSISTENT or CONST_CS, 0, TSRMLS_D);
   RegisterInternalConstants(TSRMLS_D);
 end;
 
@@ -1752,12 +1766,13 @@ begin
      {Shutdown PHP thread safe resource manager}
      if Assigned(FOnEngineShutdown) then
        FOnEngineShutdown(Self);
-
+    {$IF not Defined(PHP550) and not Defined(PHP560)}
     try
     tsrm_shutdown();
     except
 
     end;
+    {$ENDIF}
     FHash.Clear;
    finally
      FEngineActive := false;
@@ -1807,83 +1822,35 @@ var
  cnt, offset : integer;
  HashName : zend_ustr;
 begin
-  SetLength(FLibraryEntryTable, FHash.Count + MyFuncs.Count + 14);
+  SetLength(FLibraryEntryTable, FHash.Count + MyFuncs.Count + 5);
 
   PHP_FUNCTION(FLibraryEntryTable[0], 'delphi_date', @delphi_date);
-  PHP_FUNCTION(FLibraryEntryTable[1], 'delphi_extract_file_dir', @delphi_extract_file_dir);
-  PHP_FUNCTION(FLibraryEntryTable[2], 'delphi_extract_file_drive', @delphi_extract_file_drive);
-  PHP_FUNCTION(FLibraryEntryTable[3], 'delphi_extract_file_name', @delphi_extract_file_name);
 
-  FLibraryEntryTable[4].fname := 'delphi_extract_file_ext';
-  FLibraryEntryTable[4].handler := @delphi_extract_file_ext;
-  {$IFDEF PHP4}
-  FLibraryEntryTable[4].func_arg_types := nil;
-  {$ELSE}
-  FLibraryEntryTable[4].arg_info := nil;
-  {$ENDIF}
+  FLibraryEntryTable[1].fname := 'delphi_get_author';
+  FLibraryEntryTable[1].handler := @delphi_get_author;
+  FLibraryEntryTable[1].arg_info := nil;
 
-  FLibraryEntryTable[5].fname := 'delphi_show_message';
-  FLibraryEntryTable[5].handler := @delphi_show_message;
-  {$IFDEF PHP4}
-  FLibraryEntryTable[5].func_arg_types := nil;
-  {$ELSE}
-  FLibraryEntryTable[5].arg_info := nil;
-  {$ENDIF}
+  FLibraryEntryTable[2].fname := 'delphi_str_date';
+  FLibraryEntryTable[2].handler := @delphi_str_date;
+  FLibraryEntryTable[2].arg_info := nil;
 
-  FLibraryEntryTable[6].fname :=  'register_delphi_object';
-  FLibraryEntryTable[6].handler := @register_delphi_object;
-  {$IFDEF PHP4}
-  FLibraryEntryTable[6].func_arg_types := nil;
-  {$ELSE}
-  FLibraryEntryTable[6].arg_info := nil;
-  {$ENDIF}
-
-  FLibraryEntryTable[7].fname := 'delphi_get_author';
-  FLibraryEntryTable[7].handler := @delphi_get_author;
-  {$IFDEF PHP4}
-  FLibraryEntryTable[7].func_arg_types := nil;
-  {$ELSE}
-  FLibraryEntryTable[7].arg_info := nil;
-  {$ENDIF}
-
-  FLibraryEntryTable[8].fname := 'delphi_is_uc';
-  FLibraryEntryTable[8].handler := @delphi_is_uc;
-  {$IFDEF PHP4}
-  FLibraryEntryTable[8].func_arg_types := nil;
-  {$ELSE}
-  FLibraryEntryTable[8].arg_info := nil;
-  {$ENDIF}
-
-  FLibraryEntryTable[9].fname := 'delphi_str_date';
-  FLibraryEntryTable[9].handler := @delphi_str_date;
-  {$IFDEF PHP4}
-  FLibraryEntryTable[9].func_arg_types := nil;
-  {$ELSE}
-  FLibraryEntryTable[9].arg_info := nil;
-  {$ENDIF}
-
-  PHP_FUNCTION(FLibraryEntryTable[10], 'delphi_get_system_directory', @delphi_get_system_directory);
-  PHP_FUNCTION(FLibraryEntryTable[11], 'InputBox', @delphi_input_box);
-  PHP_FUNCTION(FLibraryEntryTable[12], 'register_delphi_component', @register_delphi_component);
-
+  PHP_FUNCTION(FLibraryEntryTable[3], 'InputBox', @delphi_input_box);
 
     for cnt := 0 to FHash.Count - 1 do
     begin
       HashName := FHash[cnt];
 
       {$IFNDEF COMPILER_VC9}
-      FLibraryEntryTable[cnt+13].fname := strdup(zend_pchar(HashName));
+      FLibraryEntryTable[cnt+4].fname := strdup(zend_pchar(HashName));
       {$ELSE}
-      FLibraryEntryTable[cnt+13].fname := DupStr(zend_pchar(HashName));
+      FLibraryEntryTable[cnt+4].fname := DupStr(zend_pchar(HashName));
       {$ENDIF}
 
-      FLibraryEntryTable[cnt+13].handler := @DispatchRequest;
-      {$IFDEF PHP4}
-      FLibraryEntryTable[cnt+13].func_arg_types := nil;
-      {$ENDIF}
+      FLibraryEntryTable[cnt+4].handler := @DispatchRequest;
+      FLibraryEntryTable[cnt+4].arg_info := nil;
     end;
 
-    offset := FHash.Count + 13;
+    offset := FHash.Count + 4;
     for cnt := 0 to MyFuncs.Count - 1 do
     begin
         HashName := MyFuncs[cnt];
@@ -1894,17 +1861,13 @@ begin
         {$ENDIF}
 
          FLibraryEntryTable[cnt+offset].handler := MyFuncs.Objects[ cnt ];
-        {$IFDEF PHP4}
-         FLibraryEntryTable[cnt+offset].func_arg_types := nil;
-        {$ENDIF}
+         FLibraryEntryTable[cnt+offset].arg_info := nil;
     end;
 
 
-    FLibraryEntryTable[FHash.Count+MyFuncs.Count+13].fname := nil;
-    FLibraryEntryTable[FHash.Count+MyFuncs.Count+13].handler := nil;
-    {$IFDEF PHP4}
-    FLibraryEntryTable[FHash.Count+MyFuncs.Count+13].func_arg_types := nil;
-    {$ENDIF}
+    FLibraryEntryTable[FHash.Count+MyFuncs.Count+4].fname := nil;
+    FLibraryEntryTable[FHash.Count+MyFuncs.Count+4].handler := nil;
+    FLibraryEntryTable[FHash.Count+MyFuncs.Count+4].arg_info := nil;
 
     FLibraryModule.functions := @FLibraryEntryTable[0];
 end;

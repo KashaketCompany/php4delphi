@@ -265,7 +265,7 @@ end;
 procedure DispatchRequest(ht : integer; return_value : pzval; return_value_ptr : ppzval;
             this_ptr : pzval; return_value_used : integer; TSRMLS_DC : pointer); cdecl;
 begin
-  ZVAL_NULL(return_value);
+  ZVAL(return_value);
   if Assigned(Application) then
    try
      Application.HandleRequest(ht, return_value, return_value_ptr, this_ptr,  return_value_used, TSRMLS_DC);
@@ -343,15 +343,11 @@ begin
     {$ENDIF}
 
       module_entry_table[cnt].handler := @DispatchRequest;
-      {$IFDEF PHP4}
-      module_entry_table[cnt].func_arg_types := nil;
-      {$ENDIF}
+      module_entry_table[cnt].arg_info := nil;
     end;
     module_entry_table[Extension.FFunctions.Count].fname := nil;
     module_entry_table[Extension.FFunctions.Count].handler := nil;
-    {$IFDEF PHP4}
-    module_entry_table[Extension.FFunctions.Count].func_arg_types := nil;
-    {$ENDIF}
+    module_entry_table[Extension.FFunctions.Count].arg_info := nil;
 
     ModuleEntry.functions :=  @module_entry_table[0];
     ModuleEntry._type := ORD(Extension.ModuleType) + 1;

@@ -168,7 +168,9 @@ begin
   IS_BOOL              : Result := 'IS_BOOL';
   IS_RESOURCE          : Result := 'IS_RESOURCE';
   IS_CONSTANT          : Result := 'IS_CONSTANT';
+  {$IFNDEF PHP7}
   IS_CONSTANT_ARRAY    : Result := 'IS_CONSTANT_ARRAY';
+  {$ENDIF}
   end;
 end;
 
@@ -389,7 +391,7 @@ end;
 
 procedure TFunctionParams.SetItemName(Item: TCollectionItem);
 var
-  I, J: Integer;
+  J: Integer;
   CurItem: TFunctionParam;
 begin
   J := 1;
