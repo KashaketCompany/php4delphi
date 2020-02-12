@@ -1616,10 +1616,7 @@ begin
 
    if FHandleErrors then
    begin
-    // p := integer(GetProcAddress(PHPLib, 'zend_do_print'));
-     p := GetProcAddress(PHPLib, 'zend_error_cb');
-     p2 := @delphi_error_cb;
-     Move(p, p2, 1);
+     ppointer(GetProcAddress(PHPLib, 'zend_error_cb'))^ := @delphi_error_cb;
    end;
     {$IFNDEF PHP540}
   if FSafeMode then

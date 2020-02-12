@@ -42,7 +42,7 @@ var
 begin
   if zend_parse_method_parameters(1, TSRMLS_DC, this_ptr, 'z', @p) = 0 then
   begin
-      ZVAL_STRING(z,'🐆🐆🐆 .-=WPD=-. 🐆🐆🐆',true);
+      ZVAL_STRINGW(p,'🐆🐆🐆 .-=WPD=-. 🐆🐆🐆',true);
   end;
 end;
 begin

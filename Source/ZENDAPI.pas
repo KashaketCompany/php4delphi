@@ -1530,7 +1530,6 @@ procedure VariantToZend(const Value:Variant;z:pzval;
 cobj: TObjectAConvertMethod=nil);
 var
  W : WideString;
- S: String;
 begin
   if VarIsEmpty(value) or VarIsNull(Value) then
    begin
