@@ -198,7 +198,7 @@ type
   TPHPEngineInitEvent =  procedure(Sender:TObject;TSRMLS_DC:Pointer) of object;
   TPHPEngine = class(TPHPComponent, IUnknown, IPHPEngine)
   private
-    FINIPath : AnsiString;
+    FINIPath : zend_ustr;
     FOnEngineStartup  : TNotifyEvent;
     FAddMods          : TArray<Pzend_module_entry>;
     FOnEngineShutdown : TNotifyEvent;
@@ -264,7 +264,7 @@ type
     property  OnEngineShutdown : TNotifyEvent read FOnEngineShutdown write FOnEngineShutdown;
     property  OnScriptError : TPHPErrorEvent read FOnScriptError write FOnScriptError;
     property  OnLogMessage : TPHPLogMessage read FOnLogMessage write FOnLogMessage;
-    property  IniPath : AnsiString read FIniPath write FIniPath;
+    property  IniPath : zend_ustr read FIniPath write FIniPath;
     {$IFNDEF PHP540}
     property  SafeMode : boolean read FSafeMode write FSafeMode default false;
     property  SafeModeGid : boolean read FSafeModeGid write FSafeModeGid default false;

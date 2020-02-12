@@ -1538,9 +1538,8 @@ begin
      Exit;
    end;
   case TVarData(Value).VType of
-  varString    : //Peter Enz
+  varString    :
          begin
-         // ShowMessage('h_e');
            if Assigned ( TVarData(Value).VString ) then
              begin
                ZVAL_STRINGA(z, AnsiString(PAnsiChar(TVarData(Value).VString)), true);
@@ -1551,10 +1550,10 @@ begin
                  end;
          end;
 
-  varUString    : //Peter Enz
+  varUString    :
              ZVAL_RawStr(z, RawByteString(TVarData(Value).VUString), true);
 
-     varOleStr    : //Peter Enz
+     varOleStr    :
          begin
            if Assigned ( TVarData(Value).VOleStr ) then
              begin
@@ -1612,9 +1611,8 @@ begin
        else
         ZVALVAL(z, integer(TObject(TVarData(Value).VPointer^)));
      end;
-     varStrArg    : //Peter Enz
+     varStrArg    :
          begin
-          //ShowMessage('h_e_e');
            if Assigned ( TVarData(Value).VString ) then
              begin
                ZVAL_STRINGA(z, AnsiString(PAnsiChar(TVarData(Value).VString)), true);
