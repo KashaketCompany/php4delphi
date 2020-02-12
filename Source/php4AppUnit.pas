@@ -234,7 +234,7 @@ begin
           if zend_hash_find(ht, zend_pchar(InfoBlock.VarList.Names[cnt]),
           strlen(zend_pchar(InfoBlock.VarList.Names[cnt])) + 1, data) = SUCCESS then
           case data^^^._type of
-            IS_STRING : InfoBlock.VarList.Values[InfoBlock.VarList.Names[cnt]] := data^^^.value.str.val;
+            IS_STRING : InfoBlock.VarList.Values[InfoBlock.VarList.Names[cnt]] := Z_STRVAL(data^^);
             IS_LONG,
             IS_RESOURCE,
             IS_BOOL   : InfoBlock.VarList.Values[InfoBlock.VarList.Names[cnt]] := IntToStr(data^^^.value.lval);

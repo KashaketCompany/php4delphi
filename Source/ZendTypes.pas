@@ -495,12 +495,12 @@ type
   {$ENDIF}
   zend_uint   = UIntPtr;
   zend_bool   = boolean;
-  zend_uchar  = {$IFDEF PHP_UNICE}Utf8Char{$ELSE}AnsiChar{$ENDIF};
-  zend_ustr   = {$IFDEF PHP_UNICE}Utf8String{$ELSE}AnsiString{$ENDIF};
+  zend_uchar  = {$IF Defined(PHP_UNICODE)}Utf8Char{$ELSE}AnsiChar{$ENDIF};
+  zend_ustr   = {$IF Defined(PHP_UNICODE)}UTF8String{$ELSE}AnsiString{$ENDIF};
   zend_ulong  = ULongPtr;
   zend_long   = IntPtr;
-  zend_pchar  = {$IFDEF PHP_UNICE}PUtf8Char{$ELSE}PAnsiChar{$ENDIF};
-  zend_pstr   = {$IFDEF PHP_UNICE}PUtf8String{$ELSE}PAnsiString{$ENDIF};
+  zend_pchar  = {$IF Defined(PHP_UNICODE)}PUtf8Char{$ELSE}PAnsiChar{$ENDIF};
+  zend_pstr   = {$IF Defined(PHP_UNICODE)}PUtf8String{$ELSE}PAnsiString{$ENDIF};
   {$IFDEF PHP7}
   _zend_refcounted_h = record
       refcount : cardinal;
@@ -529,14 +529,13 @@ type
   P_zend_refcounted = ^_zend_refcounted;
     zend_string = _zend_string;
     P_zend_string = ^_zend_string;
+    pzend_string = ^_zend_string;
+  {$ELSE}
+   pzend_string = zend_pchar;
   {$ENDIF}
   zend_ushort = word;
   unsigned_char = byte;
 { Common Types }
-{$IFNDEF PHP7}
-type
-  pzend_string = {$IFDEF PHP_UNICE}PUTF8Char{$ELSE}PAnsiChar{$ENDIF};
-{$ENDIF}
 type
   uint = longword;
   PINT = ^Integer;
@@ -965,7 +964,7 @@ Pzvalue_value = ^zvalue_value;
       0: (lval: zend_long);
       1: (dval: double);
       2: (str: record
-          val: zend_pchar;
+          val: PUTF8Char;// zend_pchar;
           len: integer;
         end);
       3: (ht: PHashTable);

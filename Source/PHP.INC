@@ -52,7 +52,7 @@ backward compatibility between PHP versions.
   {$DEFINE ZEND_WIN32}
   {$DEFINE PHP_COMPILER_ID}
 {$ENDIF}
-{s$DEFINE soulengine_build}
+{$DEFINE soulengine_build}
 {.$DEFINE PHP7}
 {.$DEFINE CUTTED_PHP7dll}
  {$IFDEF PHP7}
@@ -64,7 +64,6 @@ backward compatibility between PHP versions.
 	{$DEFINE PHP530}
 	{$DEFINE PHP540}
 	{$DEFINE PHP550}
-	{//$DEFINE PHP_UNICE}
 	{$DEFINE ZEND_WIN32}
 	{$DEFINE PHP_COMPILER_ID}
 {$ENDIF}
@@ -95,6 +94,12 @@ backward compatibility between PHP versions.
 
 {$IFNDEF LINUX}
  {$DEFINE ZTS}                                               {zts support}
+{$ENDIF}
+
+{$IF Defined(COMPILER_VC11) and Defined(PHP560) or Defined(PHP7)}
+  {$DEFINE PHP_UNICODE}
+{$ELSEIF Defined(COMPILER_VC12) or Defined(COMPILER_VC13) or Defined(COMPILER_VC14) or Defined(COMPILER_VC15)}
+  {$DEFINE PHP_UNICODE}
 {$ENDIF}
 
 {$IFNDEF VER80}                                             {Delphi 1.0}

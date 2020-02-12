@@ -29,7 +29,7 @@ uses
  Windows
  {$ENDIF},
 
- {$IFDEF PHP7} hzend_types, {$ELSE} ZendTypes, {$ENDIF}
+  ZendTypes,
   PHPTypes, zendAPI,
 
 
@@ -704,7 +704,7 @@ end;
 {$ELSE}
 function GetPHPVersion: TPHPFileInfo;
 var
-  FileName: {$IFDEF PHP_UNICE}String{$ELSE}AnsiString{$ENDIF};
+  FileName: String;
   InfoSize, Wnd: DWORD;
   VerBuf: Pointer;
   FI: PVSFixedFileInfo;
@@ -715,20 +715,12 @@ begin
   Result.Release := 0;
   Result.Build := 0;
   FileName := PHPWin;
-  {$IFDEF PHP_UNICE}
   InfoSize := GetFileVersionInfoSize(PWideChar(Filename), Wnd);
-  {$ELSE}
-  InfoSize := GetFileVersionInfoSizeA(PAnsiChar(FileName), Wnd);
-  {$ENDIF}
    if InfoSize <> 0 then
     begin
       GetMem(VerBuf, InfoSize);
       try
-      {$IFDEF PHP_UNICE}
       if GetFileVersionInfo(PWideChar(FileName), Wnd, InfoSize, VerBuf) then
-      {$ELSE}
-        if GetFileVersionInfoA(PAnsiChar(FileName), Wnd, InfoSize, VerBuf) then
-      {$ENDIF}
           if VerQueryValue(VerBuf, '\', Pointer(FI), VerSize) then
            begin
              Result.MajorVersion := HIWORD(FI.dwFileVersionMS);

@@ -21,8 +21,9 @@ interface
 
 uses
 VCL.Dialogs,
-  {$IFNDEF FPC} Windows{$ELSE} LCLType,LCLIntf,dynlibs,libc{$ENDIF}, SysUtils,
-  {$IFDEF PHP7} hzend_types, {$ElSE} ZendTypes, {$ENDIF} Variants,
+WideStrUtils,
+  {$IFDEF FPC} LCLType,LCLIntf,dynlibs,libc{$ELSE}Windows{$ENDIF}, SysUtils,
+  ZendTypes, Variants,
   PHPTypes;
 type
 TArrayVariant = array of variant;
@@ -77,7 +78,7 @@ type
   end;
 const
   PLATFORM_ALIGNMENT = (SizeOf(align_test));
-{$IFNDEF PHP_UNICE}
+{$IFNDEF PHP_UNICODE}
 function AnsiFormat(const Format: AnsiString; const Args: array of const): AnsiString;
 {$ENDIF}
 function Lfunc(var Func: Pointer; addr: LPCWSTR): Bool;
@@ -318,13 +319,13 @@ var
 
   zend_register_auto_global :
   {$IFDEF PHP700}
-  function(name:Pzend_string; jit:zend_bool; auto_global_callback:Pointer):longint; cdecl;
+  function(name:Pzend_string; jit:boolean; instance_init_callback:Pointer): IntPtr; cdecl;
   {$ELSE}
     {$IFDEF PHP5}
-    function(name: zend_pchar; name_len: uint; jit:boolean; callback: Pointer; TSRMLS_DC: Pointer): Integer; cdecl;
+    function(name: zend_pchar; name_len: uint; jit:boolean; instance_init_callback: Pointer; TSRMLS_DC: Pointer): IntPtr; cdecl;
      zend_activate_auto_globals: procedure(TSRMLS_C: Pointer); cdecl;
     {$ELSE}
-    function(name: zend_pchar; name_len: uint; callback: Pointer; TSRMLS_DC: Pointer): Integer; cdecl;
+    function(name: zend_pchar; name_len: uint; callback: Pointer; TSRMLS_DC: Pointer): IntPtr; cdecl;
     {$ENDIF}
   {$ENDIF}
 procedure REGISTER_MAIN_LONG_CONSTANT(name: zend_pchar; lval: longint; flags: integer; TSRMLS_DC: Pointer);
@@ -349,7 +350,7 @@ var
   zend_error_cb                                   : procedure; cdecl;
 
   zend_eval_string                                : function(str: zend_pchar; ret_val: pointer; strname: zend_pchar; tsrm: pointer): integer; cdecl;
-  zend_eval_string_ex                             : function(str:PAnsiChar;  retval_ptr:pzval; string_name:PAnsiChar; handle_exceptions:longint):longint; cdecl;
+  zend_eval_string_ex                             : function(str: zend_pchar;  retval_ptr:pzval; string_name: zend_pchar; handle_exceptions:longint):longint; cdecl;
   zend_make_compiled_string_description           : function(a: zend_pchar; tsrm: pointer): zend_pchar; cdecl;
   _zval_copy_ctor_func                            : procedure(val: pzval; __zend_filename: zend_pchar; __zend_lineno: uint); cdecl;
   _zval_dtor_func                                 : procedure(val: pzval; __zend_filename: zend_pchar; __zend_lineno: uint); cdecl;
@@ -530,12 +531,12 @@ var
 
   zend_html_puts                                  : procedure(s: zend_pchar; len: uint; TSRMLS_DC: Pointer); cdecl;
 
-  	zend_parse_method_parameters:function(num_args:longint; TSRMLS_DC:Pointer; this_ptr:Pzval; type_spec:PAnsiChar):longint; cdecl varargs;
+  	zend_parse_method_parameters:function(num_args:longint; TSRMLS_DC:Pointer; this_ptr:Pzval; type_spec:zend_pchar):longint; cdecl varargs;
 
-	zend_parse_method_parameters_ex:function(flags:longint; num_args:longint; TSRMLS_DC:Pointer; this_ptr:Pzval; type_spec:PAnsiChar):longint; cdecl varargs;
+	zend_parse_method_parameters_ex:function(flags:longint; num_args:longint; TSRMLS_DC:Pointer; this_ptr:Pzval; type_spec:zend_pchar):longint; cdecl varargs;
 
   {$IFDEF PHP7}
-  zend_parse_parameters_throw                     : function(num_args:longint; type_spec:PAnsiChar):longint; cdecl varargs;
+  zend_parse_parameters_throw                     : function(num_args:longint; type_spec:zend_pchar):longint; cdecl varargs;
   {$ELSE}
   zend_indent                                     : procedure; cdecl;
   {$ENDIF}
@@ -566,7 +567,7 @@ var
 var
   _zend_bailout                                   : procedure (filename : zend_pchar; lineno : uint); cdecl;
 
-  zend_alter_ini_entry                            : function(name: PAnsiChar; name_length: uint; new_value: PAnsiChar; new_value_length: uint; modify_type: Integer; stage: Integer): Integer; cdecl;
+  zend_alter_ini_entry                            : function(name: zend_pchar; name_length: uint; new_value: zend_pchar; new_value_length: uint; modify_type: Integer; stage: Integer): Integer; cdecl;
   zend_alter_ini_entry_ex                            : function(name: zend_pchar; name_length: uint; new_value: zend_pchar; new_value_length: uint; modify_type: Integer; stage: Integer; force_change: integer): Integer; cdecl;
 
   zend_restore_ini_entry                          : function(name: zend_pchar; name_length: uint; stage: Integer): Integer; cdecl;
@@ -674,13 +675,6 @@ var
   zend_register_internal_module    : function(module_entry: Pzend_module_entry; TSRMLS_DC: pointer): Pzend_module_entry;cdecl;
   zend_startup_modules             : function(TSRMLS_DC:pointer):integer;
   zend_collect_module_handlers     : function(TSRMLS_DC:pointer):integer;
-  function ZvalInt(z:zval):Integer;
-  function ZvalDouble(z:zval):Double;
-  function ZvalBool(z:zval):Boolean;
-
-  function ZvalStrS(z:zval) : string;
-  function ZvalStr(z:zval)  : zend_ustr;
-  function ZvalStrW(z:zval) : WideString;
 
   procedure ZvalVAL(z:pzval; v:Boolean) overload;
   procedure ZvalVAL(z:pzval; v:Integer; const _type:Integer = IS_LONG) overload;
@@ -739,8 +733,9 @@ procedure ZVAL_ARRAYWS(z: pzval; keynames: array of string; keyvals: array of st
 procedure HashToArray(HT: {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{$ENDIF}; var AR: TArrayVariant); overload;
 procedure ArrayToHash(AR: Array of Variant; var HT: pzval); overload;
 procedure ArrayToHash(Keys,AR: Array of Variant; var HT: pzval); overload;
-function ToStrA(V: Variant): zend_ustr;
-function ToStr(V: Variant): String;
+function ToStrA(V: Variant): AnsiString;
+function ToStrW(V: Variant): WideString;
+function ToStr(V: Variant): zend_ustr;
 function toWChar(s: zend_pchar): PWideChar;
 function ZendToVariant(const Value: pzval;cobj: TObjectBConvertMethod=nil): Variant;
 {$IFNDEF PHP7}
@@ -750,10 +745,11 @@ function ZendToVariant(const Value: pppzval;cobj: TObjectBConvertMethod=nil): Va
 {$ENDIF}
 procedure VariantToZend(const Value: Variant; z: pzval;
 cobj: TObjectAConvertMethod=nil);
-procedure ZVAL_STRING(z: pzval; s: zend_pchar; duplicate: boolean);
-procedure ZVAL_STRINGU(z: pzval; s: PUtf8Char; duplicate: boolean);
-procedure ZVAL_STRINGW(z: pzval; s: PWideChar; duplicate: boolean);
-
+procedure ZVAL_RawStr(z: pzval; s:RawByteString; duplicate: boolean);
+procedure ZVAL_STRING(z: pzval; s: WideString; duplicate: boolean);
+procedure ZVAL_STRINGU(z: pzval; s: UTF8String; duplicate: boolean);
+procedure ZVAL_STRINGW(z: pzval; StW: WideString; duplicate: boolean);
+procedure ZVAL_STRINGA(z: pzval; s: AnsiString; duplicate: boolean);
 procedure ZVAL_STRINGL(z: pzval; s: zend_pchar; l: integer; duplicate: boolean);
 procedure ZVAL_STRINGLW(z: pzval; s: PWideChar; l: integer; duplicate: boolean);
 
@@ -832,9 +828,11 @@ function object_init(arg: pzval; ce: pzend_class_entry; TSRMLS_DC : pointer) : i
 function Z_LVAL(z : Pzval) : longint;
 function Z_BVAL(z : Pzval) : boolean;
 function Z_DVAL(z : Pzval) : double;
-function Z_STRVAL(z : Pzval) : zend_ustr;
+function Z_RAWSTR(z: PZval): RawByteString;
+function Z_STRVAL(z : Pzval) : WideString;
+function Z_ASTRVAL(z : Pzval) : AnsiString;
 function Z_STRUVAL(z : PZval): UTF8String;
-function Z_STRWVAL(z : pzval) : String;
+function Z_WSTRVAL(z : pzval) : String;
 function Z_CHAR(z: PZval) : zend_uchar;
 function Z_WCHAR(z: PZval) : WideChar;
 function Z_ACHAR(z: PZVAL): AnsiChar;
@@ -873,7 +871,7 @@ Begin
   if op1.u1.v._type = IS_STRING then
   begin
     _result.value.str.len := op1.value.str.len + op2.value.str.len;
-    _result.value.str.val := zend_pchar(zend_ustr(op1.value.str.val) + zend_ustr(op2.value.str.val));
+    _result.value.str.val := op1.value.str.val + op2.value.str.val;
     Result := SUCCESS;
   end;
 End;
@@ -1023,35 +1021,6 @@ begin
     ZvalString(z)
   else
     ZvalString(z, _s, len);
-end;
-function ZvalInt;
-begin
-  Result := z.value.lval;
-end;
-
-function ZvalDouble;
-begin
-  Result := z.value.dval;
-end;
-
-function ZvalBool;
-begin
-  Result := boolean(z.value.lval);
-end;
-
-function ZvalStrS;
-begin
- Result := z.value.str.val;
-end;
-
-function ZvalStr;
-begin
- Result := z.value.str.val;
-end;
-
-function ZvalStrW;
-begin
- Result := WideString(z.value.str.val);
 end;
 
 procedure ZvalVAL(z:pzval; v:Boolean);
@@ -1262,7 +1231,7 @@ end;
 function ZValArrayKeyDel(v: pzval; key: zend_ustr): Boolean; overload;
 {$IFDEF PHP7}
 var
-  pzs: pzend_string;
+  pzs: zend_pchar;
 {$ENDIF}
 begin
   Result := false;
@@ -1282,7 +1251,7 @@ end;
 function ZValArrayKeyDel(v: pzval; idx: Integer): Boolean; overload;
 {$IFDEF PHP7}
 var
-  pzs: pzend_string;
+  pzs: zend_pchar;
 {$ENDIF}
 begin
   Result := false;
@@ -1359,9 +1328,9 @@ begin
       vtUnicodeString:
         ZvalVAL(Result, UnicodeString(Args._Reserved1));
       vtWideChar:
-        ZvalVAL(Result, zend_ustr(Args.VWideChar));
+        ZvalVAL(Result, zend_pchar(Args.VWideChar));
       vtChar:
-        ZvalVAL(Result, zend_pchar(zend_uchar(Args.VChar)));
+        ZvalVAL(Result, zend_pchar(Args.VChar));
       vtPWideChar:
         ZvalVAL(Result, Args.VPWideChar);
       vtPChar:
@@ -1373,66 +1342,52 @@ begin
 end;
 
 
-procedure ZVAL_STRINGU(z: pzval; s: PUtf8Char; duplicate: boolean);
+procedure ZVAL_STRINGU(z: pzval; s: UTF8String; duplicate: boolean);
 var
-  __s : PUTF8Char;
+  sc: PUTF8Char;
 begin
-  if not assigned(s) then
-   __s := ''
-    else
-     __s := s;
-
-  z^.value.str.len := length(__s);
+  sc := PUtf8Char(s);
+  z^.value.str.len := Length(s);
   if duplicate then
-
-   z^.value.str.val := estrndup(__s, z^.value.str.len)
+    z^.value.str.val := estrndup(sc, z^.value.str.len)
   else
-    z^.value.str.val := __s;
-  {$IFDEF PHP7} z^.u1.v._type {$ELSE} z^._type {$ENDIF} := IS_STRING;
+    z^.value.str.val := sc;
+
+  z^._type := IS_STRING;
 end;
 
-procedure ZVAL_STRING(z: pzval; s: zend_pchar; duplicate: boolean);
-var
-  __s : zend_pchar;
+procedure ZVAL_RawStr(z: pzval; s: RawByteString; duplicate: boolean);
+var _s: RawByteString;
 begin
-  if not assigned(s) then
-   __s := ''
-    else
-     __s := s;
-
-  z^.value.str.len := strlen(__s);
-  if duplicate then
-
-   z^.value.str.val := estrndup(__s, z^.value.str.len)
-  else
-    z^.value.str.val := __s;
-  {$IFDEF PHP7} z^.u1.v._type {$ELSE} z^._type {$ENDIF} := IS_STRING;
+  _s := s;
+  SetCodePage(_s, CP_UTF8, not IsUTF8String(_s));
+  ZVAL_STRINGU(z, UTF8String(_s), duplicate);
 end;
 
-procedure ZVAL_STRINGW(z: pzval; s: PWideChar; duplicate: boolean);
-var
-  __s : zend_pchar;
-  StA : zend_ustr;
-  StW : WideString;
+procedure ZVAL_STRING(z: pzval; s: WideString; duplicate: boolean);
 begin
-  if not assigned(s) then
-   __s := ''
-    else
-      begin
-        StW := WideString(s);
-        StA := zend_ustr(StW);
-        __s := zend_pchar(StA);
-      end;
-
-  z^.value.str.len := strlen(__s);
-  if duplicate then
-
-   z^.value.str.val := estrndup(__s, z^.value.str.len)
-  else
-    z^.value.str.val := __s;
-  {$IFDEF PHP7} z^.u1.v._type {$ELSE} z^._type {$ENDIF} := IS_STRING;
+  ZVAL_STRINGU(z, UTF8String(s), duplicate);
 end;
+procedure ZVAL_STRINGW(z: pzval; StW: WideString; duplicate: boolean);
+var
+  St: UTF8String;
+  sc: PUTF8Char;
+begin
 
+  St := UTF8String(StW);
+  sc := PUtf8Char(St);
+  z^.value.str.len := Length(St);
+  if duplicate then
+    z^.value.str.val := estrndup(sc, z^.value.str.len)
+  else
+    z^.value.str.val := sc;
+
+  z^._type := IS_STRING;
+end;
+procedure ZVAL_STRINGA(z: pzval; s: AnsiString; duplicate: boolean);
+begin
+  ZVAL_STRINGU(z, UTF8String(s), duplicate);
+end;
 procedure ZVAL_STRINGL(z: pzval; s: zend_pchar; l: integer; duplicate: boolean);
 var
   __s  : zend_pchar;
@@ -1479,27 +1434,28 @@ end;
 procedure ZVAL_EMPTY_STRING(z: pzval);
 begin
   z^.value.str.len := 0;
- // {$IFDEF PHP510}
   z^.value.str.val := STR_EMPTY_ALLOC;
-  (*{$ELSE}
-  z^.value.str.val := '';
-  {$ENDIF}*)
   {$IFDEF PHP7} z^.u1.v._type {$ELSE} z^._type {$ENDIF} := IS_STRING;
 end;
 
-function ToStrA(V: Variant): zend_ustr;
+function ToStrA(V: Variant): AnsiString;
 begin
   Result := V;
 end;
 
-function ToStr(V: Variant): String;
+function ToStr(V: Variant): zend_ustr;
+begin
+  Result := V;
+end;
+
+function ToStrW(V: Variant): WideString;
 begin
   Result := V;
 end;
 
 function ToPChar(V: Variant): zend_pchar;
 begin
-  Result := zend_pchar(ToStr(V));
+  Result := zend_pchar(zend_ustr(V));
 end;
 
 function toWChar(s: zend_pchar): PWideChar;
@@ -1541,8 +1497,6 @@ begin
 end;
 function ZendToVariant(const Value: pzval;
 cobj: TObjectBConvertMethod=nil): Variant; overload;
-  Var
-  S: String;
 begin
  case {$IFDEF PHP7} Value^.u1.v._type {$ELSE}Value^._type{$ENDIF} of
  0: Result := Null;                           //Null
@@ -1558,11 +1512,11 @@ begin
   if Assigned(cobj) then
     Result := cobj(Value)
   else
-    Result := Null;                           //String
- 6: begin S := Value^.value.str.val; Result := S; end;
+    Result := Null;
+ 6: Result := Z_STRVAL(Value);                 //String
  7: Result := Value^.value.lval;              //Resource
                                               //Constant
- 8: begin S := Value^.value.str.val; Result := S; end;
+ 8: Result := Z_STRVAL(Value);
  {$IFDEF PHP7}
   9: Result := HashToVarArray(Value^.value.arr) //Constant Array
  {$ELSE}
@@ -1586,9 +1540,10 @@ begin
   case TVarData(Value).VType of
   varString    : //Peter Enz
          begin
+         // ShowMessage('h_e');
            if Assigned ( TVarData(Value).VString ) then
              begin
-               ZVAL_STRING(z, TVarData(Value).VString , true);
+               ZVAL_STRINGA(z, AnsiString(PAnsiChar(TVarData(Value).VString)), true);
              end
                else
                  begin
@@ -1663,9 +1618,10 @@ begin
      end;
      varStrArg    : //Peter Enz
          begin
+          //ShowMessage('h_e_e');
            if Assigned ( TVarData(Value).VString ) then
              begin
-               ZVAL_STRING(z, TVarData(Value).VString , true);
+               ZVAL_STRINGA(z, AnsiString(PAnsiChar(TVarData(Value).VString)), true);
              end
                else
                  begin
@@ -1843,7 +1799,7 @@ begin
 
    for i := 0 to Length(arr)-1 do
     begin
-       add_next_index_string(z, zend_pchar(arr[i]), 1);
+       add_next_index_string(z, zend_pchar(zend_ustr(arr[i])), 1);
     end;
     Exit;
 end;
@@ -2002,7 +1958,7 @@ begin
   if Length(keynames) = Length(keyvals) then
    begin
    for i := 0 to Length(keynames)-1 do
-      add_assoc_string_ex(z, zend_pchar(zend_uchar(keynames[i])), StrLen(PAnsiChar(keynames[i])) + 1, zend_pchar(zend_uchar(keyvals[i])), 1);
+      add_assoc_string_ex(z, zend_pchar(zend_ustr(keynames[i])), Length(zend_ustr(keynames[i])) + 1, zend_pchar(zend_ustr(keyvals[i])), 1);
    end
    else
    begin
@@ -2033,7 +1989,7 @@ begin
    begin
    for i := 0 to Length(keynames)-1 do
     begin
-      add_assoc_string_ex(z, zend_pchar(keynames[i]), StrLen(zend_pchar(keynames[i])) + 1, zend_pchar(keyvals[i]), 1);
+      add_assoc_string_ex(z, zend_pchar(zend_ustr(keynames[i])), Length(zend_ustr(keynames[i])) + 1, zend_pchar(zend_ustr(keyvals[i])), 1);
     end;
     Exit;
    end
@@ -2070,7 +2026,7 @@ begin
     begin
                     //Создаём строку в массиве первого уровня
                     //Создаём ассоциацию строки с ключём первого уровня
-      add_assoc_string_ex(z, zend_pchar(zend_ustr(keynames[i])), StrLen(zend_pchar(zend_ustr(keynames[i]))) + 1,
+      add_assoc_string_ex(z, zend_pchar(zend_ustr(keynames[i])), Length(zend_ustr(keynames[i])) + 1,
       zend_pchar(zend_ustr(keyvals[i])), 1);
 
                     //Продолжаем цикл
@@ -2108,7 +2064,7 @@ begin
    begin
    for i := 0 to Length(keynames)-1 do
     begin
-      add_assoc_string_ex(z, zend_pchar(zend_ustr(keynames[i])), StrLen(zend_pchar(zend_ustr(keynames[i]))) + 1,
+      add_assoc_string_ex(z, zend_pchar(zend_ustr(keynames[i])), Length(zend_ustr(keynames[i])) + 1,
       zend_pchar(zend_ustr(keyvals[i])), 1);
     end;
     Exit;
@@ -2144,7 +2100,7 @@ begin
    begin
    for i := 0 to Length(keynames)-1 do
     begin
-      add_assoc_string_ex(z, zend_pchar(keynames[i]), StrLen(zend_pchar(keynames[i])) + 1, zend_pchar(keyvals[i]), 1);
+      add_assoc_string_ex(z, zend_pchar(zend_ustr(keynames[i])), Length(zend_ustr(keynames[i])) + 1, zend_pchar(zend_ustr(keyvals[i])), 1);
     end;
     Exit;
    end
@@ -2179,7 +2135,7 @@ begin
    begin
    for i := 0 to Length(keynames)-1 do
     begin
-      add_assoc_string_ex(z, zend_pchar(zend_ustr(keynames[i])), StrLen(PAnsiChar(keynames[i])) + 1, zend_pchar(zend_ustr(keyvals[i])), 1);
+      add_assoc_string_ex(z, zend_pchar(zend_ustr(keynames[i])), Length(zend_ustr(keynames[i])) + 1, zend_pchar(zend_ustr(keyvals[i])), 1);
     end;
     Exit;
    end
@@ -3202,7 +3158,7 @@ function zend_unregister_functions(functions : {$IFDEF PHP7}P_zend_function_entr
 var
  i : integer;
  {$IFDEF PHP7}
- pzs: pzend_string;
+ pzs: zend_pchar;
  {$ENDIF}
  ptr : {$IFDEF PHP7}P_zend_function_entry{$ELSE}pzend_function_entry{$ENDIF};
 begin
@@ -3481,8 +3437,6 @@ begin
 end;
 
 function Z_VARREC(z: pzval): TVarRec;
-  Var
-  P: zend_ustr;
 begin
   if z = nil then
   begin
@@ -3506,16 +3460,8 @@ begin
             Result.VExtended^ := z.value.dval;
         end;
         IS_STRING: begin
-            Result.VType := {$IFDEF PHP_UNICE}vtString{$ELSE}vtAnsiString{$ENDIF};
-
-            SetLength(P, z.value.str.len);
-            Move(z.value.str.val^, P[1], z.value.str.len);
-
-            {$IFDEF PHP_UNICE}
-              Result.VUnicodeString := Pointer(p);
-            {$ELSE}
-              Result.VAnsiString := Pointer(P);
-            {$ENDIF}
+            Result.VType   := vtWideString;
+            Result.VWideString := PWideChar(Z_STRVAL(z));
         end;
         else
         begin
@@ -3524,71 +3470,56 @@ begin
         end;
     end;
 end;
-
+function Z_RawStr(z: pzval): RawByteString;
+{$ifdef fpc}
+var
+  s_len: SizeInt;
+{$endif}
+begin
+  Result := '';
+  case z^._type of
+    IS_BOOL:
+    begin
+      if z^.value.lval = 1 then
+        Result := RawByteString('True')
+      Else
+        Result := RawByteString('False');
+    end;
+    IS_LONG:
+      Result := RawByteString(inttostr(z^.value.lval));
+    IS_DOUBLE:
+      Result := RawByteString(FloatToStr(z^.value.dval));
+    IS_STRING:
+      begin
+          SetString(Result, PAnsiChar(z^.value.str.val), z^.value.str.len);
+          SetCodePage(Result, CP_UTF8, not IsUTF8String(Result));
+      end;
+    IS_ARRAY:
+       Result := RawByteString('(array)');
+    IS_OBJECT:
+       Result := RawByteString('[object]');
+    IS_RESOURCE:
+       Result := RawByteString('#resource#id:' + IntToStr(z^.value.lval));
+  end;
+end;
 function Z_STRUVAL(z : pzval) : UTF8String;
 begin
-  if z = nil then
-  begin
-      Result := '';
-      exit;
-  end;
-
-  if {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} = IS_STRING then
-  begin
-     SetLength(Result, z.value.str.len);
-     Move(z.value.str.val^, Result[1], z.value.str.len);
-  end else
-    case {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} of
-       IS_LONG: Result := IntToStr(z.value.lval);
-       IS_DOUBLE: Result := FloatToStr(z.value.dval);
-       IS_BOOL: if z.value.lval = 0 then Result := '' else Result := '1';
-       else
-        Result := '';
-    end;
+  Result := UTf8String(Z_RawStr(z));
 end;
 
-function Z_STRVAL(z : pzval) : zend_ustr;
+function Z_STRVAL(z : pzval) : WideString;
 begin
-  if z = nil then
-  begin
-      Result := '';
-      exit;
-  end;
-
-  if {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} = IS_STRING then
-  begin
-     SetLength(Result, z.value.str.len);
-     Move(z.value.str.val^, Result[1], z.value.str.len);
-  end else
-    case {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} of
-       IS_LONG: Result := IntToStr(z.value.lval);
-       IS_DOUBLE: Result := FloatToStr(z.value.dval);
-       IS_BOOL: if z.value.lval = 0 then Result := '' else Result := '1';
-       else
-        Result := '';
-    end;
+  Result := WideString(Z_RawStr(z));
 end;
 
-function Z_STRWVAL(z : pzval) : String;
+function Z_ASTRVAL(z : pzval) : AnsiString;
 begin
-  if z = nil then
-  begin
-      Result := '';
-      exit;
-  end;
+  Result := AnsiString(Z_RawStr(z));
+end;
 
-  if {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} = IS_STRING then
-  begin
-     SetLength(Result, z.value.str.len);
-     Move(z.value.str.val^, Result[1], z.value.str.len);
-  end else
-    case {$IFDEF PHP7}z.u1.v._type{$ELSE}z._type{$ENDIF} of
-       IS_LONG: Result := IntToStr(z.value.lval);
-       IS_DOUBLE: Result := FloatToStr(z.value.dval);
-       IS_BOOL: if z.value.lval = 0 then Result := '' else Result := '1';
-       else
-        Result := '';
-    end;
+function Z_WSTRVAL(z : pzval) : String;
+begin
+  Result := String(Z_RawStr(z));
 end;
 
 function Z_CHAR(z: PZval) : zend_uchar;
@@ -3627,6 +3558,7 @@ Result := #0;
   SetLength(S,1);
   Result := AnsiChar(S[1]);
 end;
+
 function Z_WCHAR(z: PZVAL): WideChar;
 var S: WideString;
 begin
@@ -3679,12 +3611,12 @@ begin
   Result := {$IFDEF PHP7}z.value.obj.handlers{$ELSE}z.value.obj.handle{$ENDIF};
 end;
 
-function Z_OBJ_HT(z : pzval) : {$IFDEF PHP7}hzend_types.P_zend_object_handlers{$ELSE}pzend_object_handlers{$ENDIF};
+function Z_OBJ_HT(z : pzval) : pzend_object_handlers;
 begin
   Result := z.value.obj.handlers;
 end;
 
-function Z_OBJPROP(z : pzval;TSRMLS_DC:pointer=nil) : {$IFDEF PHP7}hzend_types.PHashTable{$ELSE}PHashTable{$ENDIF};
+function Z_OBJPROP(z : pzval;TSRMLS_DC:pointer=nil) : {$IFDEF PHP7} PZend_Array {$ELSE} PHashTable {$ENDIF};
 {$IFDEF PHP7}
 begin
   Result := Z_OBJ_HT(z)^.get_properties(z);
@@ -3726,7 +3658,7 @@ function zend_hash_add_or_update(ht : {$IFDEF PHP7}Pzend_array{$ELSE}PHashTable{
     nKeyLength : uint; pData : {$IFDEF PHP7}pzval{$ELSE}pointer{$ENDIF}; nDataSize : uint; pDes : pointer;
     flag : integer) : integer;
 {$IFDEF PHP7}
-var pz: Pzend_string;
+var pz: zend_pchar;
 {$ENDIF}
 begin
   {$IFDEF PHP7}
@@ -3750,7 +3682,7 @@ end;
 
 {$ENDIF}
 
-{$IFNDEF PHP_UNICE}
+{$IFNDEF PHP_UNICODE}
 function AnsiFormat(const Format: AnsiString; const Args: array of const): AnsiString;
 begin
    Result := Sysutils.Format(Format, Args);

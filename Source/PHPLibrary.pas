@@ -16,6 +16,9 @@ unit phpLibrary;
 interface
  uses
   Windows, SysUtils, Classes,
+  {$IFDEF PHP_UNICODE}
+  WideStrUtils,
+  {$ENDIF}
   {$IFDEF VERSION6}
   Variants,
   {$ENDIF}
@@ -178,7 +181,7 @@ var
 begin
   Func := TPHPFunction(Functions.Add);
   Func.FunctionName :=
-  {$IFDEF PHP_UNICE}LowerCase{$ELSE}AnsiLowerCase{$ENDIF}(AName);
+  {$IFDEF PHP_UNICODE}UTF8LowerCase{$ELSE}AnsiLowerCase{$ENDIF}(AName);
   Func.Description := ADescription;
 
   for cnt := 0 to Length(AParams) - 1 do
@@ -353,28 +356,28 @@ end;
 procedure TPHPSystemLibrary.AnsiUpperCaseProc;
 begin
   ReturnOutputArg(
-    {$IFDEF PHP_UNICE}UpperCase{$ELSE}AnsiUpperCase{$ENDIF}( GetInputArgAsString( 0 ) )
+    {$IFDEF PHP_UNICODE}UTF8UpperCase{$ELSE}AnsiUpperCase{$ENDIF}( GetInputArgAsString( 0 ) )
   );
 end;
 
 procedure TPHPSystemLibrary.AnsiLowerCaseProc;
 begin
   ReturnOutputArg(
-    {$IFDEF PHP_UNICE}LowerCase{$ELSE}AnsiLowerCase{$ENDIF}( GetInputArgAsString( 0 ) )
+    {$IFDEF PHP_UNICODE}UTF8LowerCase{$ELSE}AnsiLowerCase{$ENDIF}( GetInputArgAsString( 0 ) )
   );
 end;
 
 procedure TPHPSystemLibrary.AnsiCompareStrProc;
 begin
   ReturnOutputArg(
-    {$IFDEF PHP_UNICE}CompareStr{$ELSE}AnsiCompareStr{$ENDIF}( GetInputArgAsString( 0 ),GetInputArgAsString( 1 ) )
+    {$IFDEF PHP_UNICODE}CompareStr{$ELSE}AnsiCompareStr{$ENDIF}( GetInputArgAsString( 0 ),GetInputArgAsString( 1 ) )
   );
 end;
 
 procedure TPHPSystemLibrary.AnsiCompareTextProc;
 begin
    ReturnOutputArg(
-    {$IFDEF PHP_UNICE}CompareText{$ELSE}AnsiCompareText{$ENDIF}( GetInputArgAsString( 0 ),GetInputArgAsString( 1 ) )
+    {$IFDEF PHP_UNICODE}CompareText{$ELSE}AnsiCompareText{$ENDIF}( GetInputArgAsString( 0 ),GetInputArgAsString( 1 ) )
    );
 end;
 

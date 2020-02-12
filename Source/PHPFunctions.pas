@@ -20,10 +20,10 @@ unit phpFunctions;
 interface
  uses
    Windows, SysUtils,  Classes,
-   {$IFDEF PHP_UNICE}WideStrUtils, {$ENDIF}
+   {$IFDEF PHP_UNICODE}WideStrUtils, {$ENDIF}
    {$IFDEF VERSION6} Variants,
    {$ENDIF}
-  {$IFDEF PHP7} hzend_types, {$ELSE} ZendTypes, {$ENDIF} PHPTypes, ZendAPI, PHPAPI ;
+   ZendTypes, PHPTypes, ZendAPI, PHPAPI ;
 
 type
   TParamType = (tpString, tpInteger, tpFloat, tpBoolean, tpArray, tpUnknown);
@@ -316,17 +316,17 @@ var
   NameValue : zend_ustr;
 begin
    NameValue := Value;
-  if {$IFDEF PHP_UNICE}CompareText{$ELSE}AnsiCompareText{$ENDIF}(NameValue, FFunctionName) <> 0 then
+  if {$IFDEF PHP_UNICODE}CompareText{$ELSE}AnsiCompareText{$ENDIF}(NameValue, FFunctionName) <> 0 then
   begin
     if Collection <> nil then
       for I := 0 to Collection.Count - 1 do
       begin
         F := TPHPFunctions(Collection).Items[I];
         if (F <> Self) and (F is TPHPFunction) and
-          ({$IFDEF PHP_UNICE}CompareText{$ELSE}AnsiCompareText{$ENDIF}(NameValue, F.FunctionName) = 0) then
+          ({$IFDEF PHP_UNICODE}CompareText{$ELSE}AnsiCompareText{$ENDIF}(NameValue, F.FunctionName) = 0) then
           raise Exception.CreateFmt('Duplicate function name: %s', [Value]);
       end;
-    FFunctionName :=  {$IFDEF PHP_UNICE}UTF8LowerCase{$ELSE}AnsiLowerCase{$ENDIF}(Value);
+    FFunctionName :=  {$IFDEF PHP_UNICODE}UTF8LowerCase{$ELSE}AnsiLowerCase{$ENDIF}(Value);
     Changed(False);
   end;
 end;
@@ -467,14 +467,14 @@ var
   I: Integer;
   F: TFunctionParam;
 begin
-  if {$IFDEF PHP_UNICE}CompareText{$ELSE}AnsiCompareText{$ENDIF}(Value, FName) <> 0 then
+  if {$IFDEF PHP_UNICODE}CompareText{$ELSE}AnsiCompareText{$ENDIF}(Value, FName) <> 0 then
   begin
     if Collection <> nil then
       for I := 0 to Collection.Count - 1 do
       begin
         F := TFunctionParams(Collection).Items[I];
         if ((F <> Self) and (F is TFunctionParam) and
-          ({$IFDEF PHP_UNICE}CompareText{$ELSE}AnsiCompareText{$ENDIF}(Value, F.Name) = 0)) then
+          ({$IFDEF PHP_UNICODE}CompareText{$ELSE}AnsiCompareText{$ENDIF}(Value, F.Name) = 0)) then
           raise Exception.Create('Duplicate parameter name');
       end;
     FName := Value;
@@ -611,14 +611,7 @@ begin
    end;
 
   case {$IFDEF PHP7}FValue^.u1.v._type{$ELSE} FValue^._type{$ENDIF} of
-   IS_STRING : begin
-                 try
-                   SetLength(Result, FValue^.value.str.len);
-                   Move(FValue^.value.str.val^, Result[1], FValue^.value.str.len);
-                 except
-                   Result := '';
-                 end;
-               end;
+   IS_STRING : result := Z_STRVAL(FValue);
    IS_DOUBLE : result := FloatToStr(FValue^.value.dval);
    IS_LONG   : result := IntToStr(FValue^.value.lval);
    IS_NULL   : result := '';

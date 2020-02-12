@@ -18,7 +18,7 @@ interface
 uses
   SysUtils, Classes,
   VCL.Controls,
-  {$IFDEF PHP7} hzend_types, {$ELSE} ZendTypes, {$ENDIF} ZendAPI, PHPTypes, PHPAPI, VCL.Dialogs, typinfo,
+  ZendTypes, ZendAPI, PHPTypes, PHPAPI, VCL.Dialogs, typinfo,
   VCL.Forms, VCL.stdctrls;
 
 {$ifdef fpc}

@@ -12,8 +12,7 @@
 unit php4AppIntf;
 
 interface
-type
-zend_pchar = {$IF DEFINED(Unicode)} PUTF8Char {$ELSE} PAnsiChar {$ENDIF};
+uses ZendTypes;
 function  InitRequest : integer; stdcall;
 procedure DoneRequest(RequestID : integer); stdcall;
 procedure RegisterVariable(RequestID : integer; AName : zend_pchar; AValue : zend_pchar); stdcall;

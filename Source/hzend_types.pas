@@ -205,11 +205,11 @@ type
    uint32_t = CARDINAL;
 
 
-  zend_pchar  = {$IFDEF PHP_UNICE}PUtf8Char{$ELSE}PAnsiChar{$ENDIF};
-  zend_pstr   = {$IFDEF PHP_UNICE}PUtf8String{$ELSE}PAnsiString{$ENDIF};
+  zend_pchar  = {$IFDEF PHP_UNICODE}PUtf8Char{$ELSE}PAnsiChar{$ENDIF};
+  zend_pstr   = {$IFDEF PHP_UNICODE}PUtf8String{$ELSE}PAnsiString{$ENDIF};
 
-  //zend_uchar  = {$IFDEF PHP_UNICE}Utf8Char{$ELSE}AnsiChar{$ENDIF};
-  zend_ustr   = {$IFDEF PHP_UNICE}Utf8String{$ELSE}AnsiString{$ENDIF};
+  //zend_uchar  = {$IFDEF PHP_UNICODE}Utf8Char{$ELSE}AnsiChar{$ENDIF};
+  zend_ustr   = {$IFDEF PHP_UNICODE}Utf8String{$ELSE}AnsiString{$ENDIF};
 
 
 

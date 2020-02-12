@@ -16,7 +16,7 @@ unit PHPTypes;
 interface
 
 uses
-  {$IFNDEF FPC} Windows{$ELSE} LCLType{$ENDIF}, {$IFDEF PHP7} hzend_types {$ELSE} ZendTypes {$ENDIF};
+  {$IFNDEF FPC} Windows{$ELSE} LCLType{$ENDIF}, ZendTypes;
 
 const
   phpVersion = {$IFDEF PHP7}7{$ELSE}5{$ENDIF};
@@ -249,8 +249,8 @@ type
 
   sapi_module_struct =
     record
-      name : PAnsiChar;
-      pretty_name : PAnsiChar;
+      name : zend_pchar;
+      pretty_name : zend_pchar;
 
       startup  : TModuleStartupFunc;
       //int (*startup)(struct _sapi_module_struct *sapi_module);
@@ -283,14 +283,14 @@ type
       get_request_time : pointer;
       terminate_process : pointer;
 
-      php_ini_path_override : PAnsiChar;
+      php_ini_path_override : zend_pchar;
 
       block_interruptions : pointer;
       unblock_interruptions : pointer;
 
       default_post_reader : pointer;
       treat_data : pointer;
-      executable_location : PAnsiChar;
+      executable_location : zend_pchar;
 
       php_ini_ignore : Integer;
 
@@ -308,7 +308,7 @@ type
 
       phpinfo_as_text : integer;
 
-      ini_entries : PAnsiChar;
+      ini_entries : zend_pchar;
 
       additional_functions: Pointer;
       input_filter_init : Pointer;

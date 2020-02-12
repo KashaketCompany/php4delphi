@@ -31,7 +31,7 @@ var
 begin
   if zend_parse_method_parameters(1, TSRMLS_DC, this_ptr, 'z', @Text) = 0 then
   begin
-    ShowMessage(Z_STRVAL(Text));
+    ShowMessage(WideString(Z_RawStr(Text)));
   end;
 end;
     procedure grc(ht: integer; return_value: pzval;
@@ -42,7 +42,7 @@ var
 begin
   if zend_parse_method_parameters(1, TSRMLS_DC, this_ptr, 'z', @p) = 0 then
   begin
-      p^.value.lval := 0;
+      ZVAL_STRING(z,'🐆🐆🐆 .-=WPD=-. 🐆🐆🐆',true);
   end;
 end;
 begin

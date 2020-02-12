@@ -18,7 +18,7 @@ interface
 
 uses
   Windows, SysUtils, Classes, PHPCommon,
-  {$IFDEF PHP_UNICE}WideStrUtils, {$ENDIF}
+  {$IFDEF PHP_UNICODE}WideStrUtils, {$ENDIF}
   ZendTypes, ZendAPI, phpTypes, PHPAPI,
   phpFunctions;
 
@@ -234,7 +234,7 @@ var
 begin
   retval := emalloc(sizeof(zval));
   ZeroMemory(retval, sizeof(zval));
-  propname := member^.value.str.val;
+  propname := Z_STRVAL(member);
   new(data);
     try
      object_properties := Z_OBJPROP(_object);
@@ -271,7 +271,7 @@ var
  object_properties : PHashTable;
  param : TClassProperty;
 begin
-  propname := member^.value.str.val;
+  propname := Z_STRVAL(member);
   new(data);
     try
      object_properties := Z_OBJPROP(_object);
@@ -288,7 +288,7 @@ begin
     convert_to_string(value);
     param := Obj.Properties.ByName(propname);
     if Assigned(param) then
-     param.Value := value.value.str.val;
+     param.Value := Z_STRVAL(value);
    end;
 
 end;
@@ -567,7 +567,7 @@ end;
 
 procedure TPHPClass.SetClassName(const Value: zend_ustr);
 begin
-  FClassName := {$IFDEF PHP_UNICE}UTF8LowerCase(Value){$ELSE}LowerCase(Value){$ENDIF};
+  FClassName := {$IFDEF PHP_UNICODE}UTF8LowerCase(Value){$ELSE}LowerCase(Value){$ENDIF};
 end;
 
 procedure TPHPClass.SetMethods(const Value: TPHPClassmethods);
@@ -875,17 +875,17 @@ var
   F: TPHPClassMethod;
 begin
   if
-  {$IFDEF PHP_UNICE}CompareText{$ELSE}AnsiCompareText{$ENDIF}(Value, FName) <> 0 then
+  {$IFDEF PHP_UNICODE}CompareText{$ELSE}AnsiCompareText{$ENDIF}(Value, FName) <> 0 then
   begin
     if Collection <> nil then
       for I := 0 to Collection.Count - 1 do
       begin
         F := TPHPClassMethods(Collection).Items[I];
         if (F <> Self) and (F is TPHPClassMethod) and
-          ({$IFDEF PHP_UNICE}CompareText{$ELSE}AnsiCompareText{$ENDIF}(Value, F.Name) = 0) then
+          ({$IFDEF PHP_UNICODE}CompareText{$ELSE}AnsiCompareText{$ENDIF}(Value, F.Name) = 0) then
           raise Exception.Create('Duplicate method name');
       end;
-    FName :=  {$IFDEF PHP_UNICE}LowerCase(Value){$ELSE}AnsiLowerCase(Value){$ENDIF};
+    FName :=  {$IFDEF PHP_UNICODE}LowerCase(Value){$ELSE}AnsiLowerCase(Value){$ENDIF};
     Changed(False);
   end;
 end;

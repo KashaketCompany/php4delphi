@@ -38,9 +38,9 @@ interface
 uses
   Windows, Messages, SysUtils, System.Types, Classes, VCL.Graphics,
   PHPCommon, WinApi.WinSock,
-  {$IFDEF PHP7} hzend_types, {$ELSE} ZendTypes, {$ENDIF} PHPTypes, PHPAPI, ZENDAPI,
+  ZendTypes, PHPTypes, PHPAPI, ZENDAPI,
   DelphiFunctions, phpFunctions, strUtils, varUtils,
-  {$IFDEF PHP_UNICE}WideStrUtils, {$ENDIF}
+  {$IFDEF PHP_UNICODE}WideStrUtils, {$ENDIF}
   {$IFDEF soulengine_build} VCL.Dialogs, {$ENDIF}
   System.UITypes;
 
@@ -868,11 +868,11 @@ begin
                end;
               {$IFDEF CUTTED_PHP7dll}
                ShowMessage(
-                {$IFDEF PHP_UNICE}Format{$ELSE}AnsiFormat{$ENDIF}
+                Format
                 ('PHP4DELPHI %s:  %s in %s on line %d', [error_type_str, buffer, error_filename, error_lineno]));
               {$ELSE}
                 php_log_err(zend_pchar(
-               {$IFDEF PHP_UNICE}Format{$ELSE}AnsiFormat{$ENDIF}
+               {$IFDEF PHP_UNICODE}Format{$ELSE}AnsiFormat{$ENDIF}
                ('PHP4DELPHI %s:  %s in %s on line %d', [error_type_str, buffer, error_filename, error_lineno])), p);
               {$ENDIF}
              end;
@@ -1253,7 +1253,7 @@ begin
           begin
             variable := data^^;
             convert_to_string(variable);
-            FVariables[cnt].Value := variable^.value.str.val;
+            FVariables[cnt].Value := Z_STRVAL(variable);
           end;
         finally
           freemem(data);
@@ -1423,10 +1423,11 @@ begin
 end;
 
 function TpsvCustomPHP.CreateVirtualFile(A_code : zend_ustr): boolean;
-{$IFDEF PHP4}
 var
- _handles : array[0..1] of THandle;
+{$IFDEF PHP4}
+_handles : array[0..1] of THandle;
 {$ENDIF}
+sc:PUTF8Char;
 begin
 
   Result := false;
@@ -1580,7 +1581,7 @@ begin
                    if not IsParamTypeCorrect(FParameters[j].ParamType, Params[j]^) then
                      begin
                        zend_error(E_WARNING, zend_pchar(
-                       {$IFDEF PHP_UNICE}Format{$ELSE}AnsiFormat{$ENDIF}
+                       {$IFDEF PHP_UNICODE}Format{$ELSE}AnsiFormat{$ENDIF}
                        ('Wrong parameter type for %s()', [FActiveFunctionName])));
                        Exit;
                      end;
@@ -1671,7 +1672,7 @@ begin
   delphi_sapi_module.register_server_variables := @php_delphi_register_variables;
   delphi_sapi_module.log_message := @php_delphi_log_message;
   if FIniPath <> '' then
-     delphi_sapi_module.php_ini_path_override := PAnsiChar(FIniPath)
+     delphi_sapi_module.php_ini_path_override := zend_pchar(FIniPath)
   else
      delphi_sapi_module.php_ini_path_override :=  nil;
   delphi_sapi_module.block_interruptions := nil;
@@ -1720,7 +1721,7 @@ begin
       strlen(zend_pchar(ConstantName)) + 1,
       zend_pchar(ConstantValue), CONST_PERSISTENT or CONST_CS, 0, TSRMLS_D);
   end;
-  zend_register_bool_constant( zend_pchar('UTF8_SUPPORT'), 13, {$IFDEF PHP_UNICE}TRUE{$ELSE}FALSE{$ENDIF},
+  zend_register_bool_constant( zend_pchar('UTF8_SUPPORT'), 13, {$IFDEF PHP_UNICODE}TRUE{$ELSE}FALSE{$ENDIF},
     CONST_PERSISTENT or CONST_CS, 0, TSRMLS_D);
   RegisterInternalConstants(TSRMLS_D);
 end;
@@ -1796,7 +1797,7 @@ begin
   for cnt := 0 to ALib.Functions.Count - 1 do
    begin
       FN :=
-      {$IFDEF PHP_UNICE}UTF8LowerCase{$ELSE}AnsiLowerCase{$ENDIF}
+      {$IFDEF PHP_UNICODE}UTF8LowerCase{$ELSE}AnsiLowerCase{$ENDIF}
       (ALib.Functions[cnt].FunctionName);
       if FHash.IndexOf(FN) > -1 then
       begin
@@ -1809,7 +1810,7 @@ begin
    begin
       for cnt := 0 to ALib.Functions.Count - 1 do
        begin
-         FN := {$IFDEF PHP_UNICE}UTF8LowerCase{$ELSE}AnsiLowerCase{$ENDIF}
+         FN := {$IFDEF PHP_UNICODE}UTF8LowerCase{$ELSE}AnsiLowerCase{$ENDIF}
          (ALib.Functions[cnt].FunctionName);
          FHash.AddObject(FN, ALib.Functions[cnt]);
        end;
