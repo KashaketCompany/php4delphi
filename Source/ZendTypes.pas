@@ -964,7 +964,7 @@ Pzvalue_value = ^zvalue_value;
       0: (lval: zend_long);
       1: (dval: double);
       2: (str: record
-          val: PUTF8Char;// zend_pchar;
+          val: zend_pchar;
           len: integer;
         end);
       3: (ht: PHashTable);

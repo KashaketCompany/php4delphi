@@ -885,7 +885,7 @@ begin
           ({$IFDEF PHP_UNICODE}CompareText{$ELSE}AnsiCompareText{$ENDIF}(Value, F.Name) = 0) then
           raise Exception.Create('Duplicate method name');
       end;
-    FName :=  {$IFDEF PHP_UNICODE}LowerCase(Value){$ELSE}AnsiLowerCase(Value){$ENDIF};
+    FName :=  {$IFDEF PHP_UNICODE}UTF8LowerCase(Value){$ELSE}AnsiLowerCase(Value){$ENDIF};
     Changed(False);
   end;
 end;

@@ -3437,6 +3437,7 @@ begin
 end;
 
 function Z_VARREC(z: pzval): TVarRec;
+var P: zend_ustr;
 begin
   if z = nil then
   begin
@@ -3460,8 +3461,16 @@ begin
             Result.VExtended^ := z.value.dval;
         end;
         IS_STRING: begin
-            Result.VType   := vtWideString;
-            Result.VWideString := PWideChar(Z_STRVAL(z));
+            Result.VType := {$IFDEF PHP_UNICODE}vtString{$ELSE}vtAnsiString{$ENDIF};
+
+            SetLength(P, z.value.str.len);
+            Move(z.value.str.val^, P[1], z.value.str.len);
+
+            {$IFDEF PHP_UNICODE}
+              Result.VUnicodeString := Pointer(P);
+            {$ELSE}
+              Result.VAnsiString := Pointer(P);
+            {$ENDIF}
         end;
         else
         begin
