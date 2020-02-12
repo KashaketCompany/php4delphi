@@ -1552,11 +1552,7 @@ begin
          end;
 
   varUString    : //Peter Enz
-         begin
-            S := string(TVarData(Value).VUString);
-
-             ZVAL_STRING(z, zend_pchar(zend_ustr(S)), true);
-         end;
+             ZVAL_RawStr(z, RawByteString(TVarData(Value).VUString), true);
 
      varOleStr    : //Peter Enz
          begin
@@ -1629,12 +1625,7 @@ begin
                  end;
          end;
 
-     varUStrArg    : //Peter Enz
-         begin
-            S := string(TVarData(Value).VUString);
-
-             ZVAL_STRING(z, zend_pchar(zend_ustr(S)), true);
-         end;
+     varUStrArg  : ZVAL_RawStr(z, RawByteString(TVarData(Value).VUString), true);
      varInt64    : ZVALVAL(z, TVarData(Value).VInt64);
      varUInt64   : ZVALVAL(z, TVarData(Value).VUInt64);
      varShortInt : ZVALVAL(z, Integer(TVarData(Value).VShortInt));

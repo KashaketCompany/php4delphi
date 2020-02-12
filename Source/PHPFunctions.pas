@@ -611,7 +611,14 @@ begin
    end;
 
   case {$IFDEF PHP7}FValue^.u1.v._type{$ELSE} FValue^._type{$ENDIF} of
-   IS_STRING : result := Z_STRVAL(FValue);
+   IS_STRING : begin
+                 try
+                   SetLength(Result, FValue^.value.str.len);
+                   Move(FValue^.value.str.val^, Result[1], FValue^.value.str.len);
+                 except
+                   Result := '';
+                 end;
+               end;
    IS_DOUBLE : result := FloatToStr(FValue^.value.dval);
    IS_LONG   : result := IntToStr(FValue^.value.lval);
    IS_NULL   : result := '';
