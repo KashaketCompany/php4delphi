@@ -1058,7 +1058,7 @@ Begin
   z^.u1.v._type
   {$ELSE}
   z^._type
-  {$ENDIF} := IS_LONG;
+  {$ENDIF} := IS_DOUBLE;
   z.value.dval := v;
 End;
 
