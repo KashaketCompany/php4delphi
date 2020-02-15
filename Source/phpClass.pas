@@ -367,7 +367,7 @@ begin
              M.ZendVar.AsZendVariable := return_value; //direct access to zend variable
              M.FOnExecute(Obj, M.Parameters, M.ReturnValue, M.FZendVar.AsZendVariable, this_ptr, TSRMLS_DC);
              if M.ZendVar.ISNull then   //perform variant conversion
-              variant2zval(M.ReturnValue, return_value);
+              VariantToZend(M.ReturnValue, return_value);
 
           end;
        end;

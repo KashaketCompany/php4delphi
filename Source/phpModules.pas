@@ -265,7 +265,7 @@ end;
 procedure DispatchRequest(ht : integer; return_value : pzval; return_value_ptr : ppzval;
             this_ptr : pzval; return_value_used : integer; TSRMLS_DC : pointer); cdecl;
 begin
-  ZVAL(return_value);
+  ZvalVal(return_value);
   if Assigned(Application) then
    try
      Application.HandleRequest(ht, return_value, return_value_ptr, this_ptr,  return_value_used, TSRMLS_DC);
@@ -407,22 +407,30 @@ end;
 
 procedure TCustomPHPExtension.phpwrite(str: zend_pchar; str_len: integer);
 begin
+{$IFNDEF PHP550}
   php_body_write(str, str_len, FTSRMLS);
+{$ENDIF}
 end;
 
 procedure TCustomPHPExtension.phpwrite_h(str: zend_pchar; str_len: integer);
 begin
+{$IFNDEF PHP550}
   php_header_write(str, str_len, FTSRMLS);
+{$ENDIF}
 end;
 
 procedure TCustomPHPExtension.puts(str: zend_pchar);
 begin
+{$IFNDEF PHP550}
   php_body_write(str, strlen(str), FTSRMLS);
+{$ENDIF}
 end;
 
 procedure TCustomPHPExtension.puts_h(str: zend_pchar);
 begin
+{$IFNDEF PHP550}
   php_header_write(str, strlen(str), FTSRMLS);
+{$ENDIF}
 end;
 
 procedure TCustomPHPExtension.ReportError(ErrType: integer;
@@ -466,6 +474,7 @@ begin
    VCL.Forms.Application.ShowHint := False;
    VCL.Forms.Application.Destroying;
    VCL.Forms.Application.DestroyComponents;
+   {$ENDIF}
   except
   end; 
 end;
@@ -702,7 +711,7 @@ begin
                      FZendVar.AsZendVariable := return_value;
                      AFunction.OnExecute(DataModule, FParameters, ReturnValue, FZendVar, TSRMLS_DC);
                      if FZendVar.ISNull then
-                      variant2zval(ReturnValue, return_value);
+                      VariantToZend(ReturnValue, return_value);
                     finally
                       FZendVar.Free;
                     end;
