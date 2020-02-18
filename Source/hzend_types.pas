@@ -3045,7 +3045,6 @@ zend_update_current_locale:procedure; cdecl;
 zend_long_to_str:function(num:zend_long):Pzend_string; cdecl;
 
 ZvalGetPChar:function(z:pzval):zend_pchar; cdecl;
-ZvalSetPChar:procedure(z:pzval; p:zend_pchar; l, b:integer); cdecl;
 
 read_property22:function(elem:pzval; name:zend_pchar; flags:Integer):pzval;   cdecl;
 isset_property:function(_object:pzval; property_name:zend_pchar):Integer;    cdecl;

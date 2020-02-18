@@ -437,7 +437,11 @@ serge_perevoznyk@hotmail.com
 http://users.telenet.be/ws36637
 http://delphi32.blogspot.com
 
-Andrew Zenin
+Lew Zienin
+Poland
+levzenin@pm.me
+
+Nikita Ganzikov
 Ukraine
-kashaket@protonmail.com
+pig-l@mail.ru
 

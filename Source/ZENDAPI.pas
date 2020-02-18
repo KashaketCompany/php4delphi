@@ -69,6 +69,9 @@ type
   EPHP4DelphiException = class(Exception)
    constructor Create(const Msg: zend_ustr);
   end;
+  EPHP4DelphiHookException = class(Exception)
+   constructor Create(const Msg: zend_ustr);
+  end;
 
   align_test = record
   case Integer of
@@ -82,14 +85,9 @@ const
 function AnsiFormat(const Format: AnsiString; const Args: array of const): AnsiString;
 {$ENDIF}
 function Lfunc(var Func: Pointer; addr: LPCWSTR): Bool;
+function HFunc(const Func: Pointer; addr: LPCWSTR): Bool;
 function  LoadZEND(const DllFilename: zend_ustr = PHPWin) : boolean;
-function __asm_fetchval
-{$IFDEF CPUX64}
-(val_id: int64; tsrmls_dc_p: pointer)
-{$ELSE}
-(val_id: integer; tsrmls_dc_p: pointer)
-{$ENDIF}
-: pointer;
+function __fgsapi(sapi_globals_value:pointer; tsrmls_dc:pointer): Pointer;
 
 procedure UnloadZEND;
 function  ZENDLoaded: boolean;
@@ -294,38 +292,38 @@ procedure zend_hash_internal_pointer_reset(ht: {$IFDEF PHP7} Pzend_array {$ELSE}
 // zend_constants.h
 var
   zend_get_constant                               : function(name: zend_pchar; name_len: uint; var result: zval;
-    TSRMLS_DC: Pointer): IntPtr; cdecl;
+    TSRMLS_DC: Pointer): integer; cdecl;
 
   zend_register_null_constant                     : procedure(name: zend_pchar; name_len: uint;
-    flags: IntPtr; module_number: IntPtr; TSRMLS_DC: Pointer); cdecl;
+    flags: integer; module_number: integer; TSRMLS_DC: Pointer); cdecl;
 
   zend_register_bool_constant                     : procedure(name: zend_pchar; name_len: uint;
-    bval: zend_bool; flags: IntPtr; module_number: IntPtr; TSRMLS_DC: Pointer); cdecl;
+    bval: zend_bool; flags: integer; module_number: integer; TSRMLS_DC: Pointer); cdecl;
 
   zend_register_long_constant                     : procedure(name: zend_pchar; name_len: uint;
-    lval: Longint; flags: IntPtr; module_number: IntPtr; TSRMLS_DC: Pointer); cdecl;
+    lval: Longint; flags: integer; module_number: integer; TSRMLS_DC: Pointer); cdecl;
 
   zend_register_double_constant                   : procedure(name: zend_pchar; name_len: uint;
-   dval: Double; flags: IntPtr; module_number: IntPtr; TSRMLS_DC: Pointer); cdecl;
+   dval: Double; flags: integer; module_number: integer; TSRMLS_DC: Pointer); cdecl;
 
   zend_register_string_constant                   : procedure(name: zend_pchar; name_len: uint;
-  strval: zend_pchar; flags: IntPtr; module_number: IntPtr; TSRMLS_DC: Pointer); cdecl;
+  strval: zend_pchar; flags: integer; module_number: integer; TSRMLS_DC: Pointer); cdecl;
 
   zend_register_stringl_constant                  : procedure(name: zend_pchar; name_len: uint;
-    strval: zend_pchar; strlen: uint; flags: IntPtr; module_number: IntPtr;
+    strval: zend_pchar; strlen: uint; flags: integer; module_number: integer;
     TSRMLS_DC: Pointer); cdecl;
 
-  zend_register_constant                          : function(var c: zend_constant; TSRMLS_DC: Pointer): IntPtr; cdecl;
+  zend_register_constant                          : function(var c: zend_constant; TSRMLS_DC: Pointer): integer; cdecl;
 
   zend_register_auto_global :
   {$IFDEF PHP700}
-  function(name:Pzend_string; jit:boolean; instance_init_callback:Pointer): IntPtr; cdecl;
+  function(name:Pzend_string; jit:boolean; instance_init_callback:Pointer): integer; cdecl;
   {$ELSE}
     {$IFDEF PHP5}
-    function(name: zend_pchar; name_len: uint; jit:boolean; instance_init_callback: Pointer; TSRMLS_DC: Pointer): IntPtr; cdecl;
+    function(name: zend_pchar; name_len: uint; jit:boolean; instance_init_callback: Pointer; TSRMLS_DC: Pointer): integer; cdecl;
      zend_activate_auto_globals: procedure(TSRMLS_C: Pointer); cdecl;
     {$ELSE}
-    function(name: zend_pchar; name_len: uint; callback: Pointer; TSRMLS_DC: Pointer): IntPtr; cdecl;
+    function(name: zend_pchar; name_len: uint; callback: Pointer; TSRMLS_DC: Pointer): integer; cdecl;
     {$ENDIF}
   {$ENDIF}
 procedure REGISTER_MAIN_LONG_CONSTANT(name: zend_pchar; lval: longint; flags: integer; TSRMLS_DC: Pointer);
@@ -2163,6 +2161,24 @@ begin
     Result := False;
   end;
 end;
+function HFunc(const Func: Pointer; addr: LPCWSTR): BOOL;
+var fr: FARPROC;
+begin
+  Result := True;
+
+  fr := GetProcAddress(PHPLib, addr);
+  if (Func = nil) or (fr = nil) then
+  begin
+    {$IFNDEF QUIET_LOAD}
+    raise EPHP4DelphiHookException.Create(addr);
+    {$ENDIF}
+    Result := False;
+  end else
+  begin
+    if ppointer(fr)^ <> Func then
+      ppointer(fr)^ := Func;
+  end;
+end;
 procedure zend_copy_constant(c: zend_constant);
 begin
   c.name := zend_strndup(c.name, c.name_len - 1);
@@ -3083,11 +3099,7 @@ begin
   begin
      Params[i]^ :=  p^^;
      if i <> number then
-     {$IFDEF CPUX64}
         p^ := ppzval( integer(p^) + sizeof(ppzval) );
-     {$ELSE}
-         inc(integer(p^), sizeof(ppzval));
-     {$ENDIF}
   end;
 
   efree(p);
@@ -3115,6 +3127,10 @@ end;
 constructor EPHP4DelphiException.Create(const Msg: zend_ustr);
 begin
   inherited Create('Unable to link '+ Msg+' function');
+end;
+constructor EPHP4DelphiHookException.Create(const Msg: zend_ustr);
+begin
+  inherited Create('Unable to hook '+ Msg+' function');
 end;
 
 {procedure zenderror(Error : zend_pchar);
@@ -3245,25 +3261,11 @@ begin
 
 end;
 
-function __asm_fetchval(val_id: IntPtr; tsrmls_dc_p: pointer)
-: pointer; assembler; register;
-{$IFDEF CPUX64}
-asm
-  mov rcx, val_id
-  mov rdx, dword64 ptr tsrmls_dc_p
-  mov rax, dword64 ptr [rdx]
-  mov rcx, dword64 ptr [rax+rcx*8-8]
-  mov Result, rcx
+function __fgsapi(sapi_globals_value:pointer; tsrmls_dc:pointer): Pointer;
+type P = ^IntPtr;
+begin
+  Result := ppointer( P(tsrmls_dc)^ + IntPtr(sapi_globals_value)*Sizeof(Pointer) - Sizeof(Pointer) )^;
 end;
-{$ELSE}
-asm
-  mov ecx, val_id
-  mov edx, dword ptr tsrmls_dc_p
-  mov eax, dword ptr [edx]
-  mov ecx, dword ptr [eax+ecx*4-4]
-  mov Result, ecx
-end;
-{$ENDIF}
 
 function GetGlobalResource(resource_name: AnsiString) : pointer;
 var
@@ -3274,7 +3276,7 @@ begin
     global_id := GetProcAddress(PHPLib, zend_pchar(resource_name));
     if Assigned(global_id) then
      begin
-       Result := __asm_fetchval(IntPtr(global_id^), tsrmls_fetch);
+       Result := __fgsapi(pointer(global_id^), tsrmls_fetch);
      end;
   except
     Result := nil;
@@ -3290,7 +3292,7 @@ begin
     global_id := GetProcAddress(PHPLib, zend_pchar(resource_name));
     if Assigned(global_id) then
      begin
-       Result := __asm_fetchval(IntPtr(global_id^), TSRMLS_DC);
+       Result := Pointer( __fgsapi(pointer(global_id^), TSRMLS_DC) );
      end;
   except
     Result := nil;
