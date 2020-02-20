@@ -1233,9 +1233,13 @@ type
     {$IFDEF PHP5}
      {$IFDEF PHP520}
       globals_size : size_t;
+      {$IFDEF PHP540}
+      globals_ptr : pointer;
+      {$ELSE}
       globals_id_ptr : pointer;
-      globals_ctor : pointer;
-      globals_dtor : pointer;
+      {$ENDIF}
+      globals_ctor : procedure (global:pointer);cdecl;
+      globals_dtor : procedure (global:pointer);cdecl;
      {$ENDIF}
     {$ENDIF}
 
@@ -1250,7 +1254,7 @@ type
     global_id: integer;
     {$ENDIF}
 
-    module_started: integer;
+    module_started: longint;
     _type: byte;
     handle: pointer;
     module_number: longint;

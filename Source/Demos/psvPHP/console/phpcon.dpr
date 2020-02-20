@@ -55,7 +55,7 @@ begin
  php := TpsvPHP.Create(nil);
  if ParamCount = 1 then
  begin
-  php.FileName := ParamStr(1);
+  php.FileName := zend_ustr(ParamStr(1));
   write(php.Execute);
  end
  else
