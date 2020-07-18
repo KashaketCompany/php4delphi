@@ -308,7 +308,9 @@ type
 
       phpinfo_as_text : integer;
 
+      {$IFDEF PHP520}
       ini_entries : zend_pchar;
+      {$ENDIF}
 
       additional_functions: Pointer;
       input_filter_init : Pointer;

@@ -16,6 +16,7 @@ unit DelphiFunctions;
 
 interface
 uses
+  Dialogs,
   SysUtils, Classes,
   ZendTypes, ZendAPI, PHPTypes, PHPAPI, typinfo;
 

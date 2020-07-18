@@ -66,7 +66,7 @@ uses
   VCL.Dialogs,
   {$endif}
 {$ifend}
-  {$ENDIF}
+  {$ifend}
   PHPCommon,
   {$if CompilerVersion > 21}
   WinApi.WinSock,
@@ -1705,13 +1705,22 @@ begin
 
   FLibraryModule.request_shutdown_func := @rshutdown;
   FLibraryModule.request_startup_func := @rinit;
+  {$if defined(PHP5) and not defined(PHP520)}
+  FLibraryModule.global_id := 0;
+  {$ifend}
 
   FLibraryModule.module_started := 0;
   FLibraryModule._type := MODULE_PERSISTENT;
 
   FLibraryModule.Handle := nil;
   FLibraryModule.module_number := 0;
-  FLibraryModule.build_id := DupStr(zend_pchar(ZEND_MODULE_BUILD_ID));
+  {$ifdef PHP530}
+    {$ifndef COMPILER_VC9}
+    FLibraryModule.build_id := strdup(PAnsiChar(ZEND_MODULE_BUILD_ID));
+    {$else}
+    FLibraryModule.build_id := DupStr(zend_pchar(ZEND_MODULE_BUILD_ID));
+    {$endif}
+  {$endif}
 end;
 
 procedure TPHPEngine.RegisterConstants;

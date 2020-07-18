@@ -119,7 +119,7 @@ var
   php_get_output_start_filename: function  (TSRMLS_D : pointer) : zend_pchar; cdecl;
   php_get_output_start_lineno: function (TSRMLS_D : pointer) : integer; cdecl;
   php_ob_handler_used: function (handler_name : zend_pchar; TSRMLS_DC : pointer) : integer; cdecl;
-  {$IF not Defined(PHP540) and not Defined(PHP550) and not Defined(PHP560)}
+  {$IF not defined(PHP520) and not Defined(PHP540) and not Defined(PHP550) and not Defined(PHP560)}
   php_ob_init_conflict: function (handler_new : zend_pchar; handler_set : zend_pchar; TSRMLS_DC : pointer) : integer; cdecl;
   {$ifend}
   {$endif}
@@ -268,7 +268,7 @@ php_info_print_table_row4: procedure (n4 : integer; c1, c2, c3, c4 : zend_pchar)
 php_info_print_table_row : procedure (n2 : integer; c1, c2 : zend_pchar); cdecl;
 
 php_info_print_table_end: procedure (); cdecl;
-{$IF Defined(PHP540) or Defined(PHP550) or Defined(PHP560)}
+{$IF defined(PHP520) Defined(PHP540) or Defined(PHP550) or Defined(PHP560)}
 php_write: function (const str : zend_pchar; str_length: uint; TSRMLS_DC : pointer) : integer; cdecl;
 {$ELSE}
 php_body_write: function (const str : zend_pchar; str_length: uint; TSRMLS_DC : pointer) : integer; cdecl;
@@ -528,7 +528,7 @@ begin
 
   LFunc(@php_ob_handler_used, 'php_ob_handler_used');
 {$ENDIF}
-    {$IF not Defined(PHP540) and not Defined(PHP550) and not Defined(PHP560)}
+    {$IF not defined(PHP520) and not Defined(PHP540) and not Defined(PHP550) and not Defined(PHP560)}
   LFunc(@php_ob_init_conflict, 'php_ob_init_conflict');
     {$ifend}
   LFunc(@php_strtoupper, 'php_strtoupper');
@@ -580,7 +580,7 @@ begin
   LFunc(@php_info_print_table_row, 'php_info_print_table_row');
 
   LFunc(@php_info_print_table_end, 'php_info_print_table_end');
-  {$IF Defined(PHP540) or Defined(PHP550) or Defined(PHP560)}
+  {$IF Defined(PHP520) or Defined(PHP540) or Defined(PHP550) or Defined(PHP560)}
   LFunc(@php_write, 'php_write' );
   {$ELSE}
   LFunc(@php_body_write, 'php_body_write' );

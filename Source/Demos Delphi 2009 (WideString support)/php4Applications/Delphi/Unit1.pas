@@ -15,7 +15,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, PHP4AppIntf;
+  StdCtrls,
+  php4AppIntf;
 
 type
   TForm1 = class(TForm)

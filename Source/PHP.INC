@@ -34,8 +34,11 @@ Define suitable visual library
 }
 
 //Version
+//{$DEFINE PHP520}
 {$DEFINE PHP560}
 	//PHP Version
+{$DEFINE COMPILER_VC6}
+	//Compiler Version
 {$DEFINE ZTS}
 	//Thread Safe mode (php7ts, e.g)
 {$DEFINE VCL}
@@ -96,7 +99,6 @@ Define suitable visual library
 {$IFDEF PHP510} {$DEFINE PHP504} {$ENDIF}
 {$IFDEF PHP504} {$DEFINE PHP5} {$ENDIF}
 {$IFDEF PHP_COMPILER_ID}
- {$DEFINE COMPILER_VC9}
 	{$IFNDEF PHP7}
 		{$IFDEF PHP550} {$DEFINE COMPILER_VC11} {$ENDIF}
 	{$ELSE}
@@ -120,6 +122,10 @@ Define suitable visual library
 	{$DEFINE VERSION12}
 	{$DEFINE VERSION13}
 	{$DEFINE VERSION14}
+{$else}
+	{$if CompilerVersion > 25}
+	{$LEGACYIFEND ON}
+	{$ifend}
 {$endif}
 
 {$IFNDEF VER80}                                             {Delphi 1.0}

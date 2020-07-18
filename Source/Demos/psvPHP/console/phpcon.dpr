@@ -15,7 +15,7 @@ program phpcon;
 
 uses
   SysUtils,
-  VCL.Dialogs,
+  Dialogs,
   php4delphi,
   zendAPI,
   ZENDTypes;
@@ -23,6 +23,7 @@ uses
 var
  php    : TpsvPHP;
  Engine : TPHPEngine;
+ ft     : Byte = 0;
 
 procedure gui_message(ht: integer; return_value: pzval;
   return_value_ptr: pzval; this_ptr: pzval; return_value_used: integer;
@@ -55,9 +56,13 @@ begin
  php := TpsvPHP.Create(nil);
  if ParamCount = 1 then
  begin
-  php.FileName := zend_ustr(ParamStr(1));
-  write(php.Execute);
- end
+ php.FileName := zend_ustr(ParamStr(1));
+  if FileExists(ParamStr(1)) then
+    ft := 1;
+ end;
+
+ if ft = 1 then
+  write(php.Execute)
  else
  begin
   writeLn(Format('Usage: %s <filename.php>', [ParamStr(0)]));

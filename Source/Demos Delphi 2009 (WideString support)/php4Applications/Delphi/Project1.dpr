@@ -2,7 +2,9 @@ program Project1;
 
 uses
   Forms,
-  Unit1 in 'Unit1.pas' {Form1};
+  Unit1 in 'Unit1.pas' {Form1},
+  php4AppIntf in '..\..\..\php4AppIntf.pas',
+  ZendTypes in '..\..\..\ZendTypes.pas';
 
 {$R *.RES}
 

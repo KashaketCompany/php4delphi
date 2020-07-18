@@ -466,7 +466,15 @@ begin
     try
       if Assigned(OnCreate) and OldCreateOrder then OnCreate(Self);
     except
-      Forms.Application.HandleException(Self);
+    {$if defined(VCL) and (CompilerVersion > 21)}
+     VCL.Forms
+     {$elseif defined(FMX)}
+     FMX.Forms
+     {$elseif defined(KYLIX)}
+     QForms
+     {$elseif defined(VCL) or defined(LCL)}
+     Forms
+     {$ifend}.Application.HandleException(Self);
     end;
   end;
 end;
@@ -477,9 +485,33 @@ end;
 procedure DoneVCLApplication;
 begin
   try
-   Forms.Application.OnException := nil;
+    {$if defined(VCL) and (CompilerVersion > 21)}
+     VCL.Forms
+     {$elseif defined(FMX)}
+     FMX.Forms
+     {$elseif defined(KYLIX)}
+     QForms
+     {$elseif defined(VCL) or defined(LCL)}
+     Forms
+     {$ifend}.Application.OnException := nil;
    {$IFDEF WINDOWS}
-   if Forms.Application.Handle <> 0 then ShowOwnedPopups(Forms.Application.Handle, False);
+   if {$if defined(VCL) and (CompilerVersion > 21)}
+     VCL.Forms
+     {$elseif defined(FMX)}
+     FMX.Forms
+     {$elseif defined(KYLIX)}
+     QForms
+     {$elseif defined(VCL) or defined(LCL)}
+     Forms
+     {$ifend}.Application.Handle <> 0 then ShowOwnedPopups({$if defined(VCL) and (CompilerVersion > 21)}
+     VCL.Forms
+     {$elseif defined(FMX)}
+     FMX.Forms
+     {$elseif defined(KYLIX)}
+     QForms
+     {$elseif defined(VCL) or defined(LCL)}
+     Forms
+     {$ifend}.Application.Handle, False);
    {$ELSE}
    Forms.Application.ShowHint := False;
    Forms.Application.Destroying;
@@ -617,7 +649,15 @@ end;
 
 procedure TPHPApplication.Run;
 begin
-  Forms.Application.OnException := OnExceptionHandler;
+  {$if defined(VCL) and (CompilerVersion > 21)}
+     VCL.Forms
+     {$elseif defined(FMX)}
+     FMX.Forms
+     {$elseif defined(KYLIX)}
+     QForms
+     {$elseif defined(VCL) or defined(LCL)}
+     Forms
+     {$ifend}.Application.OnException := OnExceptionHandler;
 end;
 
 

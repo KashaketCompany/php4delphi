@@ -25,13 +25,17 @@ WideStrUtils,
 {$endif}
   {$IFDEF FPC} LCLType,LCLIntf,dynlibs,libc{$ELSE}Windows{$ENDIF}, SysUtils,
   ZendTypes, Variants,
-  PHPTypes;
+  PHPTypes
+  {$if defined(chameleon)}
+  ,zend_chameleon
+  {$ifend};
 type
 TArrayVariant = array of variant;
  TWSDate = array of string;
   PWSDate = ^TWSDate;
    TASDate = array of AnsiString;
   PASDate = ^TWSDate;
+{$if not defined(chameleon_load_firstmatch)}
 const
 PHPlp =
 {$IFDEF PHP7}
@@ -40,7 +44,7 @@ PHPlp =
   {$IFDEF PHP5}
     'php5'
   {$ELSE}
-    'php4'
+    'php'
   {$ENDIF}
 {$ENDIF}
 {$IFDEF ZTS} + 'ts' {$ENDIF}
@@ -50,6 +54,7 @@ PHPlp =
 {$ELSE}
   + '.so'
 {$ENDIF};
+{$ifend}
 
 type
   EPHP4DelphiException = class(Exception)
@@ -286,7 +291,7 @@ procedure zend_hash_internal_pointer_reset(ht: {$IFDEF PHP7} Pzend_array {$ELSE}
 var
   zend_get_constant                               : function(name: zend_pchar; name_len: uint; var result: zval;
     TSRMLS_DC: Pointer): integer; cdecl;
-
+  {$if defined(PHP530)}
   zend_register_null_constant                     : procedure(name: zend_pchar; name_len: uint;
     flags: integer; module_number: integer; TSRMLS_DC: Pointer); cdecl;
 
@@ -295,7 +300,7 @@ var
 
   zend_register_long_constant                     : procedure(name: zend_pchar; name_len: uint;
     lval: Longint; flags: integer; module_number: integer; TSRMLS_DC: Pointer); cdecl;
-
+  {$ifend}
   zend_register_double_constant                   : procedure(name: zend_pchar; name_len: uint;
    dval: Double; flags: integer; module_number: integer; TSRMLS_DC: Pointer); cdecl;
 
@@ -755,7 +760,7 @@ procedure ZVAL_STRINGLW(z: pzval; s: PWideChar; l: integer; duplicate: boolean);
 procedure INIT_CLASS_ENTRY(var class_container: Tzend_class_entry; class_name: zend_pchar; functions:
 {$IFDEF PHP7}HashTable{$ELSE}pointer{$ENDIF});
 procedure zend_copy_constant(c: zend_constant);
-{$IF defined(PHP540) or defined(PHP550) or defined(PHP560)}
+{$IF defined(PHP520) or defined(PHP540) or defined(PHP550) or defined(PHP560)}
 procedure zend_copy_constants(target: PHashTable; source: PHashTable); cdecl;
 procedure zend_class_add_ref(aclass: Ppzend_class_entry); cdecl;
 {$IFEND}
@@ -768,7 +773,7 @@ var
   zend_output_debug_string   : procedure(trigger_break: boolean; Msg: zend_pchar); cdecl;
 
 {$IFDEF PHP5}
-  {$IF not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
+  {$IF not defined(PHP520) and not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
   zend_copy_constants: procedure(target: PHashTable; source: PHashTable); cdecl;
   {$IFEND}
   zend_objects_new : function (_object : pointer; class_type : pointer; TSRMLS_DC : pointer) : {$IFDEF PHP7}zend_object{$ELSE}_zend_object_value{$ENDIF}; cdecl;
@@ -777,7 +782,7 @@ var
   zend_objects_store_del_ref: procedure (_object : pzval; TSRMLS_DC : pointer); cdecl;
 
   function_add_ref: procedure (func: {$IFDEF PHP7}Pzend_function{$ELSE}PZendFunction{$ENDIF}); cdecl;
-  {$IF not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
+  {$IF not defined(PHP520) and  not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
   zend_class_add_ref: procedure(aclass: Ppzend_class_entry); cdecl;
   {$IFEND}
 
@@ -1910,11 +1915,11 @@ begin
     Exit;
 end;
 
-{$ifdef VERSION14}
+{$if CompilerVersion > 21}
 procedure ZVAL_ARRAY(z: pzval; arr: System.TArray<System.integer>); overload;
 {$else}
 procedure ZVAL_ARRAY(z: pzval; arr: array of integer); overload;
-{$endif}
+{$ifend}
 var
   i: integer;
 begin
@@ -2238,7 +2243,7 @@ begin
 	if (c.flags and CONST_PERSISTENT) = 0 then
     _zval_copy_ctor_func(@c.value, '', 0);
 end;
-{$IF defined(PHP540) or defined(PHP550) or defined(PHP560)}
+{$if defined(PHP520) or defined(PHP540) or defined(PHP550) or defined(PHP560)}
 
 procedure zend_copy_constants(target: PHashTable;source: PHashTable);
 var tmp: zend_constant;
@@ -2274,13 +2279,13 @@ begin
 {$ENDIF}
 
  {$IFDEF PHP5}
- {$IF not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
+ {$IF not defined(PHP520) and not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
    LFunc(@zend_copy_constants, 'zend_copy_constants');
  {$IFEND}
    LFunc(@zend_objects_new, 'zend_objects_new');
    LFunc(@zend_objects_clone_obj, 'zend_objects_clone_obj');
    LFunc(@function_add_ref, 'function_add_ref');
- {$IF not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
+ {$IF not defined(PHP520) and  not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
    LFunc(@zend_class_add_ref, 'zend_class_add_ref');
  {$IFEND}
 
@@ -2515,6 +2520,7 @@ begin
   LFunc(@zend_get_constant, 'zend_get_constant');
 
   // -- zend_register_null_constant
+  {$if defined(PHP530)}
   LFunc(@zend_register_null_constant, 'zend_register_null_constant');
 
   // -- zend_register_bool_constant
@@ -2522,7 +2528,7 @@ begin
 
   // -- zend_register_long_constant
   LFunc(@zend_register_long_constant, 'zend_register_long_constant');
-
+  {$ifend}
   // -- zend_register_double_constant
   LFunc(@zend_register_double_constant, 'zend_register_double_constant');
 

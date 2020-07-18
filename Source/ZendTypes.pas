@@ -35,41 +35,21 @@ const ZEND_BUILD_DEBUG  = ',debug';
 const ZEND_BUILD_DEBUG  = '';
 {$ENDIF}
 
-{$IFDEF PHP_COMPILER_ID}
-{$IFDEF COMPILER_VC9}
 const ZEND_BUILD_SYSTEM  =
-{$IFDEF COMPILER_VC14}
-',VC14'
-{$ELSE}
-  {$IFDEF COMPILER_VC13}
-    ',VC13'
-  {$ELSE}
-    {$IFDEF COMPILER_VC12}
-      ',VC12'
-      {$ELSE}
-        {$IFDEF COMPILER_VC11}
-          ',VC11'
-          {$ELSE}
-            {$IFDEF COMPILER_VC11}
-            ',VC10'
-            {$ELSE}
-            ',VC9'
-            {$ENDIF}
-          {$ENDIF}
-      {$ENDIF}
-  {$ENDIF}
-{$ENDIF};
-{$ELSE}
-{$IFDEF COMPILER_VC6}
-const ZEND_BUILD_SYSTEM  = ',VC6';
-{$ELSE}
-const ZEND_BUILD_SYSTEM  = ', $DEFINE COMPILER_VCx directive error. See PHP.INC for more details';
+{$IFDEF PHP_COMPILER_ID}
+{$if defined(COMPILER_VC14)}',VC14'
+{$elseif COMPILER_VC13} ',VC13'
+{$elseif COMPILER_VC12} ',VC12'
+{$elseif COMPILER_VC11} ',VC11'
+{$elseif COMPILER_VC10} ',VC10'
+{$elseif COMPILER_VC9}  ',VC9'
+{$elseif COMPILER_VC6}  ',VC6'
+{$else}', $DEFINE COMPILER_VCx directive error. See PHP.INC for more details'
+{$ifend}
+{$else}
+', $DEFINE COMPILER_VCx directive error. See PHP.INC for more details'
+{$endif};
 {$ENDIF}
-{$ENDIF}
-{$ENDIF}
-
-{$ENDIF}
-
 
 
   //zend_vm_opcodes.h
@@ -853,10 +833,14 @@ type
    get_iterator : pointer;
    interface_gets_implemented : pointer;
 
+   {$IFDEF PHP530}
    get_static_method : pointer;
+   {$ENDIF}
 
+   {$IFDEF PHP511}
    serialize : pointer;
    unserialize : pointer;
+   {$ENDIF}
 
    interfaces : pointer;
    num_interfaces : zend_uint;
@@ -867,7 +851,9 @@ type
    doc_comment : zend_pchar;
    doc_comment_len : zend_uint;
 
+   {$IFDEF PHP511}
    module : pointer;
+   {$ENDIF}
   end;
   {$ENDIF}
 
@@ -1192,10 +1178,14 @@ type
     request_shutdown_func : pointer;
     info_func             : pointer;
     version               : zend_pchar;
-    globals_size          : size_t;
-    globals_id_ptr        : pointer;
-    globals_ctor          : pointer;
-    globals_dtor          : pointer;
+
+    {$IFDEF PHP520}
+    globals_size : size_t;
+    globals_id_ptr : pointer;
+    globals_ctor : pointer;
+    globals_dtor : pointer;
+    {$ENDIF}
+
     post_deactivate_func  : pointer;
     module_started        : integer;
     _type                 : byte;

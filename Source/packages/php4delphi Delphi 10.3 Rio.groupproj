@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{D3946CCE-C89C-4195-8C9B-ACC8FEE61B03}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="..\php4DelphiRRio.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="..\php4DelphiDRio.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="php4DelphiRRio">
+        <MSBuild Projects="..\php4DelphiRRio.dproj"/>
+    </Target>
+    <Target Name="php4DelphiRRio:Clean">
+        <MSBuild Projects="..\php4DelphiRRio.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="php4DelphiRRio:Make">
+        <MSBuild Projects="..\php4DelphiRRio.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="php4DelphiDRio">
+        <MSBuild Projects="..\php4DelphiDRio.dproj"/>
+    </Target>
+    <Target Name="php4DelphiDRio:Clean">
+        <MSBuild Projects="..\php4DelphiDRio.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="php4DelphiDRio:Make">
+        <MSBuild Projects="..\php4DelphiDRio.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="php4DelphiRRio;php4DelphiDRio"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="php4DelphiRRio:Clean;php4DelphiDRio:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="php4DelphiRRio:Make;php4DelphiDRio:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
