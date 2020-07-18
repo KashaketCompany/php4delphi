@@ -177,7 +177,7 @@ php_print_info_htmlhead: procedure (TSRMLS_D : pointer); cdecl;
 
 
 
-{$IFNDEF CUTTED_PHP7dll}
+{$IFNDEF COMPILER_php7pv}
 php_log_err: procedure (err_msg : zend_pchar; TSRMLS_DC : pointer); cdecl;
 {$ENDIF}
 php_html_puts: procedure (str : zend_pchar; str_len : integer; TSRMLS_DC : pointer); cdecl;
@@ -587,7 +587,7 @@ begin
   LFunc(@php_body_write, 'php_body_write' );
   LFunc(@php_header_write, 'php_header_write');
   {$ENDIF}
-  {$IFNDEF CUTTED_PHP7dll}
+  {$IFNDEF COMPILER_php7pv}
   LFunc(@php_log_err, 'php_log_err');
   {$ENDIF}
   LFunc(@php_html_puts, 'php_html_puts');

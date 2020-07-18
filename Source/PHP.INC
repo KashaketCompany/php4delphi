@@ -5,101 +5,104 @@
 { Author:                                               }
 { Serhiy Perevoznyk                                     }
 { serge_perevoznyk@hotmail.com                          }
-{ http://users.chello.be/ws36637                        }
-{ http://delphi32.blogspot.com                          }
+{ https://users.chello.be/ws36637                       }
+{ https://delphi32.blogspot.com                         }
 {*******************************************************}
 
-{ $Id: PHP.INC,v 7.4 10/2009 delphi32 Exp $ }
+{ $Id: PHP.INC,v 7.4 07/2020 delphi32 Exp $ }
 
 {IMPORTANT:
-If you are using PHP version 5.0 please add $DEFINE PHP5
-If you are using PHP version 5.0.4 please add $DEFINE PHP504
-If you are using PHP version 5.1.0 or higher please add $DEFINE PHP510
-If you are using PHP version 5.1.1 or higher please add $DEFINE PHP511
-If you are using PHP version 5.1.2 or higher please add $DEFINE PHP512
-If you are using PHP version 5.2.0 or higher please add $DEFINE PHP520
-IF you are using PHP version 5.3.0 or higher please add $DEFINE PHP530
-IF you are using PHP version 5.4.0 or higher please add $DEFINE PHP540
-IF you are using PHP version 5.5.0 or higher please add $DEFINE PHP550
-IF you are using PHP version 5.6.0 or higher please add $DEFINE PHP560
-IF you are using PHP cersion 7.0.0 or higher please add $DEFINE PHP700
-If you are using PHP compiled via:
-id,   define compiler_id
-VC9   COMPILER_VC9
-VC10  COMPILER_VC10
-VC11  COMPILER_VC11
-VC12  COMPILER_VC12
-VC13  COMPILER_VC13
-VC14  COMPILER_VC14
-Sorry for such complicated configuration, but PHP team does not keep
-backward compatibility between PHP versions.
+Define suitable PHP version, the table is represented below:
+| Version |    Directive    |
+    5.0      $DEFINE PHP5
+   5.0.4     $DEFINE PHP504
+   5.1.0     $DEFINE PHP510
+   5.1.1     $DEFINE PHP511
+   5.1.2     $DEFINE PHP512
+    5.2      $DEFINE PHP520
+    5.3      $DEFINE PHP530
+    5.4      $DEFINE PHP540
+    5.5      $DEFINE PHP550
+    5.6      $DEFINE PHP560
+    7.0      $DEFINE PHP7
+    7.1      $DEFINE PHP710
+
+Define suitable visual library
+| Library |    Directive    |
+    VCL      $DEFINE VCL
+    FMX      $DEFINE FMX
 }
 
-{PHP5 must be defined if you are using PHP5}
-{$DEFINE PHP5}
-
-{For PHP5 you have to define the subversion of PHP}
-{$DEFINE PHP504}
-{$DEFINE PHP510}
-{$DEFINE PHP511}
-{$DEFINE PHP512}
-{$DEFINE PHP520}
-{$DEFINE PHP530}
-{$DEFINE PHP540}
-{$DEFINE PHP550}
+//Version
 {$DEFINE PHP560}
+{$DEFINE VCL}
+
+//Features
+{$DEFINE PHP_UNICODE}
+    //PHP unicode support *Enables WideString and UnicodeString
+{$DEFINE REGISTER_COLOURS} 
+    //constants for Delphi colours
+{.$DEFINE QUIET_LOAD}
+    //Do not show errors while loading php library
+{.$DEFINE PHP4DELPHI_AUTOLOAD}
+    //Load php library at initialization
+{.$DEFINE PHP4DELPHI_AUTOUNLOAD}
+    // Unload php library at finalization
+
+//Compiler switches
+{.$DEFINE php_side_handler}
+    //enable ability to define own error handler from php side ~NON_TC
+{.$DEFINE COMPILER_php7pv}
+    // use macroses from PHP sources patch 
+    // https://github.com/resistancelion/no-name-engine/tree/master/php-src
+{.$DEFINE PHP_DEBUG}
+    //use debug libraries (php7debug, f.e)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//E N D
+{$WARN UNIT_DEPRECATED OFF}
+{$IFDEF PHP_UNICODE} {$DEFINE UNICODE} {$ENDIF}
+
+{$IFDEF PHP710} {$DEFINE PHP700} {$ENDIF}
+{$IFDEF PHP700} {$DEFINE PHP7} {$ENDIF}
+
+{$IFDEF PHP7} {$DEFINE PHP560} {$ENDIF}
+{$IFDEF PHP560} {$DEFINE PHP550} {$ENDIF}
+{$IFDEF PHP550} {$DEFINE PHP540} {$ENDIF}
+{$IFDEF PHP540} {$DEFINE PHP530} {$ENDIF}
 {$IFDEF PHP530}
+  {$DEFINE PHP520}
   {$DEFINE ZEND_WIN32}
   {$DEFINE PHP_COMPILER_ID}
 {$ENDIF}
-{$DEFINE soulengine_build}
-{.$DEFINE PHP7}
-{.$DEFINE CUTTED_PHP7dll}
- {$IFDEF PHP7}
-  {$DEFINE COMPILER_VC14}
-  {$DEFINE PHP560}
-  {$DEFINE PHP700}
- {$ENDIF}
-{$IFDEF PHP560}
-	{$DEFINE PHP530}
-	{$DEFINE PHP540}
-	{$DEFINE PHP550}
-	{$DEFINE ZEND_WIN32}
-	{$DEFINE PHP_COMPILER_ID}
-{$ENDIF}
-//Warning! You must select one of the compilers
-//Look at the version of PHP you have installed
-//I DO recommend to use php-5.6.40-Win32-VC11-x86, specially if you are using
-//php4delphi component with php5ts.dll. If you are building PHP extensions,
-//you have to define the right compiler, otherwise you would have incompatibility
-//problems
-
+{$IFDEF PHP520} {$DEFINE PHP512} {$ENDIF}
+{$IFDEF PHP512} {$DEFINE PHP511} {$ENDIF}
+{$IFDEF PHP511} {$DEFINE PHP510} {$ENDIF}
+{$IFDEF PHP510} {$DEFINE PHP504} {$ENDIF}
+{$IFDEF PHP504} {$DEFINE PHP5} {$ENDIF}
 {$IFDEF PHP_COMPILER_ID}
  {$DEFINE COMPILER_VC9}
 	{$IFNDEF PHP7}
 		{$IFDEF PHP550} {$DEFINE COMPILER_VC11} {$ENDIF}
-	{$ENDIF}
+	{$ELSE}
+        {$DEFINE COMPILER_VC14}
+    {$ENDIF}
 {$ENDIF}
-
-{$WARN UNIT_DEPRECATED OFF}
-
-{.$DEFINE QUIET_LOAD} //Do not show error while loading php4ts.dll or php5ts.dll (depends from php version)
-
-{.$DEFINE PHP4DELPHI_AUTOLOAD}     //Load php4ts.dll or php5ts.dll at initialization
-{.$DEFINE PHP4DELPHI_AUTOUNLOAD}   // Unload php4ts.dll or php5ts.dll at finalization
-
-{.$DEFINE PHP_DEBUG}
-
-{$DEFINE REGISTER_COLORS} //register php constants for colors
 
 {$IFNDEF LINUX}
- {$DEFINE ZTS}                                               {zts support}
-{$ENDIF}
-
-{$IF Defined(COMPILER_VC11) and Defined(PHP560) or Defined(PHP7)}
-  {$DEFINE PHP_UNICODE}
-{$ELSEIF Defined(COMPILER_VC12) or Defined(COMPILER_VC13) or Defined(COMPILER_VC14) or Defined(COMPILER_VC15)}
-  {$DEFINE PHP_UNICODE}
+ {$DEFINE ZTS}                                               {zend thread safety support}
 {$ENDIF}
 
 {$IFNDEF VER80}                                             {Delphi 1.0}
@@ -205,6 +208,14 @@ backward compatibility between PHP versions.
 {$WARNINGS OFF}
 {$ENDIF}
 
-{$IFDEF MSWINDOWS}
-{$DEFINE WINDOWS}
+{$IFDEF MSWINDOWS} {$DEFINE WINDOWS} {$ENDIF}
+{$IFDEF FPC}
+    {$IFDEF FMX} {$UNDEF FMX} {$ENDIF}
+    {$IFDEF VCL} {$UNDEF VCL} {$ENDIF}
+    {$DEFINE LCL}
+{$ELSE}
+    {$IFDEF LCL}
+        {$UNDEF LCL}
+        {$DEFINE VCL}
+    {$ENDIF}
 {$ENDIF}

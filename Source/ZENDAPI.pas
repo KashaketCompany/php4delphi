@@ -592,7 +592,7 @@ var
   add_property_stringl_ex                         : function(arg: pzval; key: zend_pchar; key_len: uint; str: zend_pchar; len: uint; duplicate: integer; TSRMLS_DC: Pointer): integer; cdecl;
   add_property_zval_ex                            : function(arg: pzval; key: zend_pchar; key_len: uint; value: pzval; TSRMLS_DC: Pointer): integer; cdecl;
 
-  {$IFDEF CUTTED_PHP7dll}
+  {$IFDEF COMPILER_php7pv}
   call_user_function : procedure(func:pzval; argv:pzval; argc:integer);cdecl;
   {$ELSE}
    call_user_function : function(function_table: PHashTable; object_pp: pzval;
@@ -2399,7 +2399,7 @@ begin
   {$IFDEF PHP7}
   LFunc(@_zend_hash_add_or_update, '_zend_hash_add_or_update@@16');
   LFunc(@_zend_hash_add, '_zend_hash_add@@12');
-  {$IFDEF CUTTED_PHP7dll}
+  {$IFDEF COMPILER_php7pv}
   LFunc(@zend_hash_index_findZval,'zend_hash_index_findZval');
   LFunc(@zend_symtable_findTest,'zend_symtable_findTest');
   LFunc(@zend_hash_index_existsZval,'zend_hash_index_existsZval');
@@ -2809,8 +2809,8 @@ begin
   // -- add_property_zval_ex
   LFunc(@add_property_zval_ex, 'add_property_zval_ex');
 
-  LFunc(@call_user_function, {$IFDEF CUTTED_PHP7dll}'__call_function'{$ELSE}'call_user_function'{$ENDIF});
-  {$IFNDEF CUTTED_PHP7dll}
+  LFunc(@call_user_function, {$IFDEF COMPILER_php7pv}'__call_function'{$ELSE}'call_user_function'{$ENDIF});
+  {$IFNDEF COMPILER_php7pv}
   LFunc(@call_user_function_ex, 'call_user_function_ex');
   {$ENDIF}
   // -- add_assoc_long_ex

@@ -41,7 +41,7 @@ uses
   ZendTypes, PHPTypes, PHPAPI, ZENDAPI,
   DelphiFunctions, phpFunctions, strUtils, varUtils,
   {$IFDEF PHP_UNICODE}WideStrUtils, {$ENDIF}
-  {$IFDEF soulengine_build} VCL.Dialogs, {$ENDIF}
+  {$IFDEF php_side_handler} {$IFDEF FMX}FMX.Dialogs{$ELSE}VCL.Dialogs{$ENDIF}, {$ENDIF}
   System.UITypes;
 
 type
@@ -286,7 +286,7 @@ type
     function GetLibrary(Index : integer) : TCustomPHPLibrary;
     property Libraries : TList read FLibraries write FLibraries;
   end;
-{$IFDEF REGISTER_COLORS}
+{$IFDEF REGISTER_COLOURS}
 const
   Colors: array[0..41] of TIdentMapEntry = (
     (Value: clBlack; Name: 'clBlack'),
@@ -336,7 +336,7 @@ var
  Librarian : TPHPLibrarian = nil;
  delphi_sapi_module : sapi_module_struct;
  PHPEngine : TPHPEngine = nil;
- {$IFDEF soulengine_build}
+ {$IFDEF php_side_handler}
   log_handler_php: string;
   fatal_handler_php: string;
   phpmd: TpsvPHP;
@@ -744,7 +744,8 @@ begin
   end;
 end;
 {$ENDIF}
-{$IFDEF soulengine_build}
+
+{$IFDEF php_side_handler}
 procedure delphi_error_cb(AType: Integer; const AFname: zend_pchar; const ALineNo: UINT;
   const AFormat: zend_pchar; args: zend_pchar) cdecl;
 var
@@ -862,7 +863,7 @@ begin
                 else
                     error_type_str := 'Unknown error';
                end;
-              {$IFDEF CUTTED_PHP7dll}
+              {$IFDEF COMPILER_php7pv}
                ShowMessage(
                 Format
                 ('PHP4DELPHI %s:  %s in %s on line %d', [error_type_str, buffer, error_filename, error_lineno]));
@@ -877,7 +878,7 @@ begin
     _zend_bailout(error_filename, error_lineno);
 end;
 {$ENDIF}
-{$IFDEF soulengine_build}
+{$IFDEF php_side_handler}
 function php_delphi_log_message(msg : zend_pchar) : integer; cdecl;
 var
  php : TpsvPHP;
@@ -1692,13 +1693,13 @@ begin
 end;
 
 procedure TPHPEngine.RegisterInternalConstants(TSRMLS_DC: pointer);
-{$IFDEF REGISTER_COLORS}
+{$IFDEF REGISTER_COLOURS}
 var
  i : integer;
  ColorName : zend_ustr;
 {$ENDIF}
 begin
- {$IFDEF REGISTER_COLORS}
+ {$IFDEF REGISTER_COLOURS}
   for I := Low(Colors) to High(Colors) do
   begin
    ColorName := zend_ustr(Colors[i].Name);

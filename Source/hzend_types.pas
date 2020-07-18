@@ -2,7 +2,7 @@ unit hzend_types;
 
 interface
 
-uses Winapi.Windows;
+uses {$IFDEF FPC}Winapi.Windows{$ELSE}Windows{$ENDIF};
 
 var
  _TestCreate:Pointer;
