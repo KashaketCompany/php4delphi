@@ -562,75 +562,39 @@ begin
 
     module_entry_table[0].fname := 'regcreatekey';
     module_entry_table[0].handler := @php_regcreatekey;
-    {$IFDEF PHP4}
-    module_entry_table[0].func_arg_types := nil;
-    {$ENDIF}
 
     module_entry_table[1].fname := 'regdeleteentry';
     module_entry_table[1].handler := @php_regdeleteentry;
-    {$IFDEF PHP4}
-    module_entry_table[1].func_arg_types := nil;
-    {$ENDIF}
 
     module_entry_table[2].fname := 'regdeletekeytree';
-    module_entry_table[2].handler := @php_regdeletekeytree;
-   {$IFDEF PHP4}
-    module_entry_table[2].func_arg_types := nil;
-    {$ENDIF}
+    module_entry_table[2].handler := p_regdeletekeytree;
 
     module_entry_table[3].fname := 'reghassubkeys';
     module_entry_table[3].handler := @php_reghassubkeys;
-   {$IFDEF PHP4}
-    module_entry_table[3].func_arg_types := nil;
-    {$ENDIF}
 
     module_entry_table[4].fname := 'regkeyexists';
     module_entry_table[4].handler := @php_regkeyexists;
-   {$IFDEF PHP4}
-    module_entry_table[4].func_arg_types := nil;
-    {$ENDIF}
 
     module_entry_table[5].fname := 'regreadbool';
     module_entry_table[5].handler := @php_regreadbool;
-   {$IFDEF PHP4}
-    module_entry_table[5].func_arg_types := nil;
-    {$ENDIF}
 
     module_entry_table[6].fname := 'regreadinteger';
     module_entry_table[6].handler := @php_regreadinteger;
-   {$IFDEF PHP4}
-    module_entry_table[6].func_arg_types := nil;
-    {$ENDIF}
 
     module_entry_table[7].fname := 'regreadstring';
     module_entry_table[7].handler := @php_regreadstring;
-   {$IFDEF PHP4}
-    module_entry_table[7].func_arg_types := nil;
-    {$ENDIF}
 
     module_entry_table[8].fname := 'regwritebool';
     module_entry_table[8].handler := @php_regwritebool;
-   {$IFDEF PHP4}
-    module_entry_table[8].func_arg_types := nil;
-    {$ENDIF}
 
     module_entry_table[9].fname := 'regwriteinteger';
     module_entry_table[9].handler := @php_regwriteinteger;
-   {$IFDEF PHP4}
-    module_entry_table[9].func_arg_types := nil;
-    {$ENDIF}
 
     module_entry_table[10].fname := 'regwritestring';
     module_entry_table[10].handler := @php_regwritestring;
-   {$IFDEF PHP4}
-    module_entry_table[10].func_arg_types := nil;
-    {$ENDIF}
 
     module_entry_table[11].fname := nil;
     module_entry_table[11].handler := nil;
-   {$IFDEF PHP4}
-    module_entry_table[11].func_arg_types := nil;
-    {$ENDIF}
 
     ModuleEntry.functions :=  @module_entry_table[0];
     ModuleEntry._type := MODULE_PERSISTENT;

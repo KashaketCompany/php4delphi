@@ -16,7 +16,17 @@ unit phpModules;
 
 interface
  uses
-   SyncObjs, {$IFNDEF FPC} Windows, {$ELSE} LCLType,LCLIntf,dynlibs,LCLProc,{$ENDIF} SysUtils, Types, Classes, VCL.Forms, VCL.Consts,
+   SyncObjs, {$IFNDEF FPC} Windows, {$ELSE} LCLType,LCLIntf,dynlibs,LCLProc,{$ENDIF} SysUtils, Types, Classes,
+   {$if defined(VCL) and (CompilerVersion > 21)}
+   VCL.Forms, VCL.Consts,
+   {$elseif defined(FMX)}
+   FMX.Forms, FMX.Consts,
+   {$elseif defined(KYLIX)}
+   QForms, QConsts,
+   {$elseif defined(VCL) or defined(LCL)}
+   Forms, Consts,
+   {$ifend}
+
    PHPCommon,
    {$IFDEF VERSION6}RTLConsts, Variants,{$ENDIF} ZendAPI, phpAPI,
    phpFunctions,
@@ -456,7 +466,7 @@ begin
     try
       if Assigned(OnCreate) and OldCreateOrder then OnCreate(Self);
     except
-      VCL.Forms.Application.HandleException(Self);
+      Forms.Application.HandleException(Self);
     end;
   end;
 end;
@@ -467,13 +477,13 @@ end;
 procedure DoneVCLApplication;
 begin
   try
-   VCL.Forms.Application.OnException := nil;
+   Forms.Application.OnException := nil;
    {$IFDEF WINDOWS}
-   if VCL.Forms.Application.Handle <> 0 then ShowOwnedPopups(VCL.Forms.Application.Handle, False);
+   if Forms.Application.Handle <> 0 then ShowOwnedPopups(Forms.Application.Handle, False);
    {$ELSE}
-   VCL.Forms.Application.ShowHint := False;
-   VCL.Forms.Application.Destroying;
-   VCL.Forms.Application.DestroyComponents;
+   Forms.Application.ShowHint := False;
+   Forms.Application.Destroying;
+   Forms.Application.DestroyComponents;
    {$ENDIF}
   except
   end; 
@@ -607,7 +617,7 @@ end;
 
 procedure TPHPApplication.Run;
 begin
-  VCL.Forms.Application.OnException := OnExceptionHandler;
+  Forms.Application.OnException := OnExceptionHandler;
 end;
 
 

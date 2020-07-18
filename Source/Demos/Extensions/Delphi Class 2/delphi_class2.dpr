@@ -59,43 +59,23 @@ begin
 
   DelphiTable[4].fname := 'delphi_extract_file_ext';
   DelphiTable[4].handler := @delphi_extract_file_ext;
-  {$IFDEF PHP4}
-  DelphiTable[4].func_arg_types := nil;
-  {$ELSE}
   DelphiTable[4].arg_info := nil;
-  {$ENDIF}
 
   DelphiTable[5].fname := 'delphi_show_message';
-  DelphiTable[5].handler := @delphi_show_message;
-  {$IFDEF PHP4}
-  DelphiTable[5].func_arg_types := nil;
-  {$ELSE}
+  DelphiTable[5].handler := @delphi_show_message;}
   DelphiTable[5].arg_info := nil;
-  {$ENDIF}
 
   DelphiTable[6].fname :=  'register_delphi_object';
   delphitable[6].handler := @register_delphi_object;
-  {$IFDEF PHP4}
-  DelphiTable[6].func_arg_types := nil;
-  {$ELSE}
   DelphiTable[6].arg_info := nil;
-  {$ENDIF}
 
   DelphiTable[7].fname := 'delphi_get_author';
   DelphiTable[7].handler := @delphi_get_author;
-  {$IFDEF PHP4}
-  DelphiTable[7].func_arg_types := nil;
-  {$ELSE}
-  DelphiTable[7].arg_info := nil;
-  {$ENDIF}
+  DelphiTable[7].arg_info := nil;}
 
   DelphiTable[8].fname := 'delphi_str_date';
   DelphiTable[8].handler := @delphi_str_date;
-  {$IFDEF PHP4}
-  DelphiTable[8].func_arg_types := nil;
-  {$ELSE}
   DelphiTable[8].arg_info := nil;
-  {$ENDIF}
 
 
   PHP_FUNCTION(DelphiTable[9], 'delphi_get_system_directory', @delphi_get_system_directory);
@@ -122,9 +102,6 @@ begin
   ModuleEntry.request_startup_func := @rinit;
   ModuleEntry.request_shutdown_func := @rshutdown;
   ModuleEntry.info_func := @php_info_module;
-  {$IFDEF PHP4}
-  Module_entry_table[0].func_arg_types := nil;
-  {$ENDIF}
   ModuleEntry.functions :=  @DelphiTable[0];
   ModuleEntry._type := MODULE_PERSISTENT;
   {$IFDEF PHP530}

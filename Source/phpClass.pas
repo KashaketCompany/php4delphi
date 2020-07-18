@@ -643,6 +643,7 @@ function TClassProperty.GetAsInteger: integer;
 var
  c: CharPtr;
 begin
+{$if CompilerVersion > 21}
   c := FormatSettings.DecimalSeparator;
   try
     FormatSettings.DecimalSeparator := '.';
@@ -650,6 +651,15 @@ begin
   finally
    FormatSettings.DecimalSeparator := c;
   end;
+{$else}
+  c := DecimalSeparator;
+  try
+    DecimalSeparator := '.';
+    Result := Round(ValueToFloat(FValue));
+  finally
+   DecimalSeparator := c;
+  end;
+{$ifend}
 end;
 
 function TClassProperty.GetDisplayName: string;
@@ -677,6 +687,7 @@ procedure TClassProperty.SetAsInteger(const Value: integer);
 var
  c: CharPtr;
 begin
+{$if CompilerVersion > 21}
   c := FormatSettings.DecimalSeparator;
   try
    FormatSettings.DecimalSeparator := '.';
@@ -684,6 +695,15 @@ begin
   finally
    FormatSettings.DecimalSeparator := c;
   end;
+{$else}
+  c := DecimalSeparator;
+  try
+   DecimalSeparator := '.';
+   FValue := IntToStr(Value);
+  finally
+   DecimalSeparator := c;
+  end;
+{$ifend}
 end;
 
 

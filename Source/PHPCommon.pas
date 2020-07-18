@@ -19,7 +19,27 @@ unit PHPCommon;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, VCL.Graphics, VCL.Controls, VCL.Forms, VCL.Dialogs,
+  Windows, Messages, SysUtils, Classes,
+  {$if CompilerVersion > 21}
+  VCL.Controls,
+  VCL.Dialogs,
+  VCL.Forms, VCL.Graphics,
+  {$elseif defined(FMX)}
+  FMX.Controls,
+  FMX.Dialogs,
+  FMX.Forms, FMX.Graphics,
+  {$else}
+    {$ifdef KYLIX}
+    QControls,
+    QDialogs,
+    QForms, QGraphics,
+    {$else}
+    Controls,
+    Dialogs,
+    Forms, Graphics,
+    {$endif}
+  {$ifend}
+
   ZendTypes, ZendAPI, PHPTypes, PHPAPI;
 
 type
@@ -274,6 +294,7 @@ function TPHPVariable.GetAsInteger: integer;
 var
  c: CharPtr;
 begin
+{$if CompilerVersion > 21}
   c := FormatSettings.DecimalSeparator;
   try
    FormatSettings.DecimalSeparator := '.';
@@ -281,6 +302,15 @@ begin
   finally
     FormatSettings.DecimalSeparator := c;
   end;
+{$else}
+  c := DecimalSeparator;
+  try
+   DecimalSeparator := '.';
+   Result := Round(ValueToFloat(FValue));
+  finally
+    DecimalSeparator := c;
+  end;
+{$ifend}
 end;
 
 function TPHPVariable.GetDisplayName: string;
@@ -308,6 +338,7 @@ procedure TPHPVariable.SetAsInteger(const Value: integer);
 var
  c: CharPtr;
 begin
+{$if CompilerVersion > 21}
   c := FormatSettings.DecimalSeparator;
   try
    FormatSettings.DecimalSeparator := '.';
@@ -315,6 +346,15 @@ begin
   finally
     FormatSettings.DecimalSeparator := c;
   end;
+{$else}
+  c := DecimalSeparator;
+  try
+   DecimalSeparator := '.';
+   FValue := IntToStr(Value);
+  finally
+    DecimalSeparator := c;
+  end;
+{$ifend}
 end;
 
 { TPHPConstant }

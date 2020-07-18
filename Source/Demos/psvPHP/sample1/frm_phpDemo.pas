@@ -117,13 +117,8 @@ begin
   AStr := StringReplace(AStr, 'src="?=PHPE9568F34-D428-11d2-A769-00AA001ACF42"',
   'src="res://'+ParamStr(0)+'/php"', [rfReplaceAll, rfIgnoreCase]);
 
-  {$IFDEF PHP4}
-  AStr := StringReplace(AStr, 'src="?=PHPE9568F35-D428-11d2-A769-00AA001ACF42"',
-  'src="res://'+ ParamStr(0) + '/zend1"', [rfReplaceAll, rfIgnoreCase]);
-  {$ELSE}
   AStr := StringReplace(AStr, 'src="?=PHPE9568F35-D428-11d2-A769-00AA001ACF42"',
   'src="res://'+ ParamStr(0) + '/zend2"', [rfReplaceAll, rfIgnoreCase]);
-  {$ENDIF}
 
   Stream := StringToOleStream(AStr);
   StreamInit := Webbrowser1.Document as IPersistStreamInit;

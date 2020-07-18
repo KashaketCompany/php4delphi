@@ -86,18 +86,6 @@ begin
    memScript.Lines.Clear;
    with memScript.Lines do
    begin
-  {$IFDEF PHP4}
-    Add('$btnClose = register_delphi_component("btnClose");');
-    Add('$frmTest =   register_delphi_component("frmTest");');
-    Add('$btnClose->Caption = "&Exit";');
-    Add('$frmTest->Caption = "PHP4Delphi demo";');
-    Add('$btnClose->Top =  150;');
-    Add('$btnClose->Font->Size = 10;');
-    Add('$btnClose->Cursor = -21;');
-    Add('$frmTest->Color = clGreen;');
-    Add('$st = delphi_input_box("InputBox", "Type your message", "Done");');
-    Add('delphi_show_message($st);');
-  {$ELSE}
     Add('$btnClose = register_delphi_component("btnClose");');
     Add('$frmTest =   register_delphi_component("frmTest");');
     Add('$btnClose->Caption = "&Exit";');
@@ -108,7 +96,6 @@ begin
     Add('$frmTest->Color = clGreen;');
     Add('$st = delphi_input_box("InputBox", "Type your message", "Done");');
     Add('delphi_show_message($st);');
-  {$ENDIF}
    end;
    PHPEngine.StartupEngine;
 end;

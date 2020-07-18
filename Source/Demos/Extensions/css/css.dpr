@@ -104,9 +104,7 @@ begin
     ModuleEntry.info_func := @php_info_module;
     module_entry_table[0].fname := 'delphi_css';
     module_entry_table[0].handler := @delphi_css;
-  {$IFDEF PHP4}
-  Module_entry_table[0].func_arg_types := nil;
-  {$ENDIF}
+
   ModuleEntry.functions :=  @module_entry_table[0];
   ModuleEntry._type := MODULE_PERSISTENT;
   {$IFDEF PHP530}

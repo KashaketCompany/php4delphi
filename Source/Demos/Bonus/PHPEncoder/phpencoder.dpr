@@ -85,9 +85,6 @@ begin
   Module_entry_table[0].fname := 'ex_dec';
   Module_entry_table[0].handler := @ex_dec;
 
-  {$IFDEF PHP4}
-  Module_entry_table[0].func_arg_types := nil;
-  {$ENDIF}
   ModuleEntry.functions :=  @module_entry_table[0];
   ModuleEntry._type := MODULE_PERSISTENT;
   {$IFDEF PHP530}

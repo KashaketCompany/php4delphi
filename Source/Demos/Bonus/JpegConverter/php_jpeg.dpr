@@ -266,9 +266,6 @@ begin
   Module_entry_table[2].fname := 'sign_jpeg';
   Module_entry_table[2].handler := @sign_jpeg;
 
-  {$IFDEF PHP4}
-  Module_entry_table[0].func_arg_types := nil;
-  {$ENDIF}
   ModuleEntry.functions :=  @module_entry_table[0];
   ModuleEntry._type := MODULE_PERSISTENT;
   

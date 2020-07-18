@@ -38,13 +38,12 @@ contains
   DelphiFunctions in 'DelphiFunctions.pas',
   php4delphi in 'php4delphi.pas',
   PHPAPI in 'PHPAPI.pas',
+  phpModules in 'phpModules.pas',
   PHPLibrary in 'PHPLibrary.pas',
-  phpCustomLibrary in 'phpCustomLibrary.pas',
-  phpFunctions in 'phpFunctions.pas',
+  PHPFunctions in 'PHPFunctions.pas',
   PHPTypes in 'PHPTypes.pas',
   ZENDTypes in 'ZENDTypes.pas',
   phpClass in 'phpClass.pas',
-  phpModules in 'phpModules.pas',
   PHPCommon in 'PHPCommon.pas';
 
 END.

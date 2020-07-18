@@ -22,7 +22,6 @@ interface
 
 uses
  {Windows} SysUtils,
-  VCL.Dialogs,
  {$IFDEF FPC}
   dynlibs
  {$ELSE}
@@ -122,8 +121,8 @@ var
   php_ob_handler_used: function (handler_name : zend_pchar; TSRMLS_DC : pointer) : integer; cdecl;
   {$IF not Defined(PHP540) and not Defined(PHP550) and not Defined(PHP560)}
   php_ob_init_conflict: function (handler_new : zend_pchar; handler_set : zend_pchar; TSRMLS_DC : pointer) : integer; cdecl;
-  {$ENDIF}
-  {$ENDIF}
+  {$ifend}
+  {$endif}
 
 //php_output.h
 
@@ -237,7 +236,7 @@ function GetPHPGlobals(TSRMLS_DC : pointer) : Pphp_Core_Globals;
 
 procedure PHP_FUNCTION(var AFunction : zend_function_entry; AName : zend_pchar; AHandler : pointer);
 
-function LoadPHP(const DllFileName: zend_ustr = PHPWin) : boolean;
+function LoadPHP(const LibraryPath: zend_ustr = PHPlp) : boolean;
 
 procedure UnloadPHP;
 
@@ -274,7 +273,7 @@ php_write: function (const str : zend_pchar; str_length: uint; TSRMLS_DC : point
 {$ELSE}
 php_body_write: function (const str : zend_pchar; str_length: uint; TSRMLS_DC : pointer) : integer; cdecl;
 php_header_write: function (const str : zend_pchar; str_length: uint; TSRMLS_DC : pointer) : integer; cdecl;
-{$ENDIF}
+{$ifend}
 
 php_header: function(TSRMLS_D: pointer) : integer; cdecl;
 php_setcookie: function (name : zend_pchar; name_len : integer; value : zend_pchar; value_len: integer;
@@ -433,13 +432,13 @@ end;
 {$ENDIF}
 
 
-function LoadPHP(const DllFileName: zend_ustr = PHPWin) : boolean;
+function LoadPHP(const LibraryPath: zend_ustr = PHPlp) : boolean;
 
 begin
   Result := false;
   if not PHPLoaded then
     begin
-      if not LoadZend(DllFileName) then
+      if not LoadZend(LibraryPath) then
        Exit;
     end;
 
@@ -509,29 +508,29 @@ begin
   {$ELSE}
   LFunc(@php_start_ob_buffer, 'php_start_ob_buffer');
 
-  php_start_ob_buffer_named, 'php_start_ob_buffer_named');
+  LFunc(@php_start_ob_buffer_named, 'php_start_ob_buffer_named');
 
-  php_end_ob_buffer, 'php_end_ob_buffer');
+  LFunc(@php_end_ob_buffer, 'php_end_ob_buffer');
 
-  php_end_ob_buffers, 'php_end_ob_buffers');
+  LFunc(@php_end_ob_buffers, 'php_end_ob_buffers');
 
-  php_ob_get_buffer, 'php_ob_get_buffer');
+  LFunc(@php_ob_get_buffer, 'php_ob_get_buffer');
 
-  php_ob_get_length, 'php_ob_get_length');
+  LFunc(@php_ob_get_length, 'php_ob_get_length');
 
-  php_start_implicit_flush, 'php_start_implicit_flush');
+  LFunc(@php_start_implicit_flush, 'php_start_implicit_flush');
 
-  php_end_implicit_flush, 'php_end_implicit_flush');
+  LFunc(@php_end_implicit_flush, 'php_end_implicit_flush');
 
-  php_get_output_start_filename, 'php_get_output_start_filename');
+  LFunc(@php_get_output_start_filename, 'php_get_output_start_filename');
 
-  php_get_output_start_lineno, 'php_get_output_start_lineno');
+  LFunc(@php_get_output_start_lineno, 'php_get_output_start_lineno');
 
-  php_ob_handler_used, 'php_ob_handler_used');
+  LFunc(@php_ob_handler_used, 'php_ob_handler_used');
 {$ENDIF}
     {$IF not Defined(PHP540) and not Defined(PHP550) and not Defined(PHP560)}
-  php_ob_init_conflict, 'php_ob_init_conflict');
-    {$ENDIF}
+  LFunc(@php_ob_init_conflict, 'php_ob_init_conflict');
+    {$ifend}
   LFunc(@php_strtoupper, 'php_strtoupper');
 
   LFunc(@php_strtolower,'php_strtolower');
@@ -586,7 +585,7 @@ begin
   {$ELSE}
   LFunc(@php_body_write, 'php_body_write' );
   LFunc(@php_header_write, 'php_header_write');
-  {$ENDIF}
+  {$ifend}
   {$IFNDEF COMPILER_php7pv}
   LFunc(@php_log_err, 'php_log_err');
   {$ENDIF}
@@ -673,6 +672,7 @@ function FloatToValue(Value: Extended): zend_ustr;
 var
   c: CharPtr;
 begin
+  {$if CompilerVersion > 21}
   c := FormatSettings.DecimalSeparator;
   try
    FormatSettings.DecimalSeparator := '.';
@@ -680,19 +680,38 @@ begin
   finally
     FormatSettings.DecimalSeparator := c;
   end;
+  {$else}
+  c := DecimalSeparator;
+  try
+   DecimalSeparator := '.';
+   Result := SysUtils.FormatFloat('0.####', Value);
+  finally
+    DecimalSeparator := c;
+  end;
+  {$ifend}
 end;
 
 function ValueToFloat(Value : zend_ustr) : extended;
 var
   c: CharPtr;
 begin
+  {$if CompilerVersion > 21}
   c := FormatSettings.DecimalSeparator;
   try
    FormatSettings.DecimalSeparator := '.';
-   Result := SysUtils.StrToFloat(Value);
+   Result := SysUtils.StrToFloat( Value);
   finally
-   FormatSettings.DecimalSeparator := c;
+    FormatSettings.DecimalSeparator := c;
   end;
+  {$else}
+  c := DecimalSeparator;
+  try
+   DecimalSeparator := '.';
+   Result := SysUtils.StrToFloat( Value);
+  finally
+    DecimalSeparator := c;
+  end;
+  {$ifend}
 end;
 
 
@@ -714,7 +733,7 @@ begin
   Result.MinorVersion := 0;
   Result.Release := 0;
   Result.Build := 0;
-  FileName := PHPWin;
+  FileName := PHPlp;
   InfoSize := GetFileVersionInfoSize(PWideChar(Filename), Wnd);
    if InfoSize <> 0 then
     begin
@@ -735,13 +754,13 @@ begin
 end;
 {$ENDIF}
 
-initialization
 {$IFDEF PHP4DELPHI_AUTOLOAD}
+initialization
   LoadPHP;
 {$ENDIF}
 
-finalization
 {$IFDEF PHP4DELPHI_AUTOUNLOAD}
+finalization
   UnloadPHP;
 {$ENDIF}
 

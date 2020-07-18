@@ -100,25 +100,11 @@ begin
   properties[0] := 'name';
   properties[1] := 'tool';
   properties[2] := 'height';
-  {$IFDEF PHP4}
-  _object_init_ex(return_value, ce, nil, 0, TSRMLS_DC );
-  {$ELSE}
   object_init(return_value, ce, TSRMLS_DC );
-  {$ENDIF}
-
-  {$IFDEF PHP4}
-  add_property_string_ex(return_value, properties[0], strlen(properties[0]) + 1, 'Serhiy', 1);
-  add_property_string_ex(return_value, properties[1], strlen(properties[1]) + 1, 'Delphi', 1);
-  {$ELSE}
   add_property_string_ex(return_value, properties[0], strlen(properties[0]) + 1, 'Serhiy', 1, TSRMLS_DC);
   add_property_string_ex(return_value, properties[1], strlen(properties[1]) + 1, 'Delphi', 1, TSRMLS_DC);
-  {$ENDIF}
 
-  {$IFDEF PHP4}
-  add_property_long_ex(return_value, properties[2], strlen(properties[2]) + 1, 185);
-  {$ELSE}
   add_property_long_ex(return_value, properties[2], strlen(properties[2]) + 1, 185, TSRMLS_DC);
-  {$ENDIF}
 end;
 
 
@@ -143,9 +129,7 @@ begin
   ModuleEntry.info_func := @php_info_module;
   module_entry_table[0].fname := 'get_demo_class';
   module_entry_table[0].handler := @get_demo_class;
-  {$IFDEF PHP4}
-  module_entry_table[0].func_arg_types := nil;
-  {$ENDIF}
+
   ModuleEntry.functions :=  @module_entry_table[0];
   ModuleEntry._type := MODULE_PERSISTENT;
   {$IFDEF PHP530}

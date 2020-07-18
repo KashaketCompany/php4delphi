@@ -36,13 +36,50 @@ unit php4delphi;
 interface
 
 uses
-  Windows, Messages, SysUtils, System.Types, Classes, VCL.Graphics,
-  PHPCommon, WinApi.WinSock,
+  Windows, Messages, SysUtils,
+  {$if CompilerVersion > 21}
+  System.Types,
+  {$else}
+  Types,
+  {$ifend}
+   Classes,
+  {$if defined(REGISTER_COLOURS) or defined(php_side_handler)}
+
+  {$if defined(LCL) or (defined(VCL) and (CompilerVersion < 22))}
+  Graphics,
+  {$ifdef php_side_handler}
+  Dialogs,
+  {$endif}
+{$elseif defined(KYLIX)}
+  QGraphics,
+  {$ifdef php_side_handler}
+  QDialogs,
+  {$endif}
+{$elseif defined(FMX)}
+  FMX.GraphConsts,
+  {$ifdef php_side_handler}
+  FMX.Dialogs,
+  {$endif}
+{$elseif defined(VCL)}
+  VCL.Graphics,
+  {$ifdef php_side_handler}
+  VCL.Dialogs,
+  {$endif}
+{$ifend}
+  {$ENDIF}
+  PHPCommon,
+  {$if CompilerVersion > 21}
+  WinApi.WinSock,
+  {$else}
+  WinSock,
+  {$ifend}
+
   ZendTypes, PHPTypes, PHPAPI, ZENDAPI,
-  DelphiFunctions, phpFunctions, strUtils, varUtils,
-  {$IFDEF PHP_UNICODE}WideStrUtils, {$ENDIF}
-  {$IFDEF php_side_handler} {$IFDEF FMX}FMX.Dialogs{$ELSE}VCL.Dialogs{$ENDIF}, {$ENDIF}
-  System.UITypes;
+  DelphiFunctions, phpFunctions, strUtils, varUtils
+  {$IFDEF PHP_UNICODE}, WideStrUtils{$ENDIF}
+  {$if CompilerVersion > 21}
+  , System.UITypes
+  {$ifend};
 
 type
 
@@ -197,7 +234,11 @@ type
   private
     FINIPath : zend_ustr;
     FOnEngineStartup  : TNotifyEvent;
+    {$if CompilerVersion > 21}
     FAddMods          : TArray<Pzend_module_entry>;
+    {$else}
+    FAddMods          : array of Pzend_module_entry;
+    {$ifend}
     FOnEngineShutdown : TNotifyEvent;
     FEngineActive     : boolean;
     FHandleErrors     : boolean;
@@ -1739,7 +1780,7 @@ begin
     except
 
     end;
-    {$ENDIF}
+    {$ifend}
     FHash.Clear;
    finally
      FEngineActive := false;
@@ -1854,9 +1895,9 @@ begin
    if not PHPLoaded then
     begin
       if FDLLFolder <> '' then
-         DLLName := IncludeTrailingBackSlash(FDLLFolder) + PHPWin
+         DLLName := IncludeTrailingBackSlash(FDLLFolder) + PHPlp
            else
-             DLLName := PHPWin;
+             DLLName := PHPlp;
       LoadPHP(DLLName);
       if FReportDLLError then
        begin

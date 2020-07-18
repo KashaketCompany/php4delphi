@@ -16,7 +16,7 @@ unit ZENDTypes;
 interface
 
 uses
-  {$IFNDEF FPC} Windows {$ELSE} LCLType{$ENDIF}, {$IFDEF PHP7} hzend_types, {$ENDIF} SysUtils;
+  {$IFNDEF FPC} Windows {$ELSE} LCLType{$ENDIF}, SysUtils;
 
 const
   //zend.h
@@ -340,47 +340,36 @@ const
 
   //zend_modules.h
 const
-{$IFDEF PHP7}
-   ZEND_MODULE_API_NO = 20151012;
-{$ELSE}
-  {$IFDEF PHP530}
-    ZEND_MODULE_API_NO                        =
-   {$IFDEF PHP560}
-    20131226
-   {$ELSE}
-    {$IFDEF PHP550}20121212{$ELSE}{$IFDEF PHP540}20100525{$ELSE}20090626{$ENDIF}{$ENDIF}
-    {$ENDIF};
-  {$ELSE}
-  {$IFDEF PHP520}
-    ZEND_MODULE_API_NO                          = 20060613;
-  {$ELSE}
-  {$IFDEF PHP512}
-   ZEND_MODULE_API_NO                          = 20050922;
-    {$ELSE}
-     {$IFDEF PHP511}
-     ZEND_MODULE_API_NO                       = 20050922;
-      {$ELSE}
-       {$IFDEF PHP510}
-       ZEND_MODULE_API_NO                     = 20050617;
-        {$ELSE}
-          {$IFDEF PHP504}
-          ZEND_MODULE_API_NO                  =  20041030;
-           {$ELSE}
-            ZEND_MODULE_API_NO                =  20040412;
-          {$ENDIF}
-       {$ENDIF}
-     {$ENDIF}
-   {$ENDIF}
-   {$ENDIF}
-{$ENDIF}
-{$ENDIF}
-{$IFDEF ZTS}
+   ZEND_MODULE_API_NO_700 = 20151012;
+   ZEND_MODULE_API_NO_560 = 20131226;
+   ZEND_MODULE_API_NO_550 = 20121212;
+   ZEND_MODULE_API_NO_540 = 20100525;
+   ZEND_MODULE_API_NO_530 = 20090626;
+   ZEND_MODULE_API_NO_520 = 20060613;
+   ZEND_MODULE_API_NO_511 = 20050922;
+   ZEND_MODULE_API_NO_510 = 20050617;
+   ZEND_MODULE_API_NO_504 = 20041030;
+   ZEND_MODULE_API_NO_500 = 20040412;
+   
+   ZEND_MODULE_API_NO =
+   {$ifdef PHP700}20151012
+   {$elseif defined(PHP560)}20131226
+   {$elseif defined(PHP550)}20121212
+   {$elseif defined(PHP540)}20100525
+   {$elseif defined(PHP530)}20090626
+   {$elseif defined(PHP520)}20060613
+   {$elseif defined(PHP512)}20050922
+   {$elseif defined(PHP511)}20050922
+   {$elseif defined(PHP510)}20050617
+   {$elseif defined(PHP504)}20041030
+   {$else}20040412
+   {$ifend};
+
 const
-  USING_ZTS                                       = 1;
-{$ELSE}
-const
-  USING_ZTS                                       = 0;
-{$ENDIF}
+  USING_ZTS   = 
+  {$ifdef ZTS}1
+  {$else}0
+  {$endif};
 
 
 const
@@ -493,14 +482,18 @@ type
   UIntPtr = LongWord;
   ULongPtr = ULong;
   {$ENDIF}
+  {$if defined(WSTR) and (CompilerVersion < 22) }
+  UTF8Char = AnsiChar;
+  PUTF8Char = PAnsiChar;
+  {$ifend}
   zend_uint   = UIntPtr;
   zend_bool   = boolean;
-  zend_uchar  = {$IF Defined(PHP_UNICODE)}Utf8Char{$ELSE}AnsiChar{$ENDIF};
-  zend_ustr   = {$IF Defined(PHP_UNICODE)}UTF8String{$ELSE}AnsiString{$ENDIF};
+  zend_uchar  = {$IFDEF PHP_UNICODE}UTF8Char{$ELSE}AnsiChar{$ENDIF};
+  zend_ustr   = {$IFDEF PHP_UNICODE}UTF8String{$ELSE}AnsiString{$ENDIF};
   zend_ulong  = ULongPtr;
   zend_long   = IntPtr;
-  zend_pchar  = {$IF Defined(PHP_UNICODE)}PUtf8Char{$ELSE}PAnsiChar{$ENDIF};
-  zend_pstr   = {$IF Defined(PHP_UNICODE)}PUtf8String{$ELSE}PAnsiString{$ENDIF};
+  zend_pchar  = {$IFDEF PHP_UNICODE}PUTF8Char{$ELSE}PAnsiChar{$ENDIF};
+  zend_pstr   = {$IFDEF PHP_UNICODE}PUtf8String{$ELSE}PAnsiString{$ENDIF};
   {$IFDEF PHP7}
   _zend_refcounted_h = record
       refcount : cardinal;
@@ -1077,7 +1070,7 @@ type
     _type : zend_stream_type;
     {$ELSE}
     _type: uchar;
-    {$ENDIF}
+    {$IFEND}
     filename: zend_pchar;
     opened_path: zend_pchar;
     handle:

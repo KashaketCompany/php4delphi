@@ -17,9 +17,7 @@ unit DelphiFunctions;
 interface
 uses
   SysUtils, Classes,
-  VCL.Controls,
-  ZendTypes, ZendAPI, PHPTypes, PHPAPI, VCL.Dialogs, typinfo,
-  VCL.Forms, VCL.stdctrls;
+  ZendTypes, ZendAPI, PHPTypes, PHPAPI, typinfo;
 
 {$ifdef fpc}
    {$mode delphi}

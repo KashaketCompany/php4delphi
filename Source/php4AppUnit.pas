@@ -217,10 +217,6 @@ var
   data: ^ppzval;
   cnt : integer;
   InfoBlock : TPHPInfoBlock;
-  {$IFDEF PHP5}
-  EG : pzend_executor_globals;
-  {$ENDIF}
-
 begin
   InfoBlock := TPHPInfoBlock(RequestID);
    ht := GetSymbolsTable;
@@ -713,7 +709,7 @@ begin
        sapi_shutdown;
        {$IF not Defined(PHP550) and not Defined(PHP560)}
        tsrm_shutdown();
-       {$ENDIF}
+       {$ifend}
      except
      end;
    end;

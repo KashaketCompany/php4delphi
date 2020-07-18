@@ -30,16 +30,17 @@ package php4DelphiD6;
 {$DESIGNONLY}
 {$IMPLICITBUILD OFF}
 
-rrequires
+requires
   rtl,
+  vcl,
   designide,
   php4DelphiR6;
 
-ocontains
+contains
   PHPProjectWizard in 'PHPProjectWizard.pas',
   php4DelphiReg in 'php4DelphiReg.pas',
   phpWeb in 'phpWeb.pas',
   php4DelphiWeb in 'php4DelphiWeb.pas',
   phpAbout in 'phpAbout.pas' {dlgAbout};
 
-d.
+end.

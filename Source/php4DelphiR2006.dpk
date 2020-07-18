@@ -30,22 +30,21 @@ package php4DelphiR2006;
 {$RUNONLY}
 {$IMPLICITBUILD OFF}
 
-rrequires
+requires
   rtl,
   vcl;
 
-ocontains
+contains
   ZENDAPI in 'ZENDAPI.pas',
   DelphiFunctions in 'DelphiFunctions.pas',
   php4delphi in 'php4delphi.pas',
   PHPAPI in 'PHPAPI.pas',
   phpModules in 'phpModules.pas',
   PHPLibrary in 'PHPLibrary.pas',
-  phpCustomLibrary in 'phpCustomLibrary.pas',
   PHPFunctions in 'PHPFunctions.pas',
   PHPTypes in 'PHPTypes.pas',
   ZENDTypes in 'ZENDTypes.pas',
   phpClass in 'phpClass.pas',
   PHPCommon in 'PHPCommon.pas';
 
-d.
+end.

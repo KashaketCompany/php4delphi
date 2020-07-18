@@ -35,13 +35,19 @@ Define suitable visual library
 
 //Version
 {$DEFINE PHP560}
+	//PHP Version
+{$DEFINE ZTS}
+	//Thread Safe mode (php7ts, e.g)
 {$DEFINE VCL}
-
+	//visual library - Kylix, VCL, FMX for Delphi and LCL, fpGUI for Lazarus
+	
 //Features
 {$DEFINE PHP_UNICODE}
     //PHP unicode support *Enables WideString and UnicodeString
-{$DEFINE REGISTER_COLOURS} 
+{.$DEFINE REGISTER_COLOURS} 
     //constants for Delphi colours
+{.$DEFINE php_side_handler}
+    //enable ability to define own error handler from php side ~NON_TC
 {.$DEFINE QUIET_LOAD}
     //Do not show errors while loading php library
 {.$DEFINE PHP4DELPHI_AUTOLOAD}
@@ -50,14 +56,11 @@ Define suitable visual library
     // Unload php library at finalization
 
 //Compiler switches
-{.$DEFINE php_side_handler}
-    //enable ability to define own error handler from php side ~NON_TC
 {.$DEFINE COMPILER_php7pv}
     // use macroses from PHP sources patch 
     // https://github.com/resistancelion/no-name-engine/tree/master/php-src
 {.$DEFINE PHP_DEBUG}
     //use debug libraries (php7debug, f.e)
-
 
 
 
@@ -101,9 +104,23 @@ Define suitable visual library
     {$ENDIF}
 {$ENDIF}
 
-{$IFNDEF LINUX}
- {$DEFINE ZTS}                                               {zend thread safety support}
-{$ENDIF}
+
+{$ifdef FPC}
+	{$DEFINE VERSION1}
+	{$DEFINE VERSION2}
+	{$DEFINE VERSION3}
+	{$DEFINE VERSION4}
+	{$DEFINE VERSION5}
+	{$DEFINE VERSION6}
+	{$DEFINE VERSION7}
+	{$DEFINE VERSION8}
+	{$DEFINE VERSION9}
+	{$DEFINE VERSION10}
+	{$DEFINE VERSION11}
+	{$DEFINE VERSION12}
+	{$DEFINE VERSION13}
+	{$DEFINE VERSION14}
+{$endif}
 
 {$IFNDEF VER80}                                             {Delphi 1.0}
   {$DEFINE VERSION2}                                        {Delphi 2.0 and BCB 1 or higher}
@@ -179,6 +196,17 @@ Define suitable visual library
   {$ENDIF}
 {$ENDIF}
 
+{$IFNDEF VER180}
+	{$DEFINE OLD_PATHS}
+{$ENDIF}
+
+{$IFDEF VERSION12}
+	{$DEFINE WSTR}
+{$ELSE}
+	{$IFDEF PHP_UNICODE} {$UNDEF PHP_UNICODE} {$ENDIF}
+{$ENDIF}
+
+
 {$IFDEF VERSION6}
   {$WARN SYMBOL_PLATFORM OFF}
   {$IFDEF VERSION7}
@@ -214,8 +242,10 @@ Define suitable visual library
     {$IFDEF VCL} {$UNDEF VCL} {$ENDIF}
     {$DEFINE LCL}
 {$ELSE}
-    {$IFDEF LCL}
-        {$UNDEF LCL}
-        {$DEFINE VCL}
-    {$ENDIF}
+    {$UNDEF LCL}
+	{$IFDEF WINDOWS}
+		{$DEFINE VCL}
+	{$ELSE}
+		{$DEFINE KYLIX}
+	{$ENDIF}
 {$ENDIF}

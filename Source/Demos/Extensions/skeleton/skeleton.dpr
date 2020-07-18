@@ -103,9 +103,6 @@ begin
   ModuleEntry.info_func := @php_info_module;
   Module_entry_table[0].fname := 'confirm_extname_compiled';
   Module_entry_table[0].handler := @confirm_extname_compiled;
-  {$IFDEF PHP4}
-  Module_entry_table[0].func_arg_types := nil;
-  {$ENDIF}
   ModuleEntry.functions :=  @module_entry_table[0];
   ModuleEntry._type := MODULE_PERSISTENT;
   {$IFDEF PHP530}

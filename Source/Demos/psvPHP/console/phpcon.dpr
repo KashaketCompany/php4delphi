@@ -32,7 +32,7 @@ var
 begin
   if zend_parse_method_parameters(1, TSRMLS_DC, this_ptr, 'z', @Text) = 0 then
   begin
-    ShowMessage(WideString(Z_RawStr(Text)));
+    ShowMessage(Z_STRVAL(Text));
   end;
 end;
     procedure grc(ht: integer; return_value: pzval;

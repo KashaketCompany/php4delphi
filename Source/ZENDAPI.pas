@@ -20,8 +20,9 @@ unit zendAPI;
 interface
 
 uses
-VCL.Dialogs,
+{$ifdef PHP_UNICODE}
 WideStrUtils,
+{$endif}
   {$IFDEF FPC} LCLType,LCLIntf,dynlibs,libc{$ELSE}Windows{$ENDIF}, SysUtils,
   ZendTypes, Variants,
   PHPTypes;
@@ -32,37 +33,22 @@ TArrayVariant = array of variant;
    TASDate = array of AnsiString;
   PASDate = ^TWSDate;
 const
-PHPWin =
-{$IFDEF PHP_DEBUG}
+PHPlp =
 {$IFDEF PHP7}
-  'php7ts_debug.dll'
+  'php7'
 {$ELSE}
- {$IFDEF PHP5}
-  'php5ts_debug.dll'
+  {$IFDEF PHP5}
+    'php5'
   {$ELSE}
-  'php4ts_debug.dll'
+    'php4'
   {$ENDIF}
- {$ENDIF}
+{$ENDIF}
+{$IFDEF ZTS} + 'ts' {$ENDIF}
+{$IFDEF PHP_DEBUG} + '_debug' {$ENDIF}
+{$IFDEF WINDOWS}
+  + '.dll'
 {$ELSE}
- {$IFDEF PHP5}
-    {$IFDEF PHP7}
-    {$IFDEF LINUX}
-         'php7ts.so'
-   {$ENDIF}
-   {$IFDEF MSWINDOWS}
-    'php7ts.dll'
-     {$ENDIF}
-    {$ELSE}
-    {$IFDEF LINUX}
-         'php5ts.so'
-   {$ENDIF}
-   {$IFDEF MSWINDOWS}
-    'php5ts.dll'
-     {$ENDIF}
-    {$ENDIF}
-  {$ELSE}
-  'php4ts.dll'
-  {$ENDIF}
+  + '.so'
 {$ENDIF};
 
 type
@@ -84,9 +70,14 @@ const
 {$IFNDEF PHP_UNICODE}
 function AnsiFormat(const Format: AnsiString; const Args: array of const): AnsiString;
 {$ENDIF}
+{$ifdef VERSION12}
 function Lfunc(var Func: Pointer; addr: LPCWSTR): Bool;
 function HFunc(const Func: Pointer; addr: LPCWSTR): Bool;
-function  LoadZEND(const DllFilename: zend_ustr = PHPWin) : boolean;
+{$else}
+function Lfunc(var Func: Pointer; addr: PAnsiChar): BOOL;
+function HFunc(const Func: Pointer; addr: PAnsiChar): Bool;
+{$endif}
+function  LoadZEND(const LibraryPath: zend_ustr = PHPlp) : boolean;
 function __fgsapi(sapi_globals_value:pointer; tsrmls_dc:pointer): Pointer;
 
 procedure UnloadZEND;
@@ -105,9 +96,11 @@ var
   _erealloc      : function(ptr: pointer; size: size_t; allow_failure: integer; __zend_filename: zend_pchar; __zend_lineno: uint; __zend_orig_filename: zend_pchar; __zend_orig_line_no: uint): pointer; cdecl;
   _estrdup       : function(const s: zend_pchar; __zend_filename: zend_pchar; __zend_lineno: uint; __zend_orig_filename: zend_pchar; __zend_orig_line_no: uint): pointer; cdecl;
   _estrndup      : function(s: zend_pchar; Len: Cardinal; __zend_filename: zend_pchar; __zend_lineno: uint; __zend_orig_filename: zend_pchar; __zend_orig_line_no: uint): zend_pchar; cdecl;
+  {$ifdef PHP_UNICODE}
   _estrndupu     : function(s: PUTF8Char; Len: Cardinal; __zend_filename: PUTF8Char;
   __zend_lineno: uint; __zend_orig_filename: PUTF8Char;
   __zend_orig_line_no: uint): PUTF8Char; cdecl;
+  {$endif}
 function emalloc(size: size_t): pointer;
 procedure efree(ptr: pointer);
 function ecalloc(nmemb: size_t; size: size_t): pointer;
@@ -674,17 +667,17 @@ var
   zend_startup_modules             : function(TSRMLS_DC:pointer):integer;
   zend_collect_module_handlers     : function(TSRMLS_DC:pointer):integer;
 
-  procedure ZvalVAL(z:pzval; v:Boolean) overload;
-  procedure ZvalVAL(z:pzval; v:Integer; const _type:Integer = IS_LONG) overload;
-  procedure ZvalVAL(z:pzval) overload;
-  procedure ZvalVAL(z:pzval; v:Double) overload;
-  procedure ZvalVAL(z:pzval; v:SmallInt) overload;
-  procedure ZvalVAL(z:pzval; v:Extended) overload;
+  procedure ZvalVAL(z:pzval; v:Boolean); overload;
+  procedure ZvalVAL(z:pzval; v:Integer; const _type:Integer = IS_LONG); overload;
+  procedure ZvalVAL(z:pzval); overload;
+  procedure ZvalVAL(z:pzval; v:Double); overload;
+  procedure ZvalVAL(z:pzval; v:SmallInt); overload;
+  procedure ZvalVAL(z:pzval; v:Extended); overload;
   procedure ZvalVAL(z: pzval; s: zend_ustr; len: Integer = 0); overload;
-  procedure ZvalString(z:pzval) overload;
-  procedure ZvalString(z:pzval; s:zend_pchar; len:Integer = 0) overload;
-  procedure ZvalString(z:pzval; s:PWideChar; len:Integer = 0) overload;
-  procedure ZvalString(z:pzval; s:string; len:Integer = 0) overload;
+  procedure ZvalString(z:pzval); overload;
+  procedure ZvalString(z:pzval; s:zend_pchar; len:Integer = 0); overload;
+  procedure ZvalString(z:pzval; s:PWideChar; len:Integer = 0); overload;
+  procedure ZvalString(z:pzval; s:string; len:Integer = 0); overload;
 
 function ZvalArrayAdd(z: pzval; Args: array of const): Integer; overload;
 function ZvalArrayAdd(z: pzval; idx: Integer; Args: array of const)
@@ -718,9 +711,15 @@ function add_assoc_variant(arg: pzval; key: zend_pchar; key_len: uint; value: va
 procedure ZVAL_ARRAY(z: pzval; arr:  TWSDate); overload;
 procedure ZVAL_ARRAY(z: pzval; arr:  TASDate); overload;
 procedure ZVAL_ARRAY(z: pzval; arr:  array of string); overload;
+{$IFDEF WSTR}
 procedure ZVAL_ARRAY(z: pzval; arr:  array of zend_ustr); overload;
+{$ENDIF}
 procedure ZVAL_ARRAY(z: pzval; arr: array of variant); overload;
+{$if CompilerVersion > 21}
 procedure ZVAL_ARRAY(z: pzval; arr: System.TArray<System.integer>); overload;
+{$else}
+procedure ZVAL_ARRAY(z: pzval; arr: array of integer); overload;
+{$ifend}
 procedure ZVAL_ARRAY(z: pzval; arr: Variant); overload;
 procedure ZVAL_ARRAYAC(z: pzval; keynames: Array of AnsiChar; keyvals: Array of AnsiChar);
 procedure ZVAL_ARRAYWC(z: pzval; keynames: Array of PWideChar; keyvals: Array of PWideChar);
@@ -743,7 +742,9 @@ function ZendToVariant(const Value: pppzval;cobj: TObjectBConvertMethod=nil): Va
 {$ENDIF}
 procedure VariantToZend(const Value: Variant; z: pzval;
 cobj: TObjectAConvertMethod=nil);
+{$IFDEF WSTR}
 procedure ZVAL_RawStr(z: pzval; s:RawByteString; duplicate: boolean);
+{$ENDIF}
 procedure ZVAL_STRING(z: pzval; s: WideString; duplicate: boolean);
 procedure ZVAL_STRINGU(z: pzval; s: UTF8String; duplicate: boolean);
 procedure ZVAL_STRINGW(z: pzval; StW: WideString; duplicate: boolean);
@@ -757,7 +758,7 @@ procedure zend_copy_constant(c: zend_constant);
 {$IF defined(PHP540) or defined(PHP550) or defined(PHP560)}
 procedure zend_copy_constants(target: PHashTable; source: PHashTable); cdecl;
 procedure zend_class_add_ref(aclass: Ppzend_class_entry); cdecl;
-{$ENDIF}
+{$IFEND}
 
 var
   get_zend_version           : function(): zend_pchar; cdecl;
@@ -769,7 +770,7 @@ var
 {$IFDEF PHP5}
   {$IF not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
   zend_copy_constants: procedure(target: PHashTable; source: PHashTable); cdecl;
-  {$ENDIF}
+  {$IFEND}
   zend_objects_new : function (_object : pointer; class_type : pointer; TSRMLS_DC : pointer) : {$IFDEF PHP7}zend_object{$ELSE}_zend_object_value{$ENDIF}; cdecl;
   zend_objects_clone_obj: function(_object: pzval; TSRMLS_DC : pointer): {$IFDEF PHP7}zend_object{$ELSE}_zend_object_value{$ENDIF}; cdecl;
   zend_objects_store_add_ref: procedure (_object : pzval; TSRMLS_DC : pointer); cdecl;
@@ -778,7 +779,7 @@ var
   function_add_ref: procedure (func: {$IFDEF PHP7}Pzend_function{$ELSE}PZendFunction{$ENDIF}); cdecl;
   {$IF not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
   zend_class_add_ref: procedure(aclass: Ppzend_class_entry); cdecl;
-  {$ENDIF}
+  {$IFEND}
 
 {$ENDIF}
 
@@ -826,16 +827,24 @@ function object_init(arg: pzval; ce: pzend_class_entry; TSRMLS_DC : pointer) : i
 function Z_LVAL(z : Pzval) : longint;
 function Z_BVAL(z : Pzval) : boolean;
 function Z_DVAL(z : Pzval) : double;
+{$ifdef WSTR}
 function Z_RAWSTR(z: PZval): RawByteString;
+{$else}
+function Z_RAWSTR(z: PZval): TBytes;
+{$endif}
+
 function Z_STRVAL(z : Pzval) : WideString;
 function Z_ASTRVAL(z : Pzval) : AnsiString;
 function Z_STRUVAL(z : PZval): UTF8String;
-function Z_WSTRVAL(z : pzval) : String;
+function Z_SSTRVAL(z : pzval) : String;
 function Z_CHAR(z: PZval) : zend_uchar;
 function Z_WCHAR(z: PZval) : WideChar;
 function Z_ACHAR(z: PZVAL): AnsiChar;
+{$ifdef WSTR}
 function Z_UCHAR(z: PZVAL): UTF8Char;
-
+{$else}
+function Z_UCHAR(z: PZVAL): AnsiChar;
+{$endif}
 function Z_STRLEN(z : Pzval) : longint;
 function Z_ARRVAL(z : Pzval ) : PHashTable;
 function Z_OBJ_HANDLE(z :Pzval) : {$IFDEF PHP7} P_zend_object_handlers {$ELSE} zend_object_handle{$ENDIF};
@@ -891,6 +900,7 @@ begin
      else
       Result := nil;
 end;
+{$ifdef PHP_UNICODE}
 function estrndupu(s: PUtf8Char; len: Cardinal): PUTf8Char;
 begin
   if assigned(s) then
@@ -898,6 +908,7 @@ begin
      else
       Result := nil;
 end;
+{$endif}
 function emalloc(size: size_t): pointer;
 begin
   Result := _emalloc(size, nil, 0, nil, 0);
@@ -1021,7 +1032,7 @@ begin
     ZvalString(z, _s, len);
 end;
 
-procedure ZvalVAL(z:pzval; v:Boolean);
+procedure ZvalVAL(z:pzval; v:Boolean); overload;
 Begin
   {$IFDEF PHP7}
   z^.u1.v._type
@@ -1031,7 +1042,7 @@ Begin
   z.value.lval := integer(v);
 End;
 
-procedure ZvalVAL(z:pzval; v:Integer; const _type:Integer = IS_LONG);
+procedure ZvalVAL(z:pzval; v:Integer; const _type:Integer = IS_LONG); overload;
 Begin
   {$IFDEF PHP7}
   z^.u1.v._type
@@ -1041,7 +1052,7 @@ Begin
   z^.value.lval := v;
 End;
 
-procedure ZvalVAL(z:pzval);
+procedure ZvalVAL(z:pzval); overload;
 Begin
   {$IFDEF PHP7}
   z^.u1.v._type
@@ -1050,7 +1061,7 @@ Begin
   {$ENDIF}  := IS_NULL;
 End;
 
-procedure ZvalVAL(z:pzval; v:Double);
+procedure ZvalVAL(z:pzval; v:Double); overload;
 Begin
   {$IFDEF PHP7}
   z^.u1.v._type
@@ -1060,7 +1071,7 @@ Begin
   z.value.dval := v;
 End;
 
-procedure ZvalVAL(z:pzval; v:SmallInt);
+procedure ZvalVAL(z:pzval; v:SmallInt); overload;
 begin
   {$IFDEF PHP7}
   z^.u1.v._type
@@ -1070,7 +1081,7 @@ begin
   z^.value.lval := v;
 end;
 
-procedure ZvalVAL(z:pzval; v:Extended);
+procedure ZvalVAL(z:pzval; v:Extended); overload;
 Begin
   {$IFDEF PHP7}
   z^.u1.v._type
@@ -1080,7 +1091,7 @@ Begin
   z.value.dval := v;
 End;
 
-procedure ZvalVAL(z: pzval; s: zend_ustr; len: Integer = 0);
+procedure ZvalVAL(z: pzval; s: zend_ustr; len: Integer = 0); overload;
 var
   lens: Integer;
   AChar: zend_pchar;
@@ -1294,9 +1305,14 @@ end;
 
 
 
-function GetArgPZval;
+function GetArgPZval(Args: TVarRec; const _type: Integer = IS_LONG;
+  Make: Boolean = false): pzval;
 begin
+  {$if CompilerVersion > 21}
   if Args._Reserved1 = 0 then // nil
+  {$else}
+  if Integer(Args.VPointer) = 0 then
+  {$ifend}
   begin
     if Make then
       MAKE_STD_ZVAL(Result);
@@ -1317,14 +1333,27 @@ begin
         ZvalVAL(Result, Args.VBoolean);
       vtExtended:
         ZvalVAL(Result, Args.VExtended^);
+      {$if CompilerVersion > 21}
       vtClass, vtObject:
         ZvalVAL(Result, Args._Reserved1);
+      {$else}
+      vtClass:
+        ZvalVAL(Result, Integer(Args.VClass));
+      vtObject:
+        ZvalVAL(Result, Integer(Args.VObject));
+      {$ifend}
       vtString:
         ZvalVAL(Result, zend_ustr(Args.VString^));
       vtAnsiString:
         ZvalVAL(Result, zend_pchar(zend_ustr(Args.VAnsiString)));
+      {$ifdef WSTR}
       vtUnicodeString:
+        {$if CompilerVersion > 21}
         ZvalVAL(Result, UnicodeString(Args._Reserved1));
+        {$else}
+        ZvalVal(Result, UnicodeString(Args.VUnicodeString));
+        {$ifend}
+      {$endif}
       vtWideChar:
         ZvalVAL(Result, zend_pchar(Args.VWideChar));
       vtChar:
@@ -1339,7 +1368,7 @@ begin
   end;
 end;
 
-
+{$ifdef WSTR}
 procedure ZVAL_STRINGU(z: pzval; s: UTF8String; duplicate: boolean);
 var
   sc: PUTF8Char;
@@ -1361,19 +1390,21 @@ begin
   SetCodePage(_s, CP_UTF8, not IsUTF8String(_s));
   ZVAL_STRINGU(z, UTF8String(_s), duplicate);
 end;
+{$endif}
 
 procedure ZVAL_STRING(z: pzval; s: WideString; duplicate: boolean);
 begin
   ZVAL_STRINGU(z, UTF8String(s), duplicate);
 end;
+
 procedure ZVAL_STRINGW(z: pzval; StW: WideString; duplicate: boolean);
 var
   St: UTF8String;
   sc: PUTF8Char;
 begin
-
   St := UTF8String(StW);
   sc := PUtf8Char(St);
+  
   z^.value.str.len := Length(St);
   if duplicate then
     z^.value.str.val := estrndup(sc, z^.value.str.len)
@@ -1546,10 +1577,10 @@ begin
                    ZVAL_STRING(z, '', true);
                  end;
          end;
-
+  {$ifdef VERSION12}
   varUString    :
              ZVAL_RawStr(z, RawByteString(TVarData(Value).VUString), true);
-
+  {$endif}
      varOleStr    :
          begin
            if Assigned ( TVarData(Value).VOleStr ) then
@@ -1592,6 +1623,7 @@ begin
      end;
      //varRecord : integer(TVarData(Value).VRecord)
      //<==запись... я до сих пор не разобрался как с ними через RTTI работать
+     {$if CompilerVersion > 21}
      varRecord    :
      begin
        if Assigned(cobj) then
@@ -1599,6 +1631,7 @@ begin
        else
         ZVALVAL(z);
      end;
+
      //varObject : integer(TVarData(Value).VObject)
      //<==объект...
      varObject    :
@@ -1608,6 +1641,8 @@ begin
        else
         ZVALVAL(z, integer(TObject(TVarData(Value).VPointer^)));
      end;
+     {$ifend}
+
      varStrArg    :
          begin
            if Assigned ( TVarData(Value).VString ) then
@@ -1619,10 +1654,13 @@ begin
                    ZVAL_STRING(z, '', true);
                  end;
          end;
-
+     {$if CompilerVersion > 21}
      varUStrArg  : ZVAL_RawStr(z, RawByteString(TVarData(Value).VUString), true);
+     {$ifend}
      varInt64    : ZVALVAL(z, TVarData(Value).VInt64);
+     {$ifdef VERSION14}
      varUInt64   : ZVALVAL(z, TVarData(Value).VUInt64);
+     {$endif}
      varShortInt : ZVALVAL(z, Integer(TVarData(Value).VShortInt));
      varSmallInt : ZVALVAL(z, Integer(TVarData(Value).VSmallint));
      varInteger  : ZVALVAL(z, TVarData(Value).VInteger);
@@ -1816,7 +1854,7 @@ begin
     end;
     Exit;
 end;
-
+{$ifdef WSTR}
 procedure ZVAL_ARRAY(z: pzval; arr:  array of zend_ustr); overload;
 var
   i: integer;
@@ -1843,6 +1881,7 @@ begin
     end;
     Exit;
 end;
+{$endif}
 
 procedure ZVAL_ARRAY(z: pzval; arr:  array of variant); overload;
 var
@@ -1870,7 +1909,12 @@ begin
     end;
     Exit;
 end;
+
+{$ifdef VERSION14}
 procedure ZVAL_ARRAY(z: pzval; arr: System.TArray<System.integer>); overload;
+{$else}
+procedure ZVAL_ARRAY(z: pzval; arr: array of integer); overload;
+{$endif}
 var
   i: integer;
 begin
@@ -2149,7 +2193,12 @@ begin
     FreeLibrary(H);
   end;
 end;
+
+{$ifdef VERSION12}
 function Lfunc(var Func: Pointer; addr: LPCWSTR): BOOL;
+{$else}
+function Lfunc(var Func: Pointer; addr: PAnsiChar): BOOL;
+{$endif}
 begin
   Result := True;
   Func := GetProcAddress(PHPLib, addr);
@@ -2161,7 +2210,11 @@ begin
     Result := False;
   end;
 end;
+{$ifdef VERSION12}
 function HFunc(const Func: Pointer; addr: LPCWSTR): BOOL;
+{$else}
+function HFunc(const Func: Pointer; addr: PAnsiChar): Bool;
+{$endif}
 var fr: FARPROC;
 begin
   Result := True;
@@ -2197,16 +2250,19 @@ procedure zend_class_add_ref(aclass: Ppzend_class_entry); cdecl;
 begin
   Inc(aclass^.refcount,1);
 end;
-{$ENDIF}
-function LoadZEND(const DllFilename: zend_ustr = PHPWin) : boolean;
+{$IFEND}
+function LoadZEND(const LibraryPath: zend_ustr = PHPlp) : boolean;
 var
   WriteFuncPtr  : pointer;
 begin
  {$IFDEF QUIET_LOAD}
   Result := false;
  {$ENDIF}
-  PHPLib := LoadLibrary( PWideChar(WideString(DllFilename)) );
-
+ {$if CompilerVersion >= 20}
+  PHPLib := LoadLibrary( PWideChar(WideString(LibraryPath)) );
+ {$else}
+  PHPLib := LoadLibrary( String( LibraryPath ) );
+ {$ifend}
 {$IFNDEF QUIET_LOAD}
   if PHPLib = 0 then
   begin
@@ -2220,13 +2276,13 @@ begin
  {$IFDEF PHP5}
  {$IF not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
    LFunc(@zend_copy_constants, 'zend_copy_constants');
- {$ENDIF}
+ {$IFEND}
    LFunc(@zend_objects_new, 'zend_objects_new');
    LFunc(@zend_objects_clone_obj, 'zend_objects_clone_obj');
    LFunc(@function_add_ref, 'function_add_ref');
  {$IF not defined(PHP540) and not defined(PHP550) and not defined(PHP560)}
    LFunc(@zend_class_add_ref, 'zend_class_add_ref');
- {$ENDIF}
+ {$IFEND}
 
    LFunc(@zend_objects_store_add_ref, 'zend_objects_store_add_ref');
    LFunc(@zend_objects_store_del_ref, 'zend_objects_store_del_ref');
@@ -2327,6 +2383,7 @@ begin
   '_estrndup@@8'
   {$ENDIF});
 
+  {$ifdef PHP_UNICODE}
   // -- _estrndup  Unicode
   LFunc(@_estrndupu,
   {$IFNDEF PHP7}
@@ -2334,6 +2391,7 @@ begin
   {$ELSE}
   '_estrndup@@8'
   {$ENDIF});
+  {$endif}
 
   // -- zend_set_memory_limit
   LFunc(@zend_set_memory_limit, 'zend_set_memory_limit');
@@ -3469,7 +3527,21 @@ begin
         end;
     end;
 end;
-function Z_RawStr(z: pzval): RawByteString;
+{$ifndef WSTR}
+function RawByteString(s: String): TBytes; overload;
+begin
+	
+end;
+
+function RawByteString(s: PAnsiChar): TBytes; overload;
+begin
+	
+end;
+
+function Z_RAWSTR(z: pzval): TBytes;
+{$else}
+function Z_RAWSTR(z: pzval): RawByteString;
+{$endif}
 {$ifdef fpc}
 var
   s_len: SizeInt;
@@ -3485,7 +3557,7 @@ begin
         Result := RawByteString('False');
     end;
     IS_LONG:
-      Result := RawByteString(inttostr(z^.value.lval));
+      Result := RawByteString(IntToStr(z^.value.lval));
     IS_DOUBLE:
       Result := RawByteString(FloatToStr(z^.value.dval));
     IS_STRING:
@@ -3516,7 +3588,7 @@ begin
   Result := AnsiString(Z_RawStr(z));
 end;
 
-function Z_WSTRVAL(z : pzval) : String;
+function Z_SSTRVAL(z : pzval) : String;
 begin
   Result := String(Z_RawStr(z));
 end;
@@ -3576,6 +3648,7 @@ Result := #0;
   SetLength(S,1);
   Result := WideChar(S[1]);
 end;
+{$ifdef WSTR}
 function Z_UCHAR(z: PZVAL): UTF8Char;
 var S: UTF8String;
 begin
@@ -3594,6 +3667,12 @@ Result := #0;
   SetLength(S,1);
   Result := Utf8Char(S[1]);
 end;
+{$else}
+function Z_UCHAR(z: PZVAL): AnsiChar;
+begin
+	Result := Z_ACHAR(z);
+end;
+{$endif}
 
 function Z_STRLEN(z : pzval) : longint;
 begin
@@ -3703,13 +3782,13 @@ begin
 end;
 {$ENDIF}
 
-initialization
 {$IFDEF PHP4DELPHI_AUTOLOAD}
+initialization
   LoadZEND;
 {$ENDIF}
 
-finalization
 {$IFDEF PHP4DELPHI_AUTOUNLOAD}
+finalization
   UnloadZEND;
 {$ENDIF}
 

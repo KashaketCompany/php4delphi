@@ -1,5 +1,4 @@
 __history/
-
 __recovery/
 *.dcu
 *.local
@@ -7,3 +6,5 @@ __recovery/
 *.identcache
 *.stat
 *.res
+*.~pas
+*.~dcu
