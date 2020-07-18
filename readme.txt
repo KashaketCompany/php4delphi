@@ -1,9 +1,9 @@
                      PHP4Delphi library                       
 PHP - Delphi interface and PHP extensions development framework                  
 
-{ $Id: readme.txt,v 7.4 2/2019 delphi32 Exp $ } 
+{ $Id: readme.txt,v 7.4 07/2020 delphi32 Exp $ } 
 
-PHP4Delphi is a Delphi interface to PHP for Delphi 5, 6, 7, Delphi 2005 - Delphi Berlin
+PHP4Delphi is a Delphi interface to PHP for Delphi {2007, ..., Berlin}
 
 PHP4Delphi consists of 3 big subprojects:
 
@@ -29,22 +29,18 @@ More detail information available in php4Delphi manual php4Delphi.pdf
 
 
 This is a source-only release of php4Delphi. It includes
-design-time and run-time packages for Delphi 5 through Delphi Berlin
+design-time and run-time packages for Delphi 2007 through Delphi Berlin
 
 
 
 History:
-7.4.1 Mar 2019
-
-* Added unicode support
-
-7.4 Feb 2019
+7.4 Mar 2019
 
 * Compatible with PHP 5.5.0
 * Compatible with PHP 5.6.0
-* Compatible with PHP 5.6
+* Compatible with PHP 5.6.x
 * Compatible with Delphi 2011, XE8, Seattle, Berlin
-* Added Partial Unicode Support 
+* Added unicode support
 
 7.3 Jan 2019
 
@@ -196,215 +192,23 @@ c:\winnt or c:\winnt40 for NT/2000/XP servers
 
 How to install php4Delphi library:
 
-1. Delphi 5.x:
-
-Uninstall previous installed version of php4Delphi Library from Delphi 5 IDE.
-Remove previously compiled php4Delphi packages from your hard disk.
-
-Select PHP version you are going to use. php4Delphi supports PHP 4.x and PHP 5.x, 
-but not at the same time. You have to compile php4Delphi for selected target version of PHP.
-
-Open PHP.INC file.
-If you are using PHP5:
-a) Comment (remove) PHP4 directive  {$DEFINE PHP4}
-b) Uncomment (remove dot) directive {$DEFINE PHP5}
-c) Save PHP.INC file
-
-If you are using PHP4:
-a) Comment (remove) PHP5 directive {$DEFINE PHP5}
-b) Uncomment (remove dot) directive {$DEFINE PHP4}
-c) If you are using PHP version 4.2.x...4.3.0 add {$DEFINE PHP430} and remove {$DEFINE PHP433}
-   If you are using PHP version 4.3.3...4.3.x add {$DEFINE PHP433} and remove {$DEFINE PHP430}
-d) Save PHP.INC file
-
-Use "File\Open..." menu item of Delphi IDE to open php4Delphi runtime
-package php4DelphiR5.dpk. In "Package..." window click "Compile" button to
-compile packages php4DelphiR5.dpk. 
-Put compiled BPL file into directory that is accessible through the search PATH (i.e. DOS
-"PATH" environment variable; 
-for example, in the Windows\System directory).
-
-After compiling php4Delphi run-time package you must install design-time
-package into the IDE.
-
-Use "File\Open..." menu item to open design-time package php4DelphiD5.dpk.
-In "Package..." window click "Compile" button to compile the package
-and then click "Install" button to register php4Delphi Library 
-components on the component palette. 
-
-
-2. Delphi 6.x:
-
-Uninstall previous installed version of php4Delphi Library from Delphi 6 IDE.
-Remove previously compiled php4Delphi packages from your hard disk.
-
-Select PHP version you are going to use. php4Delphi supports PHP 4.x and PHP 5.x, 
-but not at the same time. You have to compile php4Delphi for selected target version of PHP.
-
-Open PHP.INC file.
-If you are using PHP5:
-a) Comment (remove) PHP4 directive  {$DEFINE PHP4}
-b) Uncomment (remove dot) directive {$DEFINE PHP5}
-c) Save PHP.INC file
-
-If you are using PHP4:
-a) Comment (remove) PHP5 directive {$DEFINE PHP5}
-b) Uncomment (remove dot) directive {$DEFINE PHP4}
-c) If you are using PHP version 4.2.x...4.3.0 add {$DEFINE PHP430} and remove {$DEFINE PHP433}
-   If you are using PHP version 4.3.3...4.3.x add {$DEFINE PHP433} and remove {$DEFINE PHP430}
-d) Save PHP.INC file
-
-Use "File\Open..." menu item of Delphi IDE to open php4Delphi runtime
-package php4DelphiR6.dpk. In "Package..." window click "Compile" button to
-compile packages php4DelphiR6. 
-Put compiled BPL file into directory that is accessible through the search PATH (i.e. DOS
-"PATH" environment variable; 
-for example, in the Windows\System directory).
-
-After compiling php4Delphi run-time package you must install design-time
-package into the IDE.
-
-Use "File\Open..." menu item to open design-time package php4DelphiD6.dpk.
-In "Package..." window click "Compile" button to compile the package
-and then click "Install" button to register php4Delphi Library 
-components on the component palette. 
-
-3. Delphi 7.x:
-
-Uninstall previous installed version of php4Delphi Library from Delphi 7 IDE.
-Remove previously compiled php4Delphi packages from your hard disk.
-
-Select PHP version you are going to use. php4Delphi supports PHP 4.x and PHP 5.x, 
-but not at the same time. You have to compile php4Delphi for selected target version of PHP.
-
-Open PHP.INC file.
-If you are using PHP5:
-a) Comment (remove) PHP4 directive  {$DEFINE PHP4}
-b) Uncomment (remove dot) directive {$DEFINE PHP5}
-c) Save PHP.INC file
-
-If you are using PHP4:
-a) Comment (remove) PHP5 directive {$DEFINE PHP5}
-b) Uncomment (remove dot) directive {$DEFINE PHP4}
-c) If you are using PHP version 4.2.x...4.3.0 add {$DEFINE PHP430} and remove {$DEFINE PHP433}
-   If you are using PHP version 4.3.3...4.3.x add {$DEFINE PHP433} and remove {$DEFINE PHP430}
-d) Save PHP.INC file
-
-Use "File\Open..." menu item of Delphi IDE to open php4Delphi runtime
-package php4DelphiR7.dpk. In "Package..." window click "Compile" button to
-compile packages php4DelphiR7.dpk. 
-Put compiled BPL file into directory that is accessible through the search PATH (i.e. DOS
-"PATH" environment variable; 
-for example, in the Windows\System directory).
-
-After compiling php4Delphi run-time package you must install design-time
-package into the IDE.
-
-Use "File\Open..." menu item to open design-time package php4DelphiD7.dpk
-In "Package..." window click "Compile" button to compile the package
-and then click "Install" button to register php4Delphi Library 
-components on the component palette. 
-
-
-4. Delphi 2005:
-
-Uninstall previous installed version of php4Delphi Library from Delphi 2005 IDE.
-Remove previously compiled php4Delphi packages from your hard disk.
-
-Select PHP version you are going to use. php4Delphi supports PHP 4.x and PHP 5.x, 
-but not at the same time. You have to compile php4Delphi for selected target version of PHP.
-
-Open PHP.INC file.
-If you are using PHP5:
-a) Comment (remove) PHP4 directive  {$DEFINE PHP4}
-b) Uncomment (remove dot) directive {$DEFINE PHP5}
-c) Save PHP.INC file
-
-If you are using PHP4:
-a) Comment (remove) PHP5 directive {$DEFINE PHP5}
-b) Uncomment (remove dot) directive {$DEFINE PHP4}
-c) If you are using PHP version 4.2.x...4.3.0 add {$DEFINE PHP430} and remove {$DEFINE PHP433}
-   If you are using PHP version 4.3.3...4.3.x add {$DEFINE PHP433} and remove {$DEFINE PHP430}
-d) Save PHP.INC file
-
-Use "File\Open..." menu item of Delphi IDE to open php4Delphi runtime
-package php4DelphiR2005.dpk. In "Package..." window click "Compile" button to
-compile packages php4DelphiR2005.dpk. 
-Put compiled BPL file into directory that is accessible through the search PATH (i.e. DOS
-"PATH" environment variable; 
-for example, in the Windows\System directory).
-
-After compiling php4Delphi run-time package you must install design-time
-package into the IDE.
-
-Use "File\Open..." menu item to open design-time package php4DelphiD2005.dpk
-In "Package..." window click "Compile" button to compile the package
-and then click "Install" button to register php4Delphi Library 
-components on the component palette. 
-
-
-
-5. Delphi 2006:
-
-Uninstall previous installed version of php4Delphi Library from Delphi 2006 IDE.
-Remove previously compiled php4Delphi packages from your hard disk.
-
-Select PHP version you are going to use. php4Delphi supports PHP 4.x and PHP 5.x, 
-but not at the same time. You have to compile php4Delphi for selected target version of PHP.
-
-Open PHP.INC file.
-If you are using PHP5:
-a) Comment (remove) PHP4 directive  {$DEFINE PHP4}
-b) Uncomment (remove dot) directive {$DEFINE PHP5}
-c) Save PHP.INC file
-
-If you are using PHP4:
-a) Comment (remove) PHP5 directive {$DEFINE PHP5}
-b) Uncomment (remove dot) directive {$DEFINE PHP4}
-c) If you are using PHP version 4.2.x...4.3.0 add {$DEFINE PHP430} and remove {$DEFINE PHP433}
-   If you are using PHP version 4.3.3...4.3.x add {$DEFINE PHP433} and remove {$DEFINE PHP430}
-d) Save PHP.INC file
-
-Use "File\Open..." menu item of Delphi IDE to open php4Delphi runtime
-package php4DelphiR2006.dpk. In "Package..." window click "Compile" button to
-compile packages php4DelphiR2006.dpk. 
-Put compiled BPL file into directory that is accessible through the search PATH (i.e. DOS
-"PATH" environment variable; 
-for example, in the Windows\System directory).
-
-After compiling php4Delphi run-time package you must install design-time
-package into the IDE.
-
-Use "File\Open..." menu item to open design-time package php4DelphiD2006.dpk
-In "Package..." window click "Compile" button to compile the package
-and then click "Install" button to register php4Delphi Library 
-components on the component palette. 
-
-
-6. Delphi 2007:
+Delphi 2007 & up:
 
 Uninstall previous installed version of php4Delphi Library from Delphi 2007 IDE.
 Remove previously compiled php4Delphi packages from your hard disk.
 
-Select PHP version you are going to use. php4Delphi supports PHP 4.x and PHP 5.x, 
+Select PHP version you are going to use. php4Delphi supports PHP 5.x, 
 but not at the same time. You have to compile php4Delphi for selected target version of PHP.
 
 Open PHP.INC file.
 If you are using PHP5:
-a) Comment (remove) PHP4 directive  {$DEFINE PHP4}
-b) Uncomment (remove dot) directive {$DEFINE PHP5}
+a) Uncomment (remove dot) from definition of suitable php, VC, Visual Library and architecture version
+b) Uncomment (remove dot) from definition of prefered features in the feature block of the PHP.INC file
 c) Save PHP.INC file
 
-If you are using PHP4:
-a) Comment (remove) PHP5 directive {$DEFINE PHP5}
-b) Uncomment (remove dot) directive {$DEFINE PHP4}
-c) If you are using PHP version 4.2.x...4.3.0 add {$DEFINE PHP430} and remove {$DEFINE PHP433}
-   If you are using PHP version 4.3.3...4.3.x add {$DEFINE PHP433} and remove {$DEFINE PHP430}
-d) Save PHP.INC file
-
 Use "File\Open..." menu item of Delphi IDE to open php4Delphi runtime
-package php4DelphiR2007.dpk. In "Package..." window click "Compile" button to
-compile packages php4DelphiR2007.dpk. 
+choose suitable Runtime package php4DelphiR(Your Delphi Version).dpk; In "Package..." window click "Compile" button to
+compile packages. 
 Put compiled BPL file into directory that is accessible through the search PATH (i.e. DOS
 "PATH" environment variable; 
 for example, in the Windows\System directory).
@@ -412,7 +216,7 @@ for example, in the Windows\System directory).
 After compiling php4Delphi run-time package you must install design-time
 package into the IDE.
 
-Use "File\Open..." menu item to open design-time package php4DelphiD2007.dpk
+Use "File\Open..." menu item to open design-time package php4DelphiD(Your Delphi Version).dpk
 In "Package..." window click "Compile" button to compile the package
 and then click "Install" button to register php4Delphi Library 
 components on the component palette. 
