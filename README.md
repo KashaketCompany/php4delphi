@@ -8,246 +8,115 @@ PHP4Delphi is a Delphi interface to PHP for Delphi {2009, ..., Rio}
 
 PHP4Delphi consists of 3 big subprojects:
 
-1. PHP scripting (using PHP as a scripting language in Delphi applications)
-PHP4Delphi allows to execute the PHP scripts within the Delphi program using 
-TpsvPHP component directly without a WebServer. 
-It is a PHP extension that enables you to write client-side GUI applications. 
-One of the goals behind it was to prove that PHP is a capable general-purpose scripting 
-language that is suited for more than just Web applications. 
-It is used by "Delphi for PHP" from CodeGear.
+1. PHP scripting (using PHP as a scripting language in Delphi applications) <br>
+PHP4Delphi allows to execute the PHP scripts within the Delphi program using <br>
+TpsvPHP component directly without a WebServer.  <br>
+It is a PHP extension that enables you to write client-side GUI applications.  <br>
+One of the goals behind it was to prove that PHP is a capable general-purpose scripting <br> 
+language that is suited for more than just Web applications.  <br>
+It is used by "Delphi for PHP" from CodeGear. <br>
 
-2. PHP extensions development framework (using Delphi to extend PHP functionality)
-Visual Development Framework gives possibility to create custom PHP
-Extensions using Delphi. 
-PHP extension, in the most basic of terms, is a set of instructions that is
-designed to add functionality to PHP.
+2. PHP extensions development framework (using Delphi to extend PHP functionality) <br>
+Visual Development Framework gives possibility to create custom PHP <br>
+Extensions using Delphi.  <br>
+PHP extension, in the most basic of terms, is a set of instructions that is <br>
+designed to add functionality to PHP. <br>
 
-3. PHP4Applications (integrate PHP in any application)
-Supports C, C++, Visual Basic, VBA, C#, Delphi, Delphi .NET, Visual Basic .NET etc. 
-
-
-More detail information available in php4Delphi manual php4Delphi.pdf
+3. PHP4Applications (integrate PHP in any application) <br>
+Supports C, C++, Visual Basic, VBA, C#, Delphi, Delphi .NET, Visual Basic .NET etc. <br> 
 
 
-This is a source-only release of php4Delphi. It includes
-design-time and run-time packages for Delphi 2009 through Delphi Rio
+More detail information available in <a href="/documentation/php4Delphi.pdf">php4Delphi manual php4Delphi.pdf</a>
 
 
+This is a source-only release of php4Delphi. <br>
+It includes design-time and run-time packages for Delphi 2009 through Delphi Rio <br> <br>
 
-# History
-7.5-rc1 2020
+# Features
 * Compatible with Delphi 2009, 10.1 Seattle, 10.2 Berlin, 10.3 Tokyo
+* PHP 5.0.0 - 5.6.x support
+* Unicode support ( php 5.5 & up )
+<br> <a href="versions.md">Version history</a>
 
-7.4 Mar 2019
-
-* Compatible with PHP 5.5.0
-* Compatible with PHP 5.6.0
-* Compatible with PHP 5.6.x
-* Compatible with Delphi 2011, XE8, Seattle, Berlin
-* Added unicode support
-
-7.3 Jan 2019
-
-* Compatible with PHP 5.4.0
-
-7.2 Oct 2009
-
-* Compatible with Delphi 2010
-* Compatible with PHP 5.2.11
-* Compatible with PHP 5.3.0 (VC6 and VC9 editions : see PHP.INC for more details)
-
-7.1 Oct 2008
-
-* Compatible with Delphi 2009
-
-7.0 Apr 2007
-
-* Compatible with Delphi 2007
-* Compatible with PHP 5.2.1
-* Compatible with PHP 4.4.6
-* Thread safe TpsvPHP component
-* New component TPHPEngine introduced
-* RunCode method reimplemented to solve "black horror" of pipes.
-* Not fully compatible with previous version due to multithreading, but migration is easy.
-
-6.2 Feb 2006
-
-* Compatible with PHP 5.2.0
-* Compatible with Delphi 2006
-* Compatible with PHP 5.1.1
-* Compatible with PHP 5.1.2
-* Code reorganized, some crap was removed
-* Added headers support (Michael Maroszek)
-* New demo projects
-* PHP4Applications revisited
-
-6.1
-
-* Compatible with PHP 5.0.4
-* Compatible with PHP 5.1.0b3
-* Compatible with Delphi 2005
-
-6.0
-
-* Translated Zend II API
-* New PHP Object Model support
-* PHP classes support for PHP4 and PHP5
-* New demo projects
-* TPHPClass component compatible with PHP4 and PHP5
-* Added new property DLLFolder to psvPHP component
-* New component PHPSystemLibrary
-
-5.5 fix 1
-
-* New property RegisterGlobals (boolean) added to psvPHP component
-* New property MaxExecutionTime (integer) added to psvPHP component - Maximum execution time of each script, in seconds
-* New property MaxInputTime (integer) added to psvPHP component - Maximum amount of time each script may spend parsing request data
-* New property SafeMode (boolean) added to psvPHP component
-* New property SafeModeGid (boolean) added to psvPHP component -  When safe_mode is on, UID/GID checks are bypassed when
-  including files from this directory and its subdirectories. (directory must also be in include_path or full path must
-  be used when including)
-* Memory leak fixed in phpModules unit
-* php_class demo project errors fixed
-* psvPHP can load now PHP modules using dl() function
-
-5.5
-
-* New component TPHPClass added (only for PHP 4)
-* Added support of PHP 5
-* Improved speed of unloading of the PHP extensions under Apache 
-* Decreased size of the compiled modules (based on API only and developed using Visual FrameWork)
-* ZendAPI unit is splitted to ZendAPI and ZendTypes units
-* PHPAPI unit is splitted to  PHPAPI and PHPTypes units
-* New version of php4App - php4Applications subproject. 
-  php4Applications allows to use php scripts in VB, C, C++, etc applications.
-  Demo projects for Delphi, VC and MS Word included.
-* New property UseDelimiters added to TpsvPHP component. If UseDelimiters = true (by default) the
-  syntax of RunCode method parameter ACode should include standard script delimiters "<?" and "?>"
-  to make RunCode and Execute method compatible.
-* New parameters for OnScriptError event (error type, file name and line number)
-
-5.4
-
-* Minor bugs fixed
-* Documentation improved 
-* New property IniPath (folder where php.ini located) added to TpsvPHP component
-* New functions translated in ZendAPI unit
-
-5.3
-* Added new public property ExecuteMethod to psvPHP component. 
-  if ExecuteMethod is emGet, psvPHP receives variables as $_GET["variable"],
-  if ExecuteMethod is emServer (default), psvPHP receives variables as $variable.
-  Can be used to debug real PHP scripts with GET parameters.
-* Added possibility to access published property of Delphi components from PHP
-* Fixed problem with loading of PHP extension compiled wihout PHP4DELPHI_AUTOLOAD
-  option.
-
-5.2
-* Added dynamic attachement of all exported functions from php4ts.dll
-  in PHPAPI.pas
-* New function for safe dynamic functions linking PHPStubInit and ZendStubInit
-  This functions can be used if you are planning to work with beta-version of PHP,
-  for example
-* New unit zend_dynamic_array.pas
-* New unit logos.pas
-
-5.0.3
-* Fixed bug when php function without parameters does not return value.
-* New classes: TZendVariable and TZendValue in  phpFunctions.pas
-* New subproject: php4App
-  Using php4App you can integrate PHP not only with Delphi, but with VB, for example
-
-5.0.2 
-* Fixed problem with assembler code in ZENDAPI.pas for Delphi 7
-
-5.0.1
-* Fixed problem with number of parameters of zend_getparameters_ex function
-
-5.0
-* First version written in Delphi
-
-
-1.0 - 4.0  
-* php4Delphi was written in C as a DLL with simple Delphi wrapper
- 
 # Prerequisites
-Before using php4Delphi library:
+Before using php4Delphi library: <br>
 
-If you have no PHP installed, you have to download and 
-install PHP separately. It is not included in the package.
-You can download the latest version of PHP from
-http://www.php.net/downloads.php
+If you have no PHP installed, you have to download and  <br>
+install PHP separately. It is not included in the package. <br>
+You can download the latest version of PHP from <br>
+https://php.net/downloads/ <br>
+or <br>
+https://windows.php.net/downloads/releases/archives/ <br>
 
-ZEND API documentation available at http://www.zend.com
-PHP  API documentation available at http://www.php.net
+ZEND API documentation available at http://www.zend.com <br>
+PHP  API documentation available at http://www.php.net <br>
 
-You need to ensure that the dlls which php uses can be found. 
-php4ts.dll is always used. If you are using any php extension dlls then you
-will need those as well. 
-To make sure that the dlls can be found, you can either copy them to the 
-system directory (e.g. winnt/system32 or  windows/system).
+You need to ensure that the dlls which php uses can be found. <br> 
+php5ts.dll is always used. If you are using any php extension dlls then you <br>
+will need those as well.  <br>
+To make sure that the dlls can be found, you can either copy them to the  <br>
+system directory (e.g. winnt/system32 or  windows/system). <br>
 
-Copy the file, php.ini-dist to your %WINDOWS% directory on
-Windows 95/98 or to your %SYSTEMROOT% directory under Windows NT,
-Windows 2000 or Windows XP and rename it to php.ini. Your %WINDOWS% or
-%SYSTEMROOT% directory is typically:
-c:\windows for Windows 95/98
-c:\winnt or c:\winnt40 for NT/2000/XP servers
+Copy the file, php.ini-release to your php installation path <br>
+and rename it to php.ini. By default php is located in  <br>
+%WINDOWS% or %SYSTEMROOT% directory: <br>
+c:\windows for Windows <br>
+c:\winnt or c:\winnt40 for NT/2000/XP servers <br>
 
 # Building
-Uninstall previous installed version of php4Delphi Library from Delphi IDE.
-Remove previously compiled php4Delphi packages from your hard disk.
+Uninstall previous installed version of php4Delphi Library from Delphi IDE. <br>
+Remove previously compiled php4Delphi packages from your disk. <br>
 
-Select PHP version you are going to use. php4Delphi supports PHP 5.x, 
-but not at the same time. You have to compile php4Delphi for selected target version of PHP.
+Select PHP version you are going to use. php4Delphi supports PHP 5.x,  <br>
+but not at the same time - this behaviour is legacy, and therefore will be removed. <br>
+You have to compile php4Delphi for selected target version of PHP. <br>
 
-Open PHP.INC file.
-If you are using PHP5:
-a) Uncomment (remove dot) from definition of suitable php, VC and widgetset version
-b) Uncomment (remove dot) from definition of prefered features in the feature block of the PHP.INC file
-c) Save PHP.INC file
+a) Edit PHPver.INC file. <br>
+   Specify PHPver constant: <br>
+   PHPver = 05604; // php 5.6.4 -> 05 6 04 <br>
+b) Edit PHP.INC file. <br>
+   Remove dot from preferred features <br>
 
-Use "File\Open..." menu item of Delphi IDE to open php4Delphi runtime
-choose suitable Runtime package php4DelphiR(Your Delphi Version).dpk; In "Package..." window click "Compile" button to
-compile packages. 
-Put compiled BPL file into directory that is accessible through the search PATH (i.e. DOS
-"PATH" environment variable; 
-for example, in the Windows\System directory).
+Use "File\Open..." menu item of Delphi IDE to open php4Delphi group <br>
+choose suitable group from /package directory;  <br>
+In "Package..." window select php4DelphiR, <br>
+click "Compile" button to compile BPL.  <br>
+Put compiled BPL file into directory that is accessible through the search PATH  <br>
+("PATH" environment variable; <br>
+for example, in the Windows\System directory). <br>
 
-After compiling php4Delphi run-time package you must install design-time
-package into the IDE.
+After compiling php4Delphi run-time package you must install design-time <br>
+package into the IDE. <br>
 
-Use "File\Open..." menu item to open design-time package php4DelphiD(Your Delphi Version).dpk
-In "Package..." window click "Compile" button to compile the package
-and then click "Install" button to register php4Delphi Library 
-components on the component palette. 
+In "Package..." window select php4DelphiD, <br>
+click "Compile" button to compile the package <br>
+and then click "Install" button to install php4Delphi components. <br>
 
 # Credits
 
-Since this is a freeware you are strongly encouraged to look 
-at the source code and improve on the components if you want to. 
-Of course I would appreciate it if you would send me back the 
-changes and bug fixes you have made. 
+Since this is a freeware you are strongly encouraged to look  <br>
+at the source code and improve on the components if you want to.  <br>
+Of course we would appreciate if you create pull request with the  <br>
+changes and bug fixes you have made.  <br>
 
-For more information on the PHP Group and the PHP project,
-please see <http://www.php.net>.
+For more information on the PHP Group and the PHP project, <br>
+please see <http://www.php.net>. <br>
 
 
-PHP4Delphi forum
-http://sourceforge.net/forum/forum.php?forum_id=324242
+PHP4Delphi forum <br>
+http://sourceforge.net/forum/forum.php?forum_id=324242  <br>
 
-Authors:                                              
-Serhiy Perevoznyk                                     
-Belgium
-serge_perevoznyk@hotmail.com
-http://users.telenet.be/ws36637
-http://delphi32.blogspot.com
+Authors: <br>                                              
+Serhiy Perevoznyk <br>                                 
+Belgium <br>
+serge_perevoznyk@hotmail.com <br>
+http://users.telenet.be/ws36637  <br>
+http://delphi32.blogspot.com  <br>
 
-Lew Zienin
-Poland
-levzenin@pm.me
+Lew Zienin  <br>
+Ukraine  <br>
+levzenin@pm.me  <br>
 
-Nikita Ganzikov
-Ukraine
+Nikita Ganzikov  <br>
+Ukraine  <br>
 pig-l@mail.ru
-
