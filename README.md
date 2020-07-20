@@ -22,7 +22,7 @@ Extensions using Delphi.  <br>
 PHP extension, in the most basic of terms, is a set of instructions that is <br>
 designed to add functionality to PHP. <br>
 
-3. PHP4Applications (integrate PHP in any application) <br>
+3. <a href="https://github.com/suwermave/php4delphi/tree/bin/php4application">PHP4Applications (integrate PHP in any application)</a> <br>
 Supports C, C++, Visual Basic, VBA, C#, Delphi, Delphi .NET, Visual Basic .NET etc. <br> 
 
 
